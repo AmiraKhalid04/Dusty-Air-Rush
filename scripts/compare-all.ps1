@@ -211,6 +211,6 @@ if($failure -eq 0){
     if($failure -eq 1){
         Write-Output "FAILURE: $failure output is incorrect"
     }else{
-        Write-Output "FAILURE: $failure outputs are incorrect"
+        Write-Output "FAILURE: $failure outputs are incorrect out of 54"
     }
 }

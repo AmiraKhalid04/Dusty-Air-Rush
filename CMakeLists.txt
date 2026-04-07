@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.0.0)   # Selects the minimum version of CMake required to run this file
+cmake_minimum_required(VERSION 3.15)   # Selects the minimum version of CMake required to run this file
 project(GFX-LAB VERSION 0.1.0)          # Here we select the project name and version
 
 # Linux compatibility
@@ -18,6 +18,10 @@ set(GLFW_BUILD_TESTS OFF CACHE BOOL "" FORCE)       # Don't build Tests
 set(GLFW_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)    # Don't build Examples
 set(GLFW_INSTALL OFF CACHE BOOL "" FORCE)           # Don't build Installation Information
 set(GLFW_USE_HYBRID_HPG ON CACHE BOOL "" FORCE)     # Add variables to use High Performance Graphics Card if available
+
+# ADD THIS LINE TO FIX THE GLFW ERROR
+set(CMAKE_POLICY_VERSION_MINIMUM 3.5)
+
 add_subdirectory(vendor/glfw)                       # Build the GLFW project to use later as a library
 
 # A variable with all the source files of GLAD
@@ -131,4 +135,5 @@ target_compile_definitions(GAME_APPLICATION PRIVATE
 
 if(UNIX AND NOT APPLE)
         target_link_libraries(GAME_APPLICATION OpenGL::GL)
+        target_link_libraries(GAME_APPLICATION GLEW::GLEW)
 endif()

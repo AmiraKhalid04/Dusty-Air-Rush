@@ -97,6 +97,12 @@ namespace our
 
         // TODO: (Req 1) Delete the copy constructor and assignment operator.
         // Question: Why do we delete the copy constructor and assignment operator?
+        /*
+        We delete copy constructor and assignment operator to:
+
+            Prevent shallow copies of GPU resources
+            Avoid double deletion / crashes
+            Enforce unique ownership*/
         ShaderProgram(const ShaderProgram &) = delete;
         ShaderProgram &operator=(const ShaderProgram &) = delete;
     };

@@ -16,5 +16,26 @@ out Varyings {
 
 //TODO: (Req 1) Finish this shader
 
+uniform vec2 translation = vec2(0.0, 0.0);
+uniform vec2 scale = vec2(1.0, 1.0);
+
 void main(){
+    vec2 vertices[3] = vec2[](
+        vec2(-0.5, -0.5),
+        vec2( 0.5, -0.5),
+        vec2( 0.0,  0.5)
+    );
+    
+    vec3 colors[3] = vec3[](
+        vec3(1.0, 0.0, 0.0),
+        vec3(0.0, 1.0, 0.0),
+        vec3(0.0, 0.0, 1.0)
+    );
+    
+    // Get the vertex position and apply scale and translation
+    vec2 position = scale * vertices[gl_VertexID] + translation;
+    gl_Position = vec4(position, 0.0, 1.0);
+    
+    // Set the vertex color for passing to the fragment shader
+    vs_out.color = colors[gl_VertexID];
 }

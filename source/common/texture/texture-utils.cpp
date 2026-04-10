@@ -7,7 +7,16 @@
 
 our::Texture2D* our::texture_utils::empty(GLenum format, glm::ivec2 size){
     our::Texture2D* texture = new our::Texture2D();
-    //TODO: (Req 11) Finish this function to create an empty texture with the given size and format
+    texture->bind();
+
+    GLenum base_format = GL_RGBA;
+    GLenum data_type = GL_UNSIGNED_BYTE;
+    if (format == GL_DEPTH_COMPONENT24 || format == GL_DEPTH_COMPONENT16 || format == GL_DEPTH_COMPONENT32) {
+        base_format = GL_DEPTH_COMPONENT;
+        data_type = GL_UNSIGNED_INT;
+    }
+
+    glTexImage2D(GL_TEXTURE_2D, 0, format, size.x, size.y, 0, base_format, data_type, nullptr);
 
     return texture;
 }

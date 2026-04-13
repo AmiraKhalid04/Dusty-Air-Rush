@@ -180,7 +180,7 @@ namespace our
                   {
             //TODO: (Req 9) Finish this function
             // HINT: the following return should return true "first" should be drawn before "second". 
-            return true; });
+            return glm::dot(first.center, cameraForward) > glm::dot(second.center, cameraForward); });
 
         // TODO: (Req 9) Get the camera ViewProjection matrix and store it in VP
         glm::mat4 VP = camera->getProjectionMatrix(windowSize) * camera->getViewMatrix();

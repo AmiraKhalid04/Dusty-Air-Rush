@@ -19,8 +19,8 @@ namespace our {
     class Material {
     public:
         PipelineState pipelineState;
-        ShaderProgram* shader;
-        bool transparent;
+        ShaderProgram* shader = nullptr;
+        bool transparent = false;
         
         // This function does 2 things: setup the pipeline state and set the shader program to be used
         virtual void setup() const;
@@ -32,7 +32,7 @@ namespace our {
     // An example where this material can be used is when the whole object has only color which defined by tint
     class TintedMaterial : public Material {
     public:
-        glm::vec4 tint;
+        glm::vec4 tint = {1.0f, 1.0f, 1.0f, 1.0f};
 
         void setup() const override;
         void deserialize(const nlohmann::json& data) override;
@@ -45,9 +45,9 @@ namespace our {
     // An example where this material can be used is when the object has a texture
     class TexturedMaterial : public TintedMaterial {
     public:
-        Texture2D* texture;
-        Sampler* sampler;
-        float alphaThreshold;
+        Texture2D* texture = nullptr;
+        Sampler* sampler = nullptr;
+        float alphaThreshold = 0.0f;
 
         void setup() const override;
         void deserialize(const nlohmann::json& data) override;

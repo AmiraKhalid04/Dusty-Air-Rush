@@ -56,10 +56,11 @@ namespace our
         void deleteMarkedEntities()
         {
             // TODO: (Req 8) Remove and delete all the entities that have been marked for removal
-            for (Entity *entity : markedForRemoval)
+            while (!markedForRemoval.empty())
             {
+                Entity *entity = *markedForRemoval.begin();
+                markedForRemoval.erase(markedForRemoval.begin());
                 entities.erase(entity);
-                markedForRemoval.erase(entity);
                 delete entity;
             }
         }
@@ -69,9 +70,10 @@ namespace our
         {
             // TODO: (Req 8) Delete all the entites and make sure that the containers are empty
             deleteMarkedEntities();
-            for (Entity *entity : entities)
+            while (!entities.empty())
             {
-                entities.erase(entity);
+                Entity *entity = *entities.begin();
+                entities.erase(entities.begin());
                 delete entity;
             }
         }

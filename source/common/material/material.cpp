@@ -58,11 +58,14 @@ namespace our
         if (shader)
             shader->set("alphaThreshold", alphaThreshold);
 
-        if (texture && sampler && shader) {
+        if (texture && shader) {
             glActiveTexture(GL_TEXTURE0);
             texture->bind();
-            sampler->bind(0);
             shader->set("tex", 0);
+        }
+
+        if (sampler) {
+            sampler->bind(0);
         }
     }
 

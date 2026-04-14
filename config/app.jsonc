@@ -30,14 +30,16 @@
         "wood": "assets/textures/wood.jpg",
         "glass": "assets/textures/glass-panels.png",
         "monkey": "assets/textures/monkey.png",
-        "dusty-texture": "assets/textures/dusty_baseColor.png"
+        "dusty-texture": "assets/textures/dusty_baseColor.png",
+        "coin-texture": "assets/textures/coin.jpg"
       },
       "meshes": {
         "cube": "assets/models/cube.obj",
         "monkey": "assets/models/monkey.obj",
         "plane": "assets/models/plane.obj",
         "sphere": "assets/models/sphere.obj",
-        "dusty": "assets/models/dusty.obj"
+        "dusty": "assets/models/dusty.obj",
+        "coin": "assets/models/coin.obj"
       },
       "samplers": {
         "default": {},
@@ -54,6 +56,17 @@
             "depthTesting": { "enabled": true }
           },
           "texture": "dusty-texture",
+          "sampler": "default",
+          "tint": [1.0, 1.0, 1.0, 1.0]
+        },
+        "coin": {
+          "type": "textured",
+          "shader": "textured",
+          "pipelineState": {
+            "faceCulling": { "enabled": false },
+            "depthTesting": { "enabled": true }
+          },
+          "texture": "coin-texture",
           "sampler": "default",
           "tint": [1.0, 1.0, 1.0, 1.0]
         }
@@ -82,6 +95,18 @@
             "type": "Mesh Renderer",
             "mesh": "dusty",
             "material": "dusty"
+          }
+        ]
+      },
+      {
+        "position": [3, 2, -10],
+        "rotation": [0, 0, 0],
+        "scale": [2, 2, 2],
+        "components": [
+          {
+            "type": "Mesh Renderer",
+            "mesh": "coin",
+            "material": "coin"
           }
         ]
       }

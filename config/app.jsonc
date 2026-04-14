@@ -29,14 +29,15 @@
         "grass": "assets/textures/grass_ground_d.jpg",
         "wood": "assets/textures/wood.jpg",
         "glass": "assets/textures/glass-panels.png",
-        "monkey": "assets/textures/monkey.png"
+        "monkey": "assets/textures/monkey.png",
+        "dusty-texture": "assets/textures/dusty_baseColor.png"
       },
       "meshes": {
         "cube": "assets/models/cube.obj",
         "monkey": "assets/models/monkey.obj",
         "plane": "assets/models/plane.obj",
         "sphere": "assets/models/sphere.obj",
-        "planes": "assets/models/planes.obj"
+        "dusty": "assets/models/dusty.obj"
       },
       "samplers": {
         "default": {},
@@ -45,14 +46,16 @@
         }
       },
       "materials": {
-        "planes": {
-          "type": "tinted",
-          "shader": "tinted",
+        "dusty": {
+          "type": "textured",
+          "shader": "textured",
           "pipelineState": {
             "faceCulling": { "enabled": false },
             "depthTesting": { "enabled": true }
           },
-          "tint": [1.0, 0.8, 0.6, 1.0]
+          "texture": "dusty-texture",
+          "sampler": "default",
+          "tint": [1.0, 1.0, 1.0, 1.0]
         }
       }
     },
@@ -77,8 +80,8 @@
         "components": [
           {
             "type": "Mesh Renderer",
-            "mesh": "planes",
-            "material": "planes"
+            "mesh": "dusty",
+            "material": "dusty"
           }
         ]
       }

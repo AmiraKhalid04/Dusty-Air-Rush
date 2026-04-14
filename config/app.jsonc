@@ -30,13 +30,15 @@
                 "grass": "assets/textures/grass_ground_d.jpg",
                 "wood": "assets/textures/wood.jpg",
                 "glass": "assets/textures/glass-panels.png",
-                "monkey": "assets/textures/monkey.png"
+                "monkey": "assets/textures/monkey.png",
+                "ring": "assets/textures/ring/ring.png"
             },
             "meshes":{
                 "cube": "assets/models/cube.obj",
                 "monkey": "assets/models/monkey.obj",
                 "plane": "assets/models/plane.obj",
-                "sphere": "assets/models/sphere.obj"
+                "sphere": "assets/models/sphere.obj",
+                "ring": "assets/models/ring.obj"
             },
             "samplers":{
                 "default":{},
@@ -123,6 +125,22 @@
                     },
                     "tint": [1, 1, 1, 1],
                     "texture": "moon",
+                    "sampler": "default"
+                }
+                ,
+                "ring":{
+                    "type": "textured",
+                    "shader": "textured",
+                    "pipelineState": {
+                        "faceCulling":{
+                            "enabled": false
+                        },
+                        "depthTesting":{
+                            "enabled": true
+                        }
+                    },
+                    "tint": [1, 1, 1, 1],
+                    "texture": "ring",
                     "sampler": "default"
                 }
             }
@@ -253,6 +271,18 @@
                     {
                         "type": "Movement",
                         "angularVelocity": [0, 90, 0]
+                    }
+                ]
+            },
+            {
+                "position": [10, 2, 10],
+                "rotation": [0, 0, 0],
+                "scale": [30, 30, 30],
+                "components": [
+                    {
+                        "type": "Mesh Renderer",
+                        "mesh": "ring",
+                        "material": "ring"
                     }
                 ]
             }

@@ -22,22 +22,26 @@ jobs:
             const fs = require('fs');
             const reviewMap = JSON.parse(fs.readFileSync('.github/review-map.json', 'utf8'));
 
-            const author = context.payload.pull_request.user.login;
-            const reviewer = reviewMap[author];
+            const author = context.payload.pull_request.user.login; 
+            let reviewers = reviewMap[author];
 
-            if (!reviewer) {
-              console.log(`No reviewer found for ${author} in review map`);
-              return;
+            if (!reviewers) {
+            console.log(`No reviewer found for ${author} in review map`);
+             return;
+            }
+             // Ensure reviewers is always an array
+            if (!Array.isArray(reviewers)) {
+            reviewers = [reviewers];
             }
 
             try {
-              await github.rest.pulls.requestReviewers({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                pull_number: context.issue.number,
-                reviewers: [reviewer]
-              });
-              console.log(`Assigned ${reviewer} as reviewer for PR #${context.issue.number}`);
+            await github.rest.pulls.requestReviewers({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: context.issue.number,
+              reviewers: reviewers
+            });
+            console.log(`Assigned reviewers ${reviewers.join(', ')} for PR #${context.issue.number}`);
             } catch (error) {
-              console.error(`Failed to assign reviewer: ${error.message}`);
+            console.error(`Failed to assign reviewer: ${error.message}`);
             }

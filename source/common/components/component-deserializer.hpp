@@ -5,6 +5,7 @@
 #include "mesh-renderer.hpp"
 #include "free-camera-controller.hpp"
 #include "movement.hpp"
+#include "coin-component.hpp"
 
 namespace our
 {
@@ -31,6 +32,10 @@ namespace our
         else if (type == MeshRendererComponent::getID())
         {
             component = entity->addComponent<MeshRendererComponent>();
+        }
+        else if (type == CoinComponent::getID())
+        {
+            component = entity->addComponent<CoinComponent>();
         }
         if (component)
             component->deserialize(data);

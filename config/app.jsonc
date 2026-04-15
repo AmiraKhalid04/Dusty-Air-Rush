@@ -32,7 +32,8 @@
                 "glass": "assets/textures/glass-panels.png",
                 "monkey": "assets/textures/monkey.png",
                 "ring": "assets/textures/ring/ring.png",
-                "tornado": "assets/textures/tornado/material.jpeg"
+                "tornado": "assets/textures/tornado/material.jpeg",
+                "cone": "assets/textures/cone/baseColor.png"
             },
             "meshes":{
                 "cube": "assets/models/cube.obj",
@@ -40,7 +41,8 @@
                 "plane": "assets/models/plane.obj",
                 "sphere": "assets/models/sphere.obj",
                 "ring": "assets/models/ring.obj",
-                "tornado": "assets/models/tornado.obj"
+                "tornado": "assets/models/tornado.obj",
+                "cone": "assets/models/cone.obj"
             },
             "samplers":{
                 "default":{},
@@ -157,6 +159,21 @@
                     },
                     "tint": [1, 1, 1, 1],
                     "texture": "tornado",
+                    "sampler": "default"
+                },
+                "cone":{
+                    "type": "textured",
+                    "shader": "textured",
+                    "pipelineState": {
+                        "faceCulling":{
+                            "enabled": false
+                        },
+                        "depthTesting":{
+                            "enabled": true
+                        }
+                    },
+                    "tint": [1, 1, 1, 1],
+                    "texture": "cone",
                     "sampler": "default"
                 }
             }
@@ -315,6 +332,18 @@
                     {
                         "type": "Movement",
                         "angularVelocity": [0, 720, 0]
+                    }
+                ]
+            },
+            {
+                "position": [5, 5, 5],
+                "rotation": [0, 0, 0],
+                "scale": [5, 5, 5],
+                "components": [
+                    {
+                        "type": "Mesh Renderer",
+                        "mesh": "cone",
+                        "material": "cone"
                     }
                 ]
             }

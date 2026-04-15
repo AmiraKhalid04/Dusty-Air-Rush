@@ -226,7 +226,10 @@ namespace our
             glm::vec3 cameraPosition = glm::vec3(M * glm::vec4(0, 0, 0, 1));
 
             // TODO: (Req 10) Create a model matrix for the sy such that it always follows the camera (sky sphere center = camera position)
-            glm::mat4 skyModel = glm::translate(glm::mat4(1.0f), cameraPosition);
+            // Subtle parallax: sky follows camera closely but lags slightly (0.95 = 95% of camera movement)
+            // This creates minimal depth perception without breaking the rendering
+            glm::vec3 parallaxCameraPosition = cameraPosition * 0.995f;
+            glm::mat4 skyModel = glm::translate(glm::mat4(1.0f), parallaxCameraPosition);
 
             // TODO: (Req 10) We want the sky to be drawn behind everything (in NDC space, z=1)
             //  We can acheive the is by multiplying by an extra matrix after the projection but what values should we put in it?

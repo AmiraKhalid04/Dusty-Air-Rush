@@ -31,14 +31,16 @@
                 "wood": "assets/textures/wood.jpg",
                 "glass": "assets/textures/glass-panels.png",
                 "monkey": "assets/textures/monkey.png",
-                "ring": "assets/textures/ring/ring.png"
+                "ring": "assets/textures/ring/ring.png",
+                "tornado": "assets/textures/tornado/material.jpeg"
             },
             "meshes":{
                 "cube": "assets/models/cube.obj",
                 "monkey": "assets/models/monkey.obj",
                 "plane": "assets/models/plane.obj",
                 "sphere": "assets/models/sphere.obj",
-                "ring": "assets/models/ring.obj"
+                "ring": "assets/models/ring.obj",
+                "tornado": "assets/models/tornado.obj"
             },
             "samplers":{
                 "default":{},
@@ -126,8 +128,7 @@
                     "tint": [1, 1, 1, 1],
                     "texture": "moon",
                     "sampler": "default"
-                }
-                ,
+                },
                 "ring":{
                     "type": "textured",
                     "shader": "textured",
@@ -141,6 +142,21 @@
                     },
                     "tint": [1, 1, 1, 1],
                     "texture": "ring",
+                    "sampler": "default"
+                },
+                "tornado":{
+                    "type": "textured",
+                    "shader": "textured",
+                    "pipelineState": {
+                        "faceCulling":{
+                            "enabled": false
+                        },
+                        "depthTesting":{
+                            "enabled": true
+                        }
+                    },
+                    "tint": [1, 1, 1, 1],
+                    "texture": "tornado",
                     "sampler": "default"
                 }
             }
@@ -283,6 +299,22 @@
                         "type": "Mesh Renderer",
                         "mesh": "ring",
                         "material": "ring"
+                    }
+                ]
+            },
+            {
+                "position": [15, 15, 5],
+                "rotation": [0, 0, 0],
+                "scale": [2, 1, 2],
+                "components": [
+                    {
+                        "type": "Mesh Renderer",
+                        "mesh": "tornado",
+                        "material": "tornado"
+                    },
+                    {
+                        "type": "Movement",
+                        "angularVelocity": [0, 720, 0]
                     }
                 ]
             }

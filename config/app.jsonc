@@ -140,9 +140,9 @@
                 ],
                 "children": [
                     {
-                        "position": [1, -1, -1],
-                        "rotation": [45, 45, 0],
-                        "scale": [0.1, 0.1, 1.0],
+                        "position": [0, -1, -4],
+                        "rotation": [0, 0, 0],
+                        "scale": [0.4, 0.1, 0.8],
                         "components": [
                             {
                                 "type": "Mesh Renderer",
@@ -154,6 +154,7 @@
                 ]
             },
             {
+                "position": [0, 0, 0],
                 "rotation": [-45, 0, 0],
                 "components": [
                     {
@@ -163,8 +164,77 @@
                     },
                     {
                         "type": "Movement",
-                        "linearVelocity": [0, 0.1, 0],
-                        "angularVelocity": [0, 45, 0]
+                        "linearVelocity": [0, 3.14, 0],
+                        "angularVelocity": [0, 45, 0],
+                        "oscillate": true
+                    }
+                ]
+            },
+            {
+                "position": [20, 20, 0],
+                "rotation": [-45, 0, 0],
+                "components": [
+                    {
+                        "type": "Mesh Renderer",
+                        "mesh": "monkey",
+                        "material": "monkey"
+                    },
+                    {
+                        "type": "Movement",
+                        "linearVelocity": [0, 3.14, 0],
+                        "angularVelocity": [0, 45, 0],
+                        "oscillate": true
+                    }
+                ]
+            },
+            {
+                "position": [0, 20, 20],
+                "rotation": [-45, 0, 0],
+                "components": [
+                    {
+                        "type": "Mesh Renderer",
+                        "mesh": "monkey",
+                        "material": "monkey"
+                    },
+                    {
+                        "type": "Movement",
+                        "linearVelocity": [0, 3.14, 0],
+                        "angularVelocity": [0, 45, 0],
+                        "oscillate": true
+                    }
+                ]
+            },
+            {
+                "position": [20, 20, 10],
+                "rotation": [-45, 0, 0],
+                "components": [
+                    {
+                        "type": "Mesh Renderer",
+                        "mesh": "monkey",
+                        "material": "monkey"
+                    },
+                    {
+                        "type": "Movement",
+                        "linearVelocity": [0, 3.14, 0],
+                        "angularVelocity": [0, 45, 0],
+                        "oscillate": true
+                    }
+                ]
+            },
+            {
+                "position": [20, 20, 20],
+                "rotation": [-45, 0, 0],
+                "components": [
+                    {
+                        "type": "Mesh Renderer",
+                        "mesh": "monkey",
+                        "material": "monkey"
+                    },
+                    {
+                        "type": "Movement",
+                        "linearVelocity": [0, 3.14, 0],
+                        "angularVelocity": [0, 45, 0],
+                        "oscillate": true
                     }
                 ]
             },
@@ -241,8 +311,40 @@
                 ]
             },
             {
-                "position": [0, 10, 0],
-                "rotation": [45, 45, 0],
+                "position": [0, 0, 20],
+                "rotation": [90, 90, 0],
+                "scale": [5, 5, 5],
+                "components": [
+                    {
+                        "type": "Mesh Renderer",
+                        "mesh": "sphere",
+                        "material": "moon"
+                    },
+                    {
+                        "type": "Movement",
+                        "angularVelocity": [0, 90, 0]
+                    }
+                ]
+            },
+            {
+                "position": [10, 0, 10],
+                "rotation": [90, 90, 0],
+                "scale": [5, 5, 5],
+                "components": [
+                    {
+                        "type": "Mesh Renderer",
+                        "mesh": "sphere",
+                        "material": "moon"
+                    },
+                    {
+                        "type": "Movement",
+                        "angularVelocity": [0, 90, 0]
+                    }
+                ]
+            },
+            {
+                "position": [20, 0, 0],
+                "rotation": [90, 90, 0],
                 "scale": [5, 5, 5],
                 "components": [
                     {

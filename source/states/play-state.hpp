@@ -1,3 +1,4 @@
+
 #pragma once
 
 #include <application.hpp>
@@ -9,7 +10,14 @@
 #include <asset-loader.hpp>
 #include <systems/ring-track-system.hpp>
 #include <systems/tornado-system.hpp>
-
+#include <systems/coin-system.hpp>
+#include <systems/ui-render-system.hpp>
+#include <components/camera.hpp>
+#include <components/free-camera-controller.hpp>
+#include <components/health-component.hpp>
+#include <material/material.hpp>
+#include <mesh/mesh.hpp>
+#include <asset-loader.hpp>
 // This state shows how to use the ECS framework and deserialization.
 class Playstate : public our::State
 {
@@ -20,6 +28,8 @@ class Playstate : public our::State
     our::MovementSystem movementSystem;
     our::RingTrackSystem ringTrack;
     our::TornadoSystem tornado;
+    our::CoinSystem coinSystem;
+    our::UIRenderSystem uiRenderer;
 
     void onInitialize() override
     {
@@ -40,6 +50,8 @@ class Playstate : public our::State
         // Then we initialize the renderer
         auto size = getApp()->getFrameBufferSize();
         renderer.initialize(size, config["renderer"]);
+                uiRenderer.initialize(getApp());
+
 
         our::RingTrackConfig trackConfig;
         trackConfig.ringCount = 10;
@@ -70,6 +82,8 @@ class Playstate : public our::State
         cameraController.update(&world, (float)deltaTime);
         // And finally we use the renderer system to draw the scene
         renderer.render(&world);
+         // Render UI elements
+        uiRenderer.render(&world, getApp());
 
         // Get a reference to the keyboard object
         auto &keyboard = getApp()->getKeyboard();
@@ -85,7 +99,9 @@ class Playstate : public our::State
     {
         // Don't forget to destroy the renderer
         renderer.destroy();
-        // On exit, we call exit for the camera controller system to make sure that the mouse is unlocked
+         // Destroy UI renderer
+        uiRenderer.destroy();
+       // On exit, we call exit for the camera controller system to make sure that the mouse is unlocked
         cameraController.exit();
         // Clear the world
         world.clear();

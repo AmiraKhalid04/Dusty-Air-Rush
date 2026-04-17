@@ -33,6 +33,12 @@ namespace our
         // We define them here (instead of being local to the "render" function) as an optimization to prevent reallocating them every frame
         std::vector<RenderCommand> opaqueCommands;
         std::vector<RenderCommand> transparentCommands;
+        
+        // Sky colors for ambient lighting
+        glm::vec3 skyTop = {1.0f, 1.0f, 1.0f};
+        glm::vec3 skyHorizon = {1.0f, 1.0f, 1.0f};
+        glm::vec3 skyBottom = {1.0f, 1.0f, 1.0f};
+
         // Objects used for rendering a skybox
         Mesh* skySphere;
         TexturedMaterial* skyMaterial;

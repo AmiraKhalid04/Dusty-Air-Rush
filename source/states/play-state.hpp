@@ -7,7 +7,16 @@
 #include <systems/free-camera-controller.hpp>
 #include <systems/movement.hpp>
 #include <systems/coin-system.hpp>
+#include <systems/ui-render-system.hpp>
+#include <components/camera.hpp>
+#include <components/free-camera-controller.hpp>
+#include <components/health-component.hpp>
+#include <material/material.hpp>
+#include <mesh/mesh.hpp>
 #include <asset-loader.hpp>
+
+#include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
 
 // This state shows how to use the ECS framework and deserialization.
 class Playstate : public our::State
@@ -18,6 +27,7 @@ class Playstate : public our::State
     our::FreeCameraControllerSystem cameraController;
     our::MovementSystem movementSystem;
     our::CoinSystem coinSystem;
+    our::UIRenderSystem uiRenderer;
 
     void onInitialize() override
     {
@@ -38,6 +48,7 @@ class Playstate : public our::State
         // Then we initialize the renderer
         auto size = getApp()->getFrameBufferSize();
         renderer.initialize(size, config["renderer"]);
+        uiRenderer.initialize(getApp());
     }
 
     void onDraw(double deltaTime) override
@@ -48,6 +59,8 @@ class Playstate : public our::State
         coinSystem.update(&world, (float)deltaTime);
         // And finally we use the renderer system to draw the scene
         renderer.render(&world);
+        // Render UI elements
+        uiRenderer.render(&world, getApp());
 
         // Get a reference to the keyboard object
         auto &keyboard = getApp()->getKeyboard();
@@ -60,9 +73,10 @@ class Playstate : public our::State
     }
 
     void onDestroy() override
-    {
-        // Don't forget to destroy the renderer
+    { // Don't forget to destroy the renderer
         renderer.destroy();
+        // Destroy UI renderer
+        uiRenderer.destroy();
         // On exit, we call exit for the camera controller system to make sure that the mouse is unlocked
         cameraController.exit();
         // Clear the world

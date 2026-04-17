@@ -4,7 +4,6 @@ project(GFX-LAB VERSION 0.1.0)          # Here we select the project name and ve
 # Linux compatibility
 if(UNIX AND NOT APPLE)
         find_package(OpenGL REQUIRED)
-        find_package(GLEW REQUIRED)
 endif()
 
 # Here we select C++17 with all the standards required and all compiler-specific extensions disabled
@@ -140,5 +139,4 @@ target_compile_definitions(GAME_APPLICATION PRIVATE
 
 if(UNIX AND NOT APPLE)
         target_link_libraries(GAME_APPLICATION OpenGL::GL)
-        target_link_libraries(GAME_APPLICATION GLEW::GLEW)
 endif()

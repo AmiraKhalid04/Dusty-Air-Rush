@@ -42,16 +42,16 @@ class Playstate : public our::State
         renderer.initialize(size, config["renderer"]);
 
         our::RingTrackConfig trackConfig;
-        trackConfig.ringCount = 25;
-        trackConfig.spacing = 50.0f;
+        trackConfig.ringCount = 10;
+        trackConfig.spacing = 30.0f;
         trackConfig.heightVariance = 15.0f;
         trackConfig.lateralVariance = 10.0f;
         trackConfig.ringScale = 10.0f;
         ringTrack.initialize(&world, trackConfig);
 
         our::TornadoConfig tornadoConfig;
-        tornadoConfig.tornadoCount = 25;
-        tornadoConfig.spacing = 50.0f;
+        tornadoConfig.tornadoCount = 10;
+        tornadoConfig.spacing = 30.0f;
         tornadoConfig.heightVariance = 15.0f;
         tornadoConfig.lateralVariance = 10.0f;
         tornadoConfig.scale = 2.0f;

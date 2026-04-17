@@ -67,6 +67,43 @@ namespace our
                 mr->mesh = ringMesh;
                 mr->material = ringMaterial;
             }
+
+            // === FINISH LINE ===
+
+            // Move one more step forward (after last ring)
+            cursor.z -= config.spacing;
+
+            int i = config.ringCount;
+
+            // Compute same track position
+            cursor.y = 2.0f + config.heightVariance * glm::sin(i * 0.4f);
+            cursor.x = config.lateralVariance * glm::sin(i * 0.3f + 1.0f);
+
+            // Create entity
+            Entity *finish = world->add();
+            finish->name = "finish_line";
+
+            finish->localTransform.position = cursor;
+
+            // Scale (adjust depending on your mesh)
+            finish->localTransform.scale = glm::vec3(2.0f, 2.0f, 2.0f);
+
+            // Optional: rotate to face player
+            finish->localTransform.rotation = glm::vec3(0, 0, 0);
+
+            // Load assets
+            Mesh *finishMesh = AssetLoader<Mesh>::get("finish_line");
+            Material *finishMaterial = AssetLoader<Material>::get("finish_line");
+
+            if (finishMesh && finishMaterial)
+            {
+                auto *mr = finish->addComponent<MeshRendererComponent>();
+                mr->mesh = finishMesh;
+                mr->material = finishMaterial;
+            }
+
+            std::cout << "Finish line at: "
+                      << cursor.x << ", " << cursor.y << ", " << cursor.z << std::endl;
         }
     };
 

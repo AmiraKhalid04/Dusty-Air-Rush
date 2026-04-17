@@ -228,7 +228,7 @@ namespace our
             // TODO: (Req 10) Create a model matrix for the sy such that it always follows the camera (sky sphere center = camera position)
             // Subtle parallax: sky follows camera closely but lags slightly (0.95 = 95% of camera movement)
             // This creates minimal depth perception without breaking the rendering
-            glm::vec3 parallaxCameraPosition = cameraPosition * 0.995f;
+            glm::vec3 parallaxCameraPosition = cameraPosition * 0.999f;
             glm::mat4 skyModel = glm::translate(glm::mat4(1.0f), parallaxCameraPosition);
 
             // TODO: (Req 10) We want the sky to be drawn behind everything (in NDC space, z=1)

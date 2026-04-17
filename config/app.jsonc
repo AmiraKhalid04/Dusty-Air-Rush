@@ -33,7 +33,8 @@
                 "monkey": "assets/textures/monkey.png",
                 "ring": "assets/textures/ring/ring.png",
                 "tornado": "assets/textures/tornado/material.jpeg",
-                "cone": "assets/textures/cone/baseColor.png"
+                "cone": "assets/textures/cone/baseColor.png",
+                "finish_line": "assets/textures/finish_line/baseColor.png"
             },
             "meshes":{
                 "cube": "assets/models/cube.obj",
@@ -42,7 +43,8 @@
                 "sphere": "assets/models/sphere.obj",
                 "ring": "assets/models/ring.obj",
                 "tornado": "assets/models/tornado.obj",
-                "cone": "assets/models/cone.obj"
+                "cone": "assets/models/cone.obj",
+                "finish_line": "assets/models/finish_line.obj"
             },
             "samplers":{
                 "default":{},
@@ -174,6 +176,21 @@
                     },
                     "tint": [1, 1, 1, 1],
                     "texture": "cone",
+                    "sampler": "default"
+                },
+                "finish_line":{
+                    "type": "textured",
+                    "shader": "textured",
+                    "pipelineState": {
+                        "faceCulling":{
+                            "enabled": false
+                        },
+                        "depthTesting":{
+                            "enabled": true
+                        }
+                    },
+                    "tint": [1, 1, 1, 1],
+                    "texture": "finish_line",
                     "sampler": "default"
                 }
             }
@@ -344,6 +361,18 @@
                         "type": "Mesh Renderer",
                         "mesh": "cone",
                         "material": "cone"
+                    }
+                ]
+            },
+            {
+                "position": [15, 15, 15],
+                "rotation": [0, 0, 0],
+                "scale": [5, 5, 5],
+                "components": [
+                    {
+                        "type": "Mesh Renderer",
+                        "mesh": "finish_line",
+                        "material": "finish_line"
                     }
                 ]
             }

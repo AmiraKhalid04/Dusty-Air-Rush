@@ -8,6 +8,7 @@
 #include "coin-component.hpp"
 #include "health-component.hpp"
 #include "dusty.hpp"
+#include "light.hpp"
 
 namespace our
 {
@@ -48,6 +49,10 @@ namespace our
             component = entity->addComponent<DustyComponent>();
         }
 
+        else if (type == LightComponent::getID())
+        {
+            component = entity->addComponent<LightComponent>();
+        }
         if (component)
             component->deserialize(data);
     }

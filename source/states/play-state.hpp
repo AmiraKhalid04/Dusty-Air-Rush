@@ -1,3 +1,4 @@
+
 #pragma once
 
 #include <application.hpp>
@@ -6,6 +7,9 @@
 #include <systems/forward-renderer.hpp>
 #include <systems/free-camera-controller.hpp>
 #include <systems/movement.hpp>
+#include <asset-loader.hpp>
+#include <systems/ring-track-system.hpp>
+#include <systems/tornado-system.hpp>
 #include <systems/coin-system.hpp>
 #include <systems/ui-render-system.hpp>
 #include <components/camera.hpp>
@@ -14,10 +18,6 @@
 #include <material/material.hpp>
 #include <mesh/mesh.hpp>
 #include <asset-loader.hpp>
-
-#include <glm/glm.hpp>
-#include <glm/gtc/matrix_transform.hpp>
-
 // This state shows how to use the ECS framework and deserialization.
 class Playstate : public our::State
 {
@@ -26,6 +26,8 @@ class Playstate : public our::State
     our::ForwardRenderer renderer;
     our::FreeCameraControllerSystem cameraController;
     our::MovementSystem movementSystem;
+    our::RingTrackSystem ringTrack;
+    our::TornadoSystem tornado;
     our::CoinSystem coinSystem;
     our::UIRenderSystem uiRenderer;
 
@@ -48,7 +50,29 @@ class Playstate : public our::State
         // Then we initialize the renderer
         auto size = getApp()->getFrameBufferSize();
         renderer.initialize(size, config["renderer"]);
-        uiRenderer.initialize(getApp());
+                uiRenderer.initialize(getApp());
+
+
+        our::RingTrackConfig trackConfig;
+        trackConfig.ringCount = 10;
+        trackConfig.spacing = 30.0f;
+        trackConfig.heightVariance = 15.0f;
+        trackConfig.lateralVariance = 10.0f;
+        trackConfig.ringScale = 10.0f;
+        ringTrack.initialize(&world, trackConfig);
+
+        our::TornadoConfig tornadoConfig;
+        tornadoConfig.tornadoCount = 10;
+        tornadoConfig.spacing = 30.0f;
+        tornadoConfig.heightVariance = 15.0f;
+        tornadoConfig.lateralVariance = 10.0f;
+        tornadoConfig.scale = 2.0f;
+        tornadoConfig.spawnChance = 0.2f;
+        tornadoConfig.sideOffset = 10.0f;
+        tornadoConfig.depthOffset = 10.0f;
+
+
+        tornado.initialize(&world, tornadoConfig);
     }
 
     void onDraw(double deltaTime) override
@@ -56,10 +80,9 @@ class Playstate : public our::State
         // Here, we just run a bunch of systems to control the world logic
         movementSystem.update(&world, (float)deltaTime);
         cameraController.update(&world, (float)deltaTime);
-        coinSystem.update(&world, (float)deltaTime);
         // And finally we use the renderer system to draw the scene
         renderer.render(&world);
-        // Render UI elements
+         // Render UI elements
         uiRenderer.render(&world, getApp());
 
         // Get a reference to the keyboard object
@@ -73,11 +96,12 @@ class Playstate : public our::State
     }
 
     void onDestroy() override
-    { // Don't forget to destroy the renderer
+    {
+        // Don't forget to destroy the renderer
         renderer.destroy();
-        // Destroy UI renderer
+         // Destroy UI renderer
         uiRenderer.destroy();
-        // On exit, we call exit for the camera controller system to make sure that the mouse is unlocked
+       // On exit, we call exit for the camera controller system to make sure that the mouse is unlocked
         cameraController.exit();
         // Clear the world
         world.clear();

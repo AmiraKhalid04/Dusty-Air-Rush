@@ -3,12 +3,12 @@
 
 namespace our
 {
-    // Tag component — marks an entity as a passable ring
-    class RingTagComponent : public Component
+    // Tag component
+    class TornadoTagComponent : public Component
     {
     public:
         bool passed = false;
-        static std::string getID() { return "Ring Tag"; }
+        static std::string getID() { return "Tornado Tag"; }
         void deserialize(const nlohmann::json &) override {}
     };
 }

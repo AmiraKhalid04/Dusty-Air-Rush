@@ -8,6 +8,7 @@
 #include <systems/movement.hpp>
 #include <asset-loader.hpp>
 #include <systems/ring-track-system.hpp>
+#include <systems/tornado-system.hpp>
 
 // This state shows how to use the ECS framework and deserialization.
 class Playstate : public our::State
@@ -18,6 +19,7 @@ class Playstate : public our::State
     our::FreeCameraControllerSystem cameraController;
     our::MovementSystem movementSystem;
     our::RingTrackSystem ringTrack;
+    our::TornadoSystem tornado;
 
     void onInitialize() override
     {
@@ -46,6 +48,19 @@ class Playstate : public our::State
         trackConfig.lateralVariance = 10.0f;
         trackConfig.ringScale = 10.0f;
         ringTrack.initialize(&world, trackConfig);
+
+        our::TornadoConfig tornadoConfig;
+        tornadoConfig.tornadoCount = 25;
+        tornadoConfig.spacing = 50.0f;
+        tornadoConfig.heightVariance = 15.0f;
+        tornadoConfig.lateralVariance = 10.0f;
+        tornadoConfig.scale = 2.0f;
+        tornadoConfig.spawnChance = 0.2f;
+        tornadoConfig.sideOffset = 10.0f;
+        tornadoConfig.depthOffset = 10.0f;
+
+
+        tornado.initialize(&world, tornadoConfig);
     }
 
     void onDraw(double deltaTime) override

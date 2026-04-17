@@ -50,8 +50,7 @@ class Playstate : public our::State
         // Then we initialize the renderer
         auto size = getApp()->getFrameBufferSize();
         renderer.initialize(size, config["renderer"]);
-                uiRenderer.initialize(getApp());
-
+        uiRenderer.initialize(getApp());
 
         our::RingTrackConfig trackConfig;
         trackConfig.ringCount = 10;
@@ -71,7 +70,6 @@ class Playstate : public our::State
         tornadoConfig.sideOffset = 10.0f;
         tornadoConfig.depthOffset = 10.0f;
 
-
         tornado.initialize(&world, tornadoConfig);
     }
 
@@ -80,9 +78,10 @@ class Playstate : public our::State
         // Here, we just run a bunch of systems to control the world logic
         movementSystem.update(&world, (float)deltaTime);
         cameraController.update(&world, (float)deltaTime);
+        coinSystem.update(&world, (float)deltaTime);
         // And finally we use the renderer system to draw the scene
         renderer.render(&world);
-         // Render UI elements
+        // Render UI elements
         uiRenderer.render(&world, getApp());
 
         // Get a reference to the keyboard object
@@ -99,9 +98,9 @@ class Playstate : public our::State
     {
         // Don't forget to destroy the renderer
         renderer.destroy();
-         // Destroy UI renderer
+        // Destroy UI renderer
         uiRenderer.destroy();
-       // On exit, we call exit for the camera controller system to make sure that the mouse is unlocked
+        // On exit, we call exit for the camera controller system to make sure that the mouse is unlocked
         cameraController.exit();
         // Clear the world
         world.clear();

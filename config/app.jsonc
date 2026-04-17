@@ -46,7 +46,10 @@
         "ring": "assets/textures/ring/ring.png",
         "tornado": "assets/textures/tornado/material.jpeg",
         "cone": "assets/textures/cone/baseColor.png",
-        "finish_line": "assets/textures/finish_line/baseColor.png"
+        "finish_line": "assets/textures/finish_line/baseColor.png",
+        "dusty-texture": "assets/textures/dusty_baseColor.png",
+        "coin-texture": "assets/textures/coin.jpg",
+        "health-texture": "assets/textures/health.png"
       },
       "meshes": {
         "cube": "assets/models/cube.obj",
@@ -56,7 +59,10 @@
         "ring": "assets/models/ring.obj",
         "tornado": "assets/models/tornado.obj",
         "cone": "assets/models/cone.obj",
-        "finish_line": "assets/models/finish_line.obj"
+        "finish_line": "assets/models/finish_line.obj",
+        "dusty": "assets/models/dusty.obj",
+        "coin": "assets/models/coin.obj",
+        "health": "assets/models/health.obj"
       },
       "samplers": {
         "default": {},
@@ -65,6 +71,39 @@
         }
       },
       "materials": {
+        "dusty": {
+          "type": "textured",
+          "shader": "textured",
+          "pipelineState": {
+            "faceCulling": { "enabled": false },
+            "depthTesting": { "enabled": true }
+          },
+          "texture": "dusty-texture",
+          "sampler": "default",
+          "tint": [1.0, 1.0, 1.0, 1.0]
+        },
+        "coin": {
+          "type": "textured",
+          "shader": "textured",
+          "pipelineState": {
+            "faceCulling": { "enabled": false },
+            "depthTesting": { "enabled": true }
+          },
+          "texture": "coin-texture",
+          "sampler": "default",
+          "tint": [1.0, 1.0, 1.0, 1.0]
+        },
+        "health": {
+          "type": "textured",
+          "shader": "textured",
+          "pipelineState": {
+            "faceCulling": { "enabled": false },
+            "depthTesting": { "enabled": true }
+          },
+          "texture": "health-texture",
+          "sampler": "default",
+          "tint": [1.0, 1.0, 1.0, 1.0]
+        },
         "ring": {
           "type": "textured",
           "shader": "textured",
@@ -257,6 +296,12 @@
           },
           {
             "type": "Free Camera Controller"
+          },
+
+          {
+            "type": "Health",
+            "maxHealth": 100.0,
+            "currentHealth": 100.0
           }
         ],
         "children": [
@@ -374,6 +419,35 @@
           {
             "type": "Movement",
             "angularVelocity": [0, 90, 0]
+          }
+        ]
+      },
+      {
+        "position": [0, -6, 0],
+        "rotation": [0, 180, 0],
+        "scale": [2, 2, 2],
+        "components": [
+          {
+            "type": "Mesh Renderer",
+            "mesh": "dusty",
+            "material": "dusty"
+          }
+        ]
+      },
+      {
+        "position": [-20, 2, -20],
+        "rotation": [0, 0, 0],
+        "scale": [1, 1, 1],
+        "components": [
+          {
+            "type": "Mesh Renderer",
+            "mesh": "health",
+            "material": "health"
+          },
+          {
+            "type": "Movement",
+            "mesh": "health",
+            "angularVelocity": [0, 180, 0]
           }
         ]
       }

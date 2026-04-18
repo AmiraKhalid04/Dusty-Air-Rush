@@ -59,7 +59,7 @@ class Playstate : public our::State
         trackConfig.heightVariance = 15.0f;
         trackConfig.lateralVariance = 10.0f;
         trackConfig.ringScale = 10.0f;
-        ringTrack.initialize(&world, trackConfig);
+        auto ringPositions = ringTrack.initialize(&world, trackConfig);
 
         our::TornadoConfig tornadoConfig;
         tornadoConfig.tornadoCount = 10;
@@ -72,22 +72,24 @@ class Playstate : public our::State
         tornadoConfig.depthOffset = 10.0f;
 
         tornado.initialize(&world, tornadoConfig);
+
+        coinSystem.initialize(&world, ringPositions);
     }
 
     void onDraw(double deltaTime) override
     {
+
         // Here, we just run a bunch of systems to control the world logic
         movementSystem.update(&world, (float)deltaTime);
         cameraController.update(&world, (float)deltaTime);
-        coinSystem.update(&world, (float)deltaTime);
         collisionSystem.update(&world, (float)deltaTime);
-        
+
         // And finally we use the renderer system to draw the scene
         renderer.render(&world);
-        
+
         // Finally, instantly delete any marked geometry from the ECS engine so they disappear natively
         world.deleteMarkedEntities();
-        
+
         // Render UI elements CHECK if a BUG appeared
         uiRenderer.render(&world, getApp());
 
@@ -111,6 +113,7 @@ class Playstate : public our::State
         cameraController.exit();
         // Clear the world
         world.clear();
+        coinSystem.reset();
         // and we delete all the loaded assets to free memory on the RAM and the VRAM
         our::clearAllAssets();
     }

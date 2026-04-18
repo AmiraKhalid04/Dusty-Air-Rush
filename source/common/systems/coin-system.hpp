@@ -6,6 +6,7 @@
 #include "../components/mesh-renderer.hpp"
 #include "../components/movement.hpp"
 #include "../components/coin-component.hpp"
+#include "../components/collider.hpp"
 #include "../asset-loader.hpp"
 #include "../mesh/mesh.hpp"
 #include "../material/material.hpp"
@@ -35,7 +36,7 @@ namespace our
         static constexpr float spawnRadius = 15.0f;  // how far from player coins can appear
         static constexpr float minRadius = 5.0f;     // minimum spawn distance (avoid spawning on player)
         static constexpr float collectRadius = 2.0f; // distance at which a coin is collected
-        static constexpr float coinHeight = 0.5f;    // Y position of spawned coins
+        static constexpr float coinHeight = 0.0f;    // Y position of spawned coins
         // ──────────────────────────────────────────────────────────────────────
 
         // Returns a random float in [0, 1]
@@ -64,31 +65,22 @@ namespace our
 
             glm::vec3 playerPos = player->localTransform.position;
 
-            // ── 2. Check each coin: collect if close enough ───────────────────
+            // ── 2. Count living coins (collection is handled by CollisionSystem) ──
             int coinCount = 0;
             for (auto entity : world->getEntities())
             {
                 if (!entity->getComponent<CoinComponent>())
                     continue;
-
-                float dist = glm::length(playerPos - entity->localTransform.position);
-                if (dist < collectRadius)
-                {
-                    world->markForRemoval(entity);
-                }
-                else
-                {
-                    coinCount++;
-                }
+                coinCount++;
             }
-            // Actually remove collected coins now so the spawn step sees the
-            // correct count and can immediately refill.
-            world->deleteMarkedEntities();
 
             // ── 3. Spawn new coins until we reach maxCoins ───────────────────
             // Grab coin assets once (they are cached by AssetLoader).
             Mesh *coinMesh = AssetLoader<Mesh>::get("coin");
             Material *coinMaterial = AssetLoader<Material>::get("coin");
+
+            // If coin assets aren't loaded, don't try to spawn any
+            if (!coinMesh || !coinMaterial) return;
 
             while (coinCount < maxCoins)
             {
@@ -119,6 +111,13 @@ namespace our
 
                 // Tag so CoinSystem can identify it next frame
                 coin->addComponent<CoinComponent>();
+
+                // Dynamic collider for collision detection
+                auto *col = coin->addComponent<ColliderComponent>();
+                col->shapeType = ColliderType::Sphere;
+                col->objectType = "coin";
+                col->sphereRadius = 0.4f;
+                col->center = glm::vec3(0.0f, 0.8f, 0.0f);
 
                 coinCount++;
             }

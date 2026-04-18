@@ -65,11 +65,8 @@ namespace our
                 rotation.y -= delta.x * controller->rotationSensitivity; // The x-axis controls the yaw
             }
 
-            // We prevent the pitch from exceeding a certain angle from the XZ plane to prevent gimbal locks
-            if(rotation.x < -glm::half_pi<float>() * 0.99f) rotation.x = -glm::half_pi<float>() * 0.99f;
-            if(rotation.x >  glm::half_pi<float>() * 0.99f) rotation.x  = glm::half_pi<float>() * 0.99f;
-            // This is not necessary, but whenever the rotation goes outside the 0 to 2*PI range, we wrap it back inside.
-            // This could prevent floating point error if the player rotates in single direction for an extremely long time. 
+            // Remove pitch lock so the plane can easily perform 360 vertical loops 
+            rotation.x = glm::wrapAngle(rotation.x);
             rotation.y = glm::wrapAngle(rotation.y);
 
             // We update the camera fov based on the mouse wheel scrolling amount
@@ -87,17 +84,59 @@ namespace our
             glm::vec3 current_sensitivity = controller->positionSensitivity;
             // If the LEFT SHIFT key is pressed, we multiply the position sensitivity by the speed up factor
             if(app->getKeyboard().isPressed(GLFW_KEY_LEFT_SHIFT)) current_sensitivity *= controller->speedupFactor;
+            if(app->getKeyboard().isPressed(GLFW_KEY_LEFT_CONTROL)) current_sensitivity /= controller->speedupFactor;
+            
+            // Moves the player forward automatically 
+            position += front * (deltaTime * current_sensitivity.z);
+            
+            // S & W moves the player pitch back and forth
+            float max_pitch = glm::pi<float>() / 3.0f; // Limit tilt to 60 degrees
+            float pitch_speed = controller->rotationSensitivity * 20.0f; // How fast it tilts
+            
+            if(app->getKeyboard().isPressed(GLFW_KEY_W)) {
+                rotation.x += (deltaTime * pitch_speed) * glm::cos(rotation.z); 
+                rotation.y += (deltaTime * pitch_speed) * glm::sin(rotation.z);
+            } else if(app->getKeyboard().isPressed(GLFW_KEY_S)) {
+                rotation.x -= (deltaTime * pitch_speed) * glm::cos(rotation.z);
+                rotation.y -= (deltaTime * pitch_speed) * glm::sin(rotation.z);
+            } else {
+                float falling_speed = pitch_speed * 0.5f; 
+                if (glm::cos(rotation.x) > 0.0f) {
+                    rotation.x -= (deltaTime * falling_speed) * glm::cos(rotation.z);
+                    rotation.y -= (deltaTime * falling_speed) * glm::sin(rotation.z);
+                } else {
+                    rotation.x += (deltaTime * falling_speed) * glm::cos(rotation.z);
+                    rotation.y += (deltaTime * falling_speed) * glm::sin(rotation.z);
+                }
+            }
 
-            // We change the camera position based on the keys WASD/QE
-            // S & W moves the player back and forth
-            if(app->getKeyboard().isPressed(GLFW_KEY_W)) position += front * (deltaTime * current_sensitivity.z);
-            if(app->getKeyboard().isPressed(GLFW_KEY_S)) position -= front * (deltaTime * current_sensitivity.z);
-            // Q & E moves the player up and down
-            if(app->getKeyboard().isPressed(GLFW_KEY_Q)) position += up * (deltaTime * current_sensitivity.y);
-            if(app->getKeyboard().isPressed(GLFW_KEY_E)) position -= up * (deltaTime * current_sensitivity.y);
-            // A & D moves the player left or right 
-            if(app->getKeyboard().isPressed(GLFW_KEY_D)) position += right * (deltaTime * current_sensitivity.x);
-            if(app->getKeyboard().isPressed(GLFW_KEY_A)) position -= right * (deltaTime * current_sensitivity.x);
+            // A & D tilts & rotates the player left or right 
+            float max_roll = glm::pi<float>(); // Limit tilt to 45 degrees
+            float roll_speed = controller->rotationSensitivity * 20.0f; // How fast it tilts
+            bool turning = false;
+            if(app->getKeyboard().isPressed(GLFW_KEY_D)) {
+                rotation.y -= (deltaTime * roll_speed);
+                if(rotation.z > -max_roll) 
+                    rotation.z -= deltaTime * roll_speed; // Tilt right
+                turning = true;
+            }
+            if(app->getKeyboard().isPressed(GLFW_KEY_A)) {
+                rotation.y += (deltaTime * roll_speed);
+                if(rotation.z < max_roll) 
+                    rotation.z += deltaTime * roll_speed; // Tilt left
+                turning = true;
+            }
+
+            // If we are not steering, restore the tilt back to 0 
+            if(!turning) {
+                if(rotation.z > 0.0f) {
+                    rotation.z -= deltaTime * roll_speed;
+                    if(rotation.z < 0.0f) rotation.z = 0.0f;
+                } else if(rotation.z < 0.0f) {
+                    rotation.z += deltaTime * roll_speed;
+                    if(rotation.z > 0.0f) rotation.z = 0.0f;
+                }
+            }
         }
 
         // When the state exits, it should call this function to ensure the mouse is unlocked

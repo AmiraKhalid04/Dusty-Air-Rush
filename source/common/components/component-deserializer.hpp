@@ -5,6 +5,7 @@
 #include "mesh-renderer.hpp"
 #include "free-camera-controller.hpp"
 #include "movement.hpp"
+#include "collider.hpp"
 #include "coin-component.hpp"
 #include "health-component.hpp"
 #include "dusty.hpp"
@@ -36,6 +37,10 @@ namespace our
         {
             component = entity->addComponent<MeshRendererComponent>();
         }
+        else if (type == ColliderComponent::getID())
+        {
+            component = entity->addComponent<ColliderComponent>();
+        }
         else if (type == CoinComponent::getID())
         {
             component = entity->addComponent<CoinComponent>();
@@ -48,7 +53,6 @@ namespace our
         {
             component = entity->addComponent<DustyComponent>();
         }
-
         else if (type == LightComponent::getID())
         {
             component = entity->addComponent<LightComponent>();

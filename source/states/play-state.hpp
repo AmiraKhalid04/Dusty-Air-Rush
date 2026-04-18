@@ -1,4 +1,3 @@
-
 #pragma once
 
 #include <application.hpp>
@@ -7,6 +6,7 @@
 #include <systems/forward-renderer.hpp>
 #include <systems/free-camera-controller.hpp>
 #include <systems/movement.hpp>
+#include <systems/collision.hpp>
 #include <asset-loader.hpp>
 #include <systems/ring-track-system.hpp>
 #include <systems/tornado-system.hpp>
@@ -26,6 +26,7 @@ class Playstate : public our::State
     our::ForwardRenderer renderer;
     our::FreeCameraControllerSystem cameraController;
     our::MovementSystem movementSystem;
+    our::CollisionSystem collisionSystem;
     our::RingTrackSystem ringTrack;
     our::TornadoSystem tornado;
     our::CoinSystem coinSystem;
@@ -79,9 +80,15 @@ class Playstate : public our::State
         movementSystem.update(&world, (float)deltaTime);
         cameraController.update(&world, (float)deltaTime);
         coinSystem.update(&world, (float)deltaTime);
+        collisionSystem.update(&world, (float)deltaTime);
+        
         // And finally we use the renderer system to draw the scene
         renderer.render(&world);
-        // Render UI elements
+        
+        // Finally, instantly delete any marked geometry from the ECS engine so they disappear natively
+        world.deleteMarkedEntities();
+        
+        // Render UI elements CHECK if a BUG appeared
         uiRenderer.render(&world, getApp());
 
         // Get a reference to the keyboard object

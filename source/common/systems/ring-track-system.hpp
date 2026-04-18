@@ -1,6 +1,7 @@
 #pragma once
 #include "../ecs/world.hpp"
 #include "../components/mesh-renderer.hpp"
+#include "../components/collider.hpp"
 #include "../asset-loader.hpp"
 #include <glm/gtc/matrix_transform.hpp>
 #include <vector>
@@ -39,7 +40,7 @@ namespace our
 
                 // Advance along Z, with sinusoidal height & lateral drift
                 cursor.z -= config.spacing;
-                cursor.y = 2.0f + config.heightVariance * glm::sin(i * 0.4f);
+                cursor.y = config.heightVariance * glm::sin(i * 0.4f);
                 cursor.x = config.lateralVariance * glm::sin(i * 0.3f + 1.0f);
                 std::cout << "Ring " << i << " position: " << cursor.x << ", " << cursor.y << ", " << cursor.z << std::endl;
 
@@ -49,7 +50,7 @@ namespace our
                 // Tilt the ring to face the direction of travel
                 glm::vec3 nextPos = cursor;
                 nextPos.z -= config.spacing;
-                nextPos.y = 2.0f + config.heightVariance * glm::sin((i + 1) * 0.4f);
+                nextPos.y = config.heightVariance * glm::sin((i + 1) * 0.4f);
                 nextPos.x = config.lateralVariance * glm::sin((i + 1) * 0.3f + 1.0f);
 
                 glm::vec3 dir = glm::normalize(nextPos - cursor);
@@ -66,6 +67,13 @@ namespace our
                 auto *mr = entity->addComponent<MeshRendererComponent>();
                 mr->mesh = ringMesh;
                 mr->material = ringMaterial;
+
+                // Dynamic collider for collision detection
+                auto *col = entity->addComponent<ColliderComponent>();
+                col->shapeType = ColliderType::AABB;
+                col->objectType = "ring";
+                col->aabbExtents = glm::vec3(0.01f, 0.2f, 0.2f);
+                col->center = glm::vec3(0.0f, 0.2f, 0.0f);
             }
 
             // === FINISH LINE ===

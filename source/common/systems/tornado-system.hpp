@@ -1,6 +1,7 @@
 #pragma once
 #include "../ecs/world.hpp"
 #include "../components/mesh-renderer.hpp"
+#include "../components/collider.hpp"
 #include "../asset-loader.hpp"
 #include <glm/gtc/matrix_transform.hpp>
 #include <vector>
@@ -48,7 +49,7 @@ namespace our
                 cursor.z -= config.spacing;
 
                 // SAME track logic as rings
-                float baseY = 2.0f + config.heightVariance * sin(i * 0.4f);
+                float baseY = config.heightVariance * sin(i * 0.4f);
                 float baseX = config.lateralVariance * sin(i * 0.3f + 1.0f);
 
                 // decide spawn
@@ -78,6 +79,13 @@ namespace our
                 auto *mr = entity->addComponent<MeshRendererComponent>();
                 mr->mesh = mesh;
                 mr->material = mat;
+
+                // Dynamic collider for collision detection
+                auto *col = entity->addComponent<ColliderComponent>();
+                col->shapeType = ColliderType::AABB;
+                col->objectType = "tornado";
+                col->aabbExtents = glm::vec3(1.0f, 2.0f, 1.0f);
+                col->center = glm::vec3(0.0f, 0.9f, 0.0f);
 
                 std::cout << "Tornado " << i << " at: "
                           << pos.x << ", " << pos.y << ", " << pos.z << std::endl;

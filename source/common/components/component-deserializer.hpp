@@ -40,6 +40,7 @@ namespace our
         else if (type == ColliderComponent::getID())
         {
             component = entity->addComponent<ColliderComponent>();
+        }
         else if (type == CoinComponent::getID())
         {
             component = entity->addComponent<CoinComponent>();

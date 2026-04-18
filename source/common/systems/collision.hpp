@@ -32,11 +32,22 @@ namespace our
                 if (!otherCollider || otherCollider->objectType == "player" || otherCollider->objectType == "pending_deletion") continue;
 
                 glm::mat4 otherMatrix = other->getLocalToWorldMatrix();
+                auto getAABB = [](const glm::mat4& matrix, const glm::vec3& extents, const glm::vec3& center) {
+                    glm::vec3 worldPos = glm::vec3(matrix * glm::vec4(center, 1.0f));
+                    glm::mat3 absMatrix = glm::mat3(
+                        glm::abs(matrix[0]),
+                        glm::abs(matrix[1]),
+                        glm::abs(matrix[2])
+                    );
+                    glm::vec3 worldExtents = absMatrix * extents;
+                    return std::make_pair(worldPos - worldExtents, worldPos + worldExtents);
+                };
+
+                auto worldAABB = getAABB(otherMatrix, otherCollider->aabbExtents, otherCollider->center);
+                glm::vec3 otherMin = worldAABB.first;
+                glm::vec3 otherMax = worldAABB.second;
                 glm::vec3 otherPos = glm::vec3(otherMatrix * glm::vec4(otherCollider->center, 1.0f));
                 glm::vec3 otherScale = glm::vec3(glm::length(otherMatrix[0]), glm::length(otherMatrix[1]), glm::length(otherMatrix[2]));
-                
-                glm::vec3 otherMin = otherPos - (otherCollider->aabbExtents * otherScale);
-                glm::vec3 otherMax = otherPos + (otherCollider->aabbExtents * otherScale);
 
                 bool isColliding = false;
 
@@ -53,9 +64,8 @@ namespace our
                         }
                     }
                     else if (playerCollider->shapeType == ColliderType::AABB && otherCollider->shapeType == ColliderType::Sphere) {
-                        glm::vec3 pMin = playerPos - (playerCollider->aabbExtents * playerScale);
-                        glm::vec3 pMax = playerPos + (playerCollider->aabbExtents * playerScale);
-                        glm::vec3 clampedCenter = glm::clamp(otherPos, pMin, pMax);
+                        auto pAABB = getAABB(playerMatrix, playerCollider->aabbExtents, playerCollider->center);
+                        glm::vec3 clampedCenter = glm::clamp(otherPos, pAABB.first, pAABB.second);
                         if (glm::distance(clampedCenter, otherPos) < otherCollider->sphereRadius * otherScale.x) {
                             isColliding = true; break;
                         }
@@ -67,8 +77,9 @@ namespace our
                         }
                     }
                     else if (playerCollider->shapeType == ColliderType::AABB && otherCollider->shapeType == ColliderType::AABB) {
-                        glm::vec3 pMin = playerPos - (playerCollider->aabbExtents * playerScale);
-                        glm::vec3 pMax = playerPos + (playerCollider->aabbExtents * playerScale);
+                        auto pAABB = getAABB(playerMatrix, playerCollider->aabbExtents, playerCollider->center);
+                        glm::vec3 pMin = pAABB.first;
+                        glm::vec3 pMax = pAABB.second;
                         if ((pMin.x <= otherMax.x && pMax.x >= otherMin.x) &&
                             (pMin.y <= otherMax.y && pMax.y >= otherMin.y) &&
                             (pMin.z <= otherMax.z && pMax.z >= otherMin.z)) {
@@ -79,18 +90,23 @@ namespace our
 
                 // 3. Resolve Collisions Logically
                 if (isColliding) {
-                    if (otherCollider->objectType == "monkey") {
-                        std::cout << "[SYSTEM] Monkey Collected! Disappearing..." << std::endl;
+                    if (otherCollider->objectType == "coin") {
+                        std::cout << "[COLLECT] +1 Coin picked up!" << std::endl;
                         world->markForRemoval(other);
                         otherCollider->objectType = "pending_deletion";
                     } 
-                    else if (otherCollider->objectType == "glass") {
-                        std::cout << "[SYSTEM] Shattered through Glass Surface!" << std::endl;
+                    else if (otherCollider->objectType == "health") {
+                        std::cout << "[COLLECT] +HP Health pack acquired!" << std::endl;
                         world->markForRemoval(other);
                         otherCollider->objectType = "pending_deletion";
                     } 
-                    else if (otherCollider->objectType == "moon" || otherCollider->objectType == "obstacle") {
-                        std::cout << "[SYSTEM] Obstacle Hit! Evaporating..." << std::endl;
+                    else if (otherCollider->objectType == "ring") {
+                        std::cout << "[TRIGGER] Flew through a Ring!" << std::endl;
+                        world->markForRemoval(other);
+                        otherCollider->objectType = "pending_deletion";
+                    }
+                    else if (otherCollider->objectType == "tornado" || otherCollider->objectType == "obstacle") {
+                        std::cout << "[DANGER] Hit a Tornado! Taking damage..." << std::endl;
                         world->markForRemoval(other);
                         otherCollider->objectType = "pending_deletion";
                     }

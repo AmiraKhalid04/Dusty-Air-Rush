@@ -1,6 +1,8 @@
 #include "forward-renderer.hpp"
 #include "../mesh/mesh-utils.hpp"
 #include "../texture/texture-utils.hpp"
+#include "../components/light.hpp"
+#include "../deserialize-utils.hpp"
 
 namespace our
 {
@@ -9,6 +11,14 @@ namespace our
     {
         // First, we store the window size for later use
         this->windowSize = windowSize;
+
+        if (config.contains("sky_lighting"))
+        {
+            auto skyLight = config["sky_lighting"];
+            skyTop = skyLight.value("top", glm::vec3(1.0f));
+            skyHorizon = skyLight.value("horizon", glm::vec3(1.0f));
+            skyBottom = skyLight.value("bottom", glm::vec3(1.0f));
+        }
 
         // Then we check if there is a sky texture in the configuration
         if (config.contains("sky"))
@@ -141,11 +151,24 @@ namespace our
         CameraComponent *camera = nullptr;
         opaqueCommands.clear();
         transparentCommands.clear();
+        
+        struct LightData {
+            LightComponent* light;
+            glm::mat4 localToWorld;
+        };
+        std::vector<LightData> activeLights;
+
         for (auto entity : world->getEntities())
         {
             // If we hadn't found a camera yet, we look for a camera in this entity
             if (!camera)
                 camera = entity->getComponent<CameraComponent>();
+            
+            // If this entity has a light component
+            if (auto light = entity->getComponent<LightComponent>(); light) {
+                activeLights.push_back({light, entity->getLocalToWorldMatrix()});
+            }
+
             // If this entity has a mesh renderer component
             if (auto meshRenderer = entity->getComponent<MeshRendererComponent>(); meshRenderer)
             {
@@ -230,6 +253,8 @@ namespace our
         // TODO: (Req 9) Clear the color and depth buffers
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
+        glm::vec3 cameraPosition = glm::vec3(camera->getOwner()->getLocalToWorldMatrix() * glm::vec4(0, 0, 0, 1));
+
         // TODO: (Req 9) Draw all the opaque commands
         //  Don't forget to set the "transform" uniform to be equal the model-view-projection matrix for each render command
         for (const RenderCommand &command : opaqueCommands)
@@ -237,6 +262,31 @@ namespace our
             command.material->setup();
             glm::mat4 transform = VP * command.localToWorld;
             command.material->shader->set("transform", transform);
+            
+            // Lighting & Advanced Transforms
+            if (auto litMat = dynamic_cast<LitMaterial*>(command.material); litMat) {
+                command.material->shader->set("VP", VP);
+                command.material->shader->set("M", command.localToWorld);
+                command.material->shader->set("M_IT", glm::transpose(glm::inverse(command.localToWorld)));
+                command.material->shader->set("camera_position", cameraPosition);
+                
+                command.material->shader->set("sky.top", skyTop);
+                command.material->shader->set("sky.horizon", skyHorizon);
+                command.material->shader->set("sky.bottom", skyBottom);
+
+                command.material->shader->set("light_count", (int)activeLights.size());
+                for(int i = 0; i < (int)activeLights.size(); i++) {
+                    std::string prefix = "lights[" + std::to_string(i) + "].";
+                    command.material->shader->set(prefix + "type", (int)activeLights[i].light->lightType);
+                    command.material->shader->set(prefix + "color", activeLights[i].light->diffuse);
+                    command.material->shader->set(prefix + "attenuation", activeLights[i].light->attenuation);
+                    glm::vec3 pos = activeLights[i].localToWorld * glm::vec4(0, 0, 0, 1);
+                    glm::vec3 dir = activeLights[i].localToWorld * glm::vec4(0, 0, -1, 0);
+                    command.material->shader->set(prefix + "position", pos);
+                    command.material->shader->set(prefix + "direction", glm::normalize(dir));
+                }
+            }
+
             command.mesh->draw();
         }
 
@@ -246,11 +296,11 @@ namespace our
             // TODO: (Req 10) setup the sky material
             this->skyMaterial->setup();
 
-            // TODO: (Req 10) Get the camera position
-            glm::vec3 cameraPosition = glm::vec3(M * glm::vec4(0, 0, 0, 1));
-
             // TODO: (Req 10) Create a model matrix for the sy such that it always follows the camera (sky sphere center = camera position)
-            glm::mat4 skyModel = glm::translate(glm::mat4(1.0f), cameraPosition);
+            // Subtle parallax: sky follows camera closely but lags slightly (0.95 = 95% of camera movement)
+            // This creates minimal depth perception without breaking the rendering
+            glm::vec3 parallaxCameraPosition = cameraPosition * 0.999f;
+            glm::mat4 skyModel = glm::translate(glm::mat4(1.0f), parallaxCameraPosition);
 
             // TODO: (Req 10) We want the sky to be drawn behind everything (in NDC space, z=1)
             //  We can acheive the is by multiplying by an extra matrix after the projection but what values should we put in it?
@@ -273,6 +323,31 @@ namespace our
             command.material->setup();
             glm::mat4 transform = VP * command.localToWorld;
             command.material->shader->set("transform", transform);
+
+            // Lighting & Advanced Transforms
+            if (auto litMat = dynamic_cast<LitMaterial*>(command.material); litMat) {
+                command.material->shader->set("VP", VP);
+                command.material->shader->set("M", command.localToWorld);
+                command.material->shader->set("M_IT", glm::transpose(glm::inverse(command.localToWorld)));
+                command.material->shader->set("camera_position", cameraPosition);
+                
+                command.material->shader->set("sky.top", skyTop);
+                command.material->shader->set("sky.horizon", skyHorizon);
+                command.material->shader->set("sky.bottom", skyBottom);
+
+                command.material->shader->set("light_count", (int)activeLights.size());
+                for(int i = 0; i < (int)activeLights.size(); i++) {
+                    std::string prefix = "lights[" + std::to_string(i) + "].";
+                    command.material->shader->set(prefix + "type", (int)activeLights[i].light->lightType);
+                    command.material->shader->set(prefix + "color", activeLights[i].light->diffuse);
+                    command.material->shader->set(prefix + "attenuation", activeLights[i].light->attenuation);
+                    glm::vec3 pos = activeLights[i].localToWorld * glm::vec4(0, 0, 0, 1);
+                    glm::vec3 dir = activeLights[i].localToWorld * glm::vec4(0, 0, -1, 0);
+                    command.material->shader->set(prefix + "position", pos);
+                    command.material->shader->set(prefix + "direction", glm::normalize(dir));
+                }
+            }
+
             command.mesh->draw();
         }
 

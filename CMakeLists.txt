@@ -4,7 +4,6 @@ project(GFX-LAB VERSION 0.1.0)          # Here we select the project name and ve
 # Linux compatibility
 if(UNIX AND NOT APPLE)
         find_package(OpenGL REQUIRED)
-        find_package(GLEW REQUIRED)
 endif()
 
 # Here we select C++17 with all the standards required and all compiler-specific extensions disabled
@@ -83,12 +82,17 @@ set(COMMON_SOURCES
         source/common/components/camera.cpp
         source/common/components/mesh-renderer.hpp
         source/common/components/mesh-renderer.cpp
+
         source/common/components/free-camera-controller.hpp
         source/common/components/free-camera-controller.cpp
+         source/common/components/health-component.hpp
+
         source/common/components/movement.hpp
         source/common/components/movement.cpp
         source/common/components/collider.hpp
         source/common/components/collider.cpp
+        source/common/components/light.hpp
+        source/common/components/light.cpp
         source/common/components/component-deserializer.hpp
 
         source/common/systems/forward-renderer.hpp
@@ -138,5 +142,4 @@ target_compile_definitions(GAME_APPLICATION PRIVATE
 
 if(UNIX AND NOT APPLE)
         target_link_libraries(GAME_APPLICATION OpenGL::GL)
-        target_link_libraries(GAME_APPLICATION GLEW::GLEW)
 endif()

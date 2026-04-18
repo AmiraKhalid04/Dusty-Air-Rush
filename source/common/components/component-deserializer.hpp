@@ -6,6 +6,10 @@
 #include "free-camera-controller.hpp"
 #include "movement.hpp"
 #include "collider.hpp"
+#include "coin-component.hpp"
+#include "health-component.hpp"
+#include "dusty.hpp"
+#include "light.hpp"
 
 namespace our
 {
@@ -36,6 +40,21 @@ namespace our
         else if (type == ColliderComponent::getID())
         {
             component = entity->addComponent<ColliderComponent>();
+        else if (type == CoinComponent::getID())
+        {
+            component = entity->addComponent<CoinComponent>();
+        }
+        else if (type == HealthComponent::getID())
+        {
+            component = entity->addComponent<HealthComponent>();
+        }
+        else if (type == DustyComponent::getID())
+        {
+            component = entity->addComponent<DustyComponent>();
+        }
+        else if (type == LightComponent::getID())
+        {
+            component = entity->addComponent<LightComponent>();
         }
         if (component)
             component->deserialize(data);

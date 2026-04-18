@@ -18,6 +18,7 @@
 #include <material/material.hpp>
 #include <mesh/mesh.hpp>
 #include <asset-loader.hpp>
+#include "systems/health-system.hpp"
 // This state shows how to use the ECS framework and deserialization.
 class Playstate : public our::State
 {
@@ -31,6 +32,7 @@ class Playstate : public our::State
     our::TornadoSystem tornado;
     our::CoinSystem coinSystem;
     our::UIRenderSystem uiRenderer;
+    our::HealthSystem healthSystem;
 
     void onInitialize() override
     {
@@ -74,6 +76,15 @@ class Playstate : public our::State
         tornado.initialize(&world, tornadoConfig);
 
         coinSystem.initialize(&world, ringPositions);
+
+        our::HealthConfig healthConfig;
+        healthConfig.spawnChance = 0.4f;
+        healthConfig.minRingsBefore = 2;
+        healthConfig.maxSideOffset = 6.0f;
+        healthConfig.maxVertOffset = 4.0f;
+        healthConfig.scale = 0.5f;
+
+        healthSystem.initialize(&world, ringPositions, healthConfig);
     }
 
     void onDraw(double deltaTime) override

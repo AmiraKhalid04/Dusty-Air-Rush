@@ -24,6 +24,10 @@
                     "vs": "assets/shaders/lit.vert",
                     "fs": "assets/shaders/lit.frag"
                 },
+                "shadow": {
+                    "vs": "assets/shaders/shadow.vert",
+                    "fs": "assets/shaders/shadow.frag"
+                },
                 "tinted": {
                     "vs": "assets/shaders/tinted.vert",
                     "fs": "assets/shaders/tinted.frag"
@@ -199,7 +203,7 @@
         "world": [
             {
                 "position": [0, 10, 0],
-                "rotation": [45, -45, 0],
+                "rotation": [-45, -45, 0],
                 "components": [
                     {
                         "type": "Light",

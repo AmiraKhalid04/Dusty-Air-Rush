@@ -43,11 +43,18 @@ namespace our
         // Objects used for rendering a skybox
         Mesh* skySphere;
         TexturedMaterial* skyMaterial;
+
+        // Objects used for Shadow Mapping
+        GLuint shadowMapFBO = 0;
+        Texture2D* shadowMapTexture = nullptr;
+        ShaderProgram* shadowShader = nullptr;
+        
         // Objects used for Postprocessing
         GLuint postprocessFrameBuffer, postProcessVertexArray;
         Texture2D *colorTarget, *depthTarget;
         TexturedMaterial* postprocessMaterial;
     public:
+        GLuint getShadowMapTexture() const { return shadowMapTexture ? shadowMapTexture->getOpenGLName() : 0; }
         // Initialize the renderer including the sky and the Postprocessing objects.
         // windowSize is the width & height of the window (in pixels).
         void initialize(glm::ivec2 windowSize, const nlohmann::json& config);

@@ -5,12 +5,16 @@
 
 #include <glm/glm.hpp>
 #include <iostream>
+#include <unordered_set>
 
 namespace our
 {
     class CollisionSystem {
         bool initialized = false;
         glm::vec3 playerStartPos = {0, 0, 0};
+        
+        // Track entities that are currently in a state of overlap to prevent repeated triggers
+        std::unordered_set<Entity*> activeCollisions;
 
     public:
         void update(World* world, float deltaTime) {
@@ -25,6 +29,9 @@ namespace our
             }
 
             if (playerParts.empty()) return;
+
+            // Track who we hit THIS frame to update activeCollisions at the end
+            std::unordered_set<Entity*> frameCollisions;
 
             // 2. Check collisions against all other colliders
             for (auto other : world->getEntities()) {
@@ -90,6 +97,8 @@ namespace our
 
                 // 3. Resolve Collisions Logically
                 if (isColliding) {
+                    frameCollisions.insert(other);
+
                     if (otherCollider->objectType == "coin") {
                         std::cout << "[COLLECT] +1 Coin picked up!" << std::endl;
                         world->markForRemoval(other);
@@ -100,18 +109,21 @@ namespace our
                         world->markForRemoval(other);
                         otherCollider->objectType = "pending_deletion";
                     } 
-                    else if (otherCollider->objectType == "ring") {
-                        std::cout << "[TRIGGER] Flew through a Ring!" << std::endl;
+                    else if (otherCollider->objectType == "ring_score") {
+                        std::cout << "[SCORE] +1! Passed through center!" << std::endl;
                         world->markForRemoval(other);
                         otherCollider->objectType = "pending_deletion";
                     }
+                    else if (otherCollider->objectType == "ring_frame") {
+                        std::cout << "[DAMAGE] Hit the Ring Frame! -20 HP" << std::endl;
+                    }
                     else if (otherCollider->objectType == "tornado" || otherCollider->objectType == "obstacle") {
-                        std::cout << "[DANGER] Hit a Tornado! Taking damage..." << std::endl;
-                        world->markForRemoval(other);
-                        otherCollider->objectType = "pending_deletion";
+                            std::cout << "[DAMAGE] Hit hazard! -20 HP" << std::endl;
                     }
                 }
             }
+            // Sync state: anyone in frameCollisions is now 'active' for next frame
+            activeCollisions = frameCollisions;
         }
     };
 }

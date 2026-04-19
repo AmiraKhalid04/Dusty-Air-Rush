@@ -81,17 +81,25 @@ namespace our
                       up = glm::vec3(matrix * glm::vec4(0, 1, 0, 0)), 
                       right = glm::vec3(matrix * glm::vec4(1, 0, 0, 0));
 
-            glm::vec3 current_sensitivity = controller->positionSensitivity;
+            glm::vec3 current_sensitivity = controller->positionSensitivity *  controller->speedupFactor;
             // If the LEFT SHIFT key is pressed, we multiply the position sensitivity by the speed up factor
-            if(app->getKeyboard().isPressed(GLFW_KEY_LEFT_SHIFT)) current_sensitivity *= controller->speedupFactor;
-            if(app->getKeyboard().isPressed(GLFW_KEY_LEFT_CONTROL)) current_sensitivity /= controller->speedupFactor;
+            if(app->getKeyboard().isPressed(GLFW_KEY_LEFT_SHIFT)) {
+                controller->speedupFactor = 3.0f;
+                controller->tiltingSensitivity = 0.6f;
+            } else if(app->getKeyboard().isPressed(GLFW_KEY_LEFT_CONTROL)) {
+                controller->speedupFactor = 0.5f;
+                controller->tiltingSensitivity = 0.1f;
+            } else {
+                controller->speedupFactor = 1.0f;
+                controller->tiltingSensitivity = 0.2f;
+            }
             
             // Moves the player forward automatically 
             position += front * (deltaTime * current_sensitivity.z);
             
             // S & W moves the player pitch back and forth
             float max_pitch = glm::pi<float>() / 3.0f; // Limit tilt to 60 degrees
-            float pitch_speed = controller->rotationSensitivity * 20.0f; // How fast it tilts
+            float pitch_speed = controller->tiltingSensitivity; // How fast it tilts
             
             if(app->getKeyboard().isPressed(GLFW_KEY_W)) {
                 rotation.x += (deltaTime * pitch_speed) * glm::cos(rotation.z); 
@@ -112,7 +120,7 @@ namespace our
 
             // A & D tilts & rotates the player left or right 
             float max_roll = glm::pi<float>(); // Limit tilt to 45 degrees
-            float roll_speed = controller->rotationSensitivity * 20.0f; // How fast it tilts
+            float roll_speed = controller->tiltingSensitivity; // How fast it tilts
             bool turning = false;
             if(app->getKeyboard().isPressed(GLFW_KEY_D)) {
                 rotation.y -= (deltaTime * roll_speed);

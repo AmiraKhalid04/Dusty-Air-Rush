@@ -38,6 +38,7 @@ struct Material {
 uniform Material material;
 uniform vec4 tint;
 uniform float alphaThreshold;
+uniform sampler2D shadow_map;
 
 in Varyings {
     vec4 color;
@@ -45,6 +46,7 @@ in Varyings {
     vec3 normal;
     vec3 view;
     vec3 world;
+    vec4 fragPosLightSpace;
 } fs_in;
 
 out vec4 frag_color;
@@ -55,6 +57,32 @@ float lambert(vec3 normal, vec3 world_to_light_direction) {
 
 float phong(vec3 reflected, vec3 view, float shininess) {
     return pow(max(0.0, dot(reflected, view)), shininess);
+}
+
+float ShadowCalculation(vec4 fragPosLightSpace, vec3 normal, vec3 lightDir) {
+    vec3 projCoords = fragPosLightSpace.xyz / fragPosLightSpace.w;
+    projCoords = projCoords * 0.5 + 0.5;
+    
+    if(projCoords.z > 1.0)
+        return 0.0;
+        
+    float currentDepth = projCoords.z;
+    float bias = max(0.025 * (1.0 - dot(normal, lightDir)), 0.005);
+    
+    // Percentage-Closer Filtering (PCF)
+    float shadow = 0.0;
+    vec2 texelSize = 1.0 / textureSize(shadow_map, 0);
+    for(int x = -1; x <= 1; ++x)
+    {
+        for(int y = -1; y <= 1; ++y)
+        {
+            float pcfDepth = texture(shadow_map, projCoords.xy + vec2(x, y) * texelSize).r; 
+            shadow += currentDepth - bias > pcfDepth  ? 1.0 : 0.0;        
+        }    
+    }
+    shadow /= 9.0;
+    
+    return shadow;
 }
 
 void main() {
@@ -81,9 +109,11 @@ void main() {
     for(int light_idx = 0; light_idx < min(MAX_LIGHTS, light_count); light_idx++){
         Light light = lights[light_idx];
         float attenuation = 1.0;
+        float shadow = 0.0;
         
         if(light.type == DIRECTIONAL){
             world_to_light_dir = -light.direction;
+            shadow = ShadowCalculation(fs_in.fragPosLightSpace, normal, world_to_light_dir);
         } else {
             world_to_light_dir = light.position - fs_in.world;
             float d = length(world_to_light_dir);
@@ -97,7 +127,7 @@ void main() {
         vec3 reflected = reflect(-world_to_light_dir, normal);
         vec3 computed_specular = light.color * specular * phong(reflected, view, shininess);
 
-        color += (computed_diffuse + computed_specular) * attenuation;
+        color += (computed_diffuse + computed_specular) * attenuation * (1.0 - shadow);
     }
     
     frag_color = vec4(color, m_albedo.a);

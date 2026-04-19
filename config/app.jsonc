@@ -24,6 +24,10 @@
                     "vs": "assets/shaders/lit.vert",
                     "fs": "assets/shaders/lit.frag"
                 },
+                "shadow": {
+                    "vs": "assets/shaders/shadow.vert",
+                    "fs": "assets/shaders/shadow.frag"
+                },
                 "tinted": {
                     "vs": "assets/shaders/tinted.vert",
                     "fs": "assets/shaders/tinted.frag"
@@ -38,6 +42,9 @@
                 "metal_specular": "assets/textures/metal/specular.jpg",
                 "metal_roughness": "assets/textures/metal/roughness.jpg",
                 "suzanne_ao": "assets/textures/suzanne/ambient_occlusion.jpg",
+                "white": "assets/textures/white.png",
+                "black": "assets/textures/black.png",
+                "gray": "assets/textures/gray.png",
                 "grass": "assets/textures/grass_ground_d.jpg",
                 "ring": "assets/textures/ring/ring.png",
                 "tornado": "assets/textures/tornado/material.jpeg",
@@ -67,24 +74,32 @@
             },
             "materials": {
                 "coin": {
-                    "type": "textured",
-                    "shader": "textured",
+                    "type": "lit",
+                    "shader": "lit",
                     "pipelineState": {
                         "faceCulling": { "enabled": false },
                         "depthTesting": { "enabled": true }
                     },
-                    "texture": "coin-texture",
+                    "albedo": "coin-texture",
+                    "specular": "gray",
+                    "roughness": "gray",
+                    "ambient": "white",
+                    "emissive": "black",
                     "sampler": "default",
                     "tint": [1.0, 1.0, 1.0, 1.0]
                 },
                 "health": {
-                    "type": "textured",
-                    "shader": "textured",
+                    "type": "lit",
+                    "shader": "lit",
                     "pipelineState": {
                         "faceCulling": { "enabled": false },
                         "depthTesting": { "enabled": true }
                     },
-                    "texture": "health-texture",
+                    "albedo": "health-texture",
+                    "specular": "gray",
+                    "roughness": "gray",
+                    "ambient": "white",
+                    "emissive": "black",
                     "sampler": "default",
                     "tint": [1.0, 1.0, 1.0, 1.0]
                 },
@@ -142,13 +157,17 @@
                     "sampler": "default"
                 },
                 "dusty": {
-                    "type": "textured",
-                    "shader": "textured",
+                    "type": "lit",
+                    "shader": "lit",
                     "pipelineState": {
                         "faceCulling": { "enabled": false },
                         "depthTesting": { "enabled": true }
                     },
-                    "texture": "dusty-texture",
+                    "albedo": "dusty-texture",
+                    "specular": "gray",
+                    "roughness": "gray",
+                    "ambient": "white",
+                    "emissive": "black",
                     "sampler": "default",
                     "tint": [1.0, 1.0, 1.0, 1.0]
                 },
@@ -184,7 +203,7 @@
         "world": [
             {
                 "position": [0, 10, 0],
-                "rotation": [45, -45, 0],
+                "rotation": [-45, -45, 0],
                 "components": [
                     {
                         "type": "Light",

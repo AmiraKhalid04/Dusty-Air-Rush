@@ -151,9 +151,12 @@ namespace our
         CameraComponent *camera = nullptr;
         opaqueCommands.clear();
         transparentCommands.clear();
-        
-        struct LightData {
-            LightComponent* light;
+
+        static float globalTime = 0.0f;
+
+        struct LightData
+        {
+            LightComponent *light;
             glm::mat4 localToWorld;
         };
         std::vector<LightData> activeLights;
@@ -163,9 +166,10 @@ namespace our
             // If we hadn't found a camera yet, we look for a camera in this entity
             if (!camera)
                 camera = entity->getComponent<CameraComponent>();
-            
+
             // If this entity has a light component
-            if (auto light = entity->getComponent<LightComponent>(); light) {
+            if (auto light = entity->getComponent<LightComponent>(); light)
+            {
                 activeLights.push_back({light, entity->getLocalToWorldMatrix()});
             }
 
@@ -189,26 +193,30 @@ namespace our
                     opaqueCommands.push_back(command);
                 }
             }
-            
+
             // Debug rendering for Colliders
-            if (auto collider = entity->getComponent<ColliderComponent>(); collider) 
+            if (auto collider = entity->getComponent<ColliderComponent>(); collider)
             {
-                Material* debugMat = our::AssetLoader<Material>::get("debug_wireframe");
-                if (debugMat) {
+                Material *debugMat = our::AssetLoader<Material>::get("debug_wireframe");
+                if (debugMat)
+                {
                     RenderCommand command;
                     glm::mat4 baseTransform = glm::translate(entity->getLocalToWorldMatrix(), collider->center);
-                    
-                    if (collider->shapeType == ColliderType::Sphere) {
+
+                    if (collider->shapeType == ColliderType::Sphere)
+                    {
                         command.localToWorld = glm::scale(baseTransform, glm::vec3(collider->sphereRadius));
                         command.mesh = our::AssetLoader<Mesh>::get("sphere");
-                    } else {
+                    }
+                    else
+                    {
                         command.localToWorld = glm::scale(baseTransform, collider->aabbExtents);
                         command.mesh = our::AssetLoader<Mesh>::get("cube");
                     }
-                    
+
                     command.center = glm::vec3(command.localToWorld * glm::vec4(0, 0, 0, 1));
                     command.material = debugMat;
-                    
+
                     // Wireframes look better in transparent pass to overlay gracefully
                     transparentCommands.push_back(command);
                 }
@@ -262,20 +270,22 @@ namespace our
             command.material->setup();
             glm::mat4 transform = VP * command.localToWorld;
             command.material->shader->set("transform", transform);
-            
+
             // Lighting & Advanced Transforms
-            if (auto litMat = dynamic_cast<LitMaterial*>(command.material); litMat) {
+            if (auto litMat = dynamic_cast<LitMaterial *>(command.material); litMat)
+            {
                 command.material->shader->set("VP", VP);
                 command.material->shader->set("M", command.localToWorld);
                 command.material->shader->set("M_IT", glm::transpose(glm::inverse(command.localToWorld)));
                 command.material->shader->set("camera_position", cameraPosition);
-                
+
                 command.material->shader->set("sky.top", skyTop);
                 command.material->shader->set("sky.horizon", skyHorizon);
                 command.material->shader->set("sky.bottom", skyBottom);
 
                 command.material->shader->set("light_count", (int)activeLights.size());
-                for(int i = 0; i < (int)activeLights.size(); i++) {
+                for (int i = 0; i < (int)activeLights.size(); i++)
+                {
                     std::string prefix = "lights[" + std::to_string(i) + "].";
                     command.material->shader->set(prefix + "type", (int)activeLights[i].light->lightType);
                     command.material->shader->set(prefix + "color", activeLights[i].light->diffuse);
@@ -285,6 +295,12 @@ namespace our
                     command.material->shader->set(prefix + "position", pos);
                     command.material->shader->set(prefix + "direction", glm::normalize(dir));
                 }
+            }
+
+            if (auto *tm = dynamic_cast<TerrainMaterial *>(command.material))
+            {
+                tm->time = globalTime;
+                command.material->shader->set("model", command.localToWorld);
             }
 
             command.mesh->draw();
@@ -325,18 +341,20 @@ namespace our
             command.material->shader->set("transform", transform);
 
             // Lighting & Advanced Transforms
-            if (auto litMat = dynamic_cast<LitMaterial*>(command.material); litMat) {
+            if (auto litMat = dynamic_cast<LitMaterial *>(command.material); litMat)
+            {
                 command.material->shader->set("VP", VP);
                 command.material->shader->set("M", command.localToWorld);
                 command.material->shader->set("M_IT", glm::transpose(glm::inverse(command.localToWorld)));
                 command.material->shader->set("camera_position", cameraPosition);
-                
+
                 command.material->shader->set("sky.top", skyTop);
                 command.material->shader->set("sky.horizon", skyHorizon);
                 command.material->shader->set("sky.bottom", skyBottom);
 
                 command.material->shader->set("light_count", (int)activeLights.size());
-                for(int i = 0; i < (int)activeLights.size(); i++) {
+                for (int i = 0; i < (int)activeLights.size(); i++)
+                {
                     std::string prefix = "lights[" + std::to_string(i) + "].";
                     command.material->shader->set(prefix + "type", (int)activeLights[i].light->lightType);
                     command.material->shader->set(prefix + "color", activeLights[i].light->diffuse);
@@ -346,6 +364,13 @@ namespace our
                     command.material->shader->set(prefix + "position", pos);
                     command.material->shader->set(prefix + "direction", glm::normalize(dir));
                 }
+            }
+
+            if (auto *cm = dynamic_cast<CloudMaterial *>(command.material))
+            {
+                cm->time = globalTime;
+                command.material->shader->set("camera_pos", cameraPosition);
+                command.material->shader->set("model", command.localToWorld);
             }
 
             command.mesh->draw();

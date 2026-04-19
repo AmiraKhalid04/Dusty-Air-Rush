@@ -1,6 +1,5 @@
 #include "material.hpp"
 
-#include "../asset-loader.hpp"
 #include "deserialize-utils.hpp"
 
 namespace our
@@ -58,13 +57,15 @@ namespace our
         if (shader)
             shader->set("alphaThreshold", alphaThreshold);
 
-        if (texture && shader) {
+        if (texture && shader)
+        {
             glActiveTexture(GL_TEXTURE0);
             texture->bind();
             shader->set("tex", 0);
         }
 
-        if (sampler) {
+        if (sampler)
+        {
             sampler->bind(0);
         }
     }
@@ -83,35 +84,45 @@ namespace our
     void LitMaterial::setup() const
     {
         TexturedMaterial::setup();
-        
-        if (albedo) {
+
+        if (albedo)
+        {
             glActiveTexture(GL_TEXTURE0);
             albedo->bind();
-            if (sampler) sampler->bind(0);
+            if (sampler)
+                sampler->bind(0);
             shader->set("material.albedo", 0);
         }
-        if (specular) {
+        if (specular)
+        {
             glActiveTexture(GL_TEXTURE1);
             specular->bind();
-            if (sampler) sampler->bind(1);
+            if (sampler)
+                sampler->bind(1);
             shader->set("material.specular", 1);
         }
-        if (roughness) {
+        if (roughness)
+        {
             glActiveTexture(GL_TEXTURE2);
             roughness->bind();
-            if (sampler) sampler->bind(2);
+            if (sampler)
+                sampler->bind(2);
             shader->set("material.roughness", 2);
         }
-        if (ambient_occlusion) {
+        if (ambient_occlusion)
+        {
             glActiveTexture(GL_TEXTURE3);
             ambient_occlusion->bind();
-            if (sampler) sampler->bind(3);
+            if (sampler)
+                sampler->bind(3);
             shader->set("material.ambient_occlusion", 3);
         }
-        if (emissive) {
+        if (emissive)
+        {
             glActiveTexture(GL_TEXTURE4);
             emissive->bind();
-            if (sampler) sampler->bind(4);
+            if (sampler)
+                sampler->bind(4);
             shader->set("material.emissive", 4);
         }
     }
@@ -128,4 +139,45 @@ namespace our
         emissive = AssetLoader<Texture2D>::get(data.value("emissive", ""));
     }
 
+    void TerrainMaterial::deserialize(const nlohmann::json &data)
+    {
+        // This handles: shader, pipelineState, transparent, AND tint
+        // (TintedMaterial::deserialize reads tint the same way it works elsewhere)
+        TintedMaterial::deserialize(data);
+
+        if (!data.is_object())
+            return;
+
+        // Height scale — matches the mesh heightScale
+        heightScale = data.value("heightScale", 20.0f);
+
+        // Sampler — identical pattern to TexturedMaterial
+        sampler = AssetLoader<Sampler>::get(data.value("sampler", ""));
+
+        // Textures — read from nested "textures": { } block
+        if (data.contains("textures") && data["textures"].is_object())
+        {
+            auto &tex = data["textures"];
+
+            auto load = [&](const char *key) -> Texture2D *
+            {
+                if (!tex.contains(key))
+                {
+                    std::cerr << "[TerrainMaterial] Missing key: " << key << "\n";
+                    return nullptr;
+                }
+                std::string name = tex[key].get<std::string>();
+                Texture2D *t = AssetLoader<Texture2D>::get(name);
+                if (!t)
+                    std::cerr << "[TerrainMaterial] Not found: " << name << "\n";
+                return t;
+            };
+
+            tex_water = load("water");
+            tex_sand = load("sand");
+            tex_grass = load("grass");
+            tex_rock = load("rock");
+            tex_snow = load("snow");
+        }
+    }
 }

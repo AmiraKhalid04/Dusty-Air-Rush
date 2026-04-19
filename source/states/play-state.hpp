@@ -32,7 +32,7 @@ class Playstate : public our::State
     our::TornadoSystem tornado;
     our::CoinSystem coinSystem;
     our::UIRenderSystem uiRenderer;
-    our::HealthSystem healthSystem;
+    our::HealthPackSystem healthPackSystem;
 
     void onInitialize() override
     {
@@ -77,14 +77,14 @@ class Playstate : public our::State
 
         coinSystem.initialize(&world, ringPositions);
 
-        our::HealthConfig healthConfig;
+        our::HealthPackConfig healthConfig;
         healthConfig.spawnChance = 0.4f;
         healthConfig.minRingsBefore = 2;
         healthConfig.maxSideOffset = 6.0f;
         healthConfig.maxVertOffset = 4.0f;
         healthConfig.scale = 0.5f;
 
-        healthSystem.initialize(&world, ringPositions, healthConfig);
+        healthPackSystem.initialize(&world, ringPositions, healthConfig);
     }
 
     void onDraw(double deltaTime) override

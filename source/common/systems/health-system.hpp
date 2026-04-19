@@ -13,7 +13,7 @@
 
 namespace our
 {
-    struct HealthConfig
+    struct HealthPackConfig
     {
         int bandageCount = 10;    // max possible bandages (one slot per ring)
         float spawnChance = 0.4f; // probability of spawning at each ring (0-1)
@@ -27,17 +27,17 @@ namespace our
         float maxVertOffset = 4.0f; // max Y offset
     };
 
-    class HealthSystem
+    class HealthPackSystem
     {
         std::mt19937 rng{std::random_device{}()};
 
     public:
         void initialize(World *world,
                         const std::vector<glm::vec3> &ringPositions,
-                        const HealthConfig &config)
+                        const HealthPackConfig &config)
         {
-            Mesh *mesh = AssetLoader<Mesh>::get("health");
-            Material *mat = AssetLoader<Material>::get("health");
+            Mesh *mesh = AssetLoader<Mesh>::get("health_pack");
+            Material *mat = AssetLoader<Material>::get("health_pack");
             if (!mesh || !mat)
                 return;
 

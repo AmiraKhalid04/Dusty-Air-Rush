@@ -67,24 +67,30 @@
             },
             "materials": {
                 "coin": {
-                    "type": "textured",
-                    "shader": "textured",
+                    "type": "lit",
+                    "shader": "lit",
                     "pipelineState": {
                         "faceCulling": { "enabled": false },
                         "depthTesting": { "enabled": true }
                     },
-                    "texture": "coin-texture",
+                    "albedo": "coin-texture",
+                    "specular": "metal_specular",
+                    "roughness": "metal_roughness",
+                    "ambient": "suzanne_ao",
                     "sampler": "default",
                     "tint": [1.0, 1.0, 1.0, 1.0]
                 },
                 "health": {
-                    "type": "textured",
-                    "shader": "textured",
+                    "type": "lit",
+                    "shader": "lit",
                     "pipelineState": {
                         "faceCulling": { "enabled": false },
                         "depthTesting": { "enabled": true }
                     },
-                    "texture": "health-texture",
+                    "albedo": "health-texture",
+                    "specular": "metal_specular",
+                    "roughness": "metal_roughness",
+                    "ambient": "suzanne_ao",
                     "sampler": "default",
                     "tint": [1.0, 1.0, 1.0, 1.0]
                 },
@@ -142,13 +148,16 @@
                     "sampler": "default"
                 },
                 "dusty": {
-                    "type": "textured",
-                    "shader": "textured",
+                    "type": "lit",
+                    "shader": "lit",
                     "pipelineState": {
                         "faceCulling": { "enabled": false },
                         "depthTesting": { "enabled": true }
                     },
-                    "texture": "dusty-texture",
+                    "albedo": "dusty-texture",
+                    "specular": "metal_specular",
+                    "roughness": "metal_roughness",
+                    "ambient": "suzanne_ao",
                     "sampler": "default",
                     "tint": [1.0, 1.0, 1.0, 1.0]
                 },

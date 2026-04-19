@@ -59,6 +59,11 @@ namespace our
                 bool isColliding = false;
 
                 for (auto player : playerParts) {
+                    // Only the main body can trigger the score gate
+                    if (otherCollider->objectType == "ring_score" && player->name != "Body Collider") {
+                        continue;
+                    }
+
                     ColliderComponent* playerCollider = player->getComponent<ColliderComponent>();
                     glm::mat4 playerMatrix = player->getLocalToWorldMatrix();
                     glm::vec3 playerPos = glm::vec3(playerMatrix * glm::vec4(playerCollider->center, 1.0f));
@@ -97,28 +102,40 @@ namespace our
 
                 // 3. Resolve Collisions Logically
                 if (isColliding) {
-                    frameCollisions.insert(other);
+                    Entity* collisionTracker = other;
+                    // Group ring parts by their parent ring entity
+                    if (otherCollider->objectType == "ring_score" || otherCollider->objectType == "ring_frame") {
+                        if (other->parent) collisionTracker = other->parent;
+                    }
 
-                    if (otherCollider->objectType == "coin") {
-                        std::cout << "[COLLECT] +1 Coin picked up!" << std::endl;
-                        world->markForRemoval(other);
-                        otherCollider->objectType = "pending_deletion";
-                    } 
-                    else if (otherCollider->objectType == "health") {
-                        std::cout << "[COLLECT] +HP Health pack acquired!" << std::endl;
-                        world->markForRemoval(other);
-                        otherCollider->objectType = "pending_deletion";
-                    } 
-                    else if (otherCollider->objectType == "ring_score") {
-                        std::cout << "[SCORE] +1! Passed through center!" << std::endl;
-                        world->markForRemoval(other);
-                        otherCollider->objectType = "pending_deletion";
-                    }
-                    else if (otherCollider->objectType == "ring_frame") {
-                        std::cout << "[DAMAGE] Hit the Ring Frame! -20 HP" << std::endl;
-                    }
-                    else if (otherCollider->objectType == "tornado" || otherCollider->objectType == "obstacle") {
+                    frameCollisions.insert(collisionTracker);
+
+                    // Only trigger the collision logic if we weren't already colliding with this entity last frame
+                    // (and haven't already processed another part of this same compound entity this frame)
+                    if (activeCollisions.find(collisionTracker) == activeCollisions.end()) {
+                        activeCollisions.insert(collisionTracker); // Prevent other parts of this ring dealing damage this frame
+
+                        if (otherCollider->objectType == "coin") {
+                            std::cout << "[COLLECT] +1 Coin picked up!" << std::endl;
+                            world->markForRemoval(other);
+                            otherCollider->objectType = "pending_deletion";
+                        } 
+                        else if (otherCollider->objectType == "health") {
+                            std::cout << "[COLLECT] +HP Health pack acquired!" << std::endl;
+                            world->markForRemoval(other);
+                            otherCollider->objectType = "pending_deletion";
+                        } 
+                        else if (otherCollider->objectType == "ring_score") {
+                            std::cout << "[SCORE] +1! Passed through center!" << std::endl;
+                            world->markForRemoval(other);
+                            otherCollider->objectType = "pending_deletion";
+                        }
+                        else if (otherCollider->objectType == "ring_frame") {
+                            std::cout << "[DAMAGE] Hit the Ring Frame! -20 HP" << std::endl;
+                        }
+                        else if (otherCollider->objectType == "tornado" || otherCollider->objectType == "obstacle") {
                             std::cout << "[DAMAGE] Hit hazard! -20 HP" << std::endl;
+                        }
                     }
                 }
             }

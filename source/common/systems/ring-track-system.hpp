@@ -68,40 +68,36 @@ namespace our
                 mr->mesh = ringMesh;
                 mr->material = ringMaterial;
 
-                // ─── 8 PERSISTENT HAZARD SEGMENTS (The outer frame) ───
+                // ─── PERSISTENT HAZARD SEGMENTS (The outer frame) ───
                 float frameRadius = 0.16f; // Average radius of the ring geometry
-                for (int j = 0; j < 8; j++) {
+                for (int j = 0; j < 12; j++) {
                     Entity* segment = world->add();
                     segment->parent = entity; // Follow the ring's transform
                     segment->name = "ring_frame_" + std::to_string(j);
                     
-                    float angle = j * (glm::pi<float>() / 4.0f);
+                    float angle = j * (glm::pi<float>() / 6.0f);
                     segment->localTransform.position = {
                         0.0f,
-                        glm::cos(angle) * frameRadius + frameRadius + 0.04f,
+                        glm::cos(angle) * frameRadius + 0.20f, // 0.16 + 0.04
                         glm::sin(angle) * frameRadius
                     };
-                    segment->localTransform.rotation = {angle, 0, 0};
                     
                     auto* col = segment->addComponent<ColliderComponent>();
-                    col->shapeType = ColliderType::AABB;
+                    col->shapeType = ColliderType::Sphere; // Spheres avoid the rotated-box 'fat AABB' issue
                     col->objectType = "ring_frame";
-                    // Tuning: [half-chord-length, half-thickness, depth]
-                    col->aabbExtents = {0.03f, 0.04f, 0.05f};
+                    col->sphereRadius = 0.04f;
                 }
 
                 // // ─── 1 SCORE TRIGGER (The inner hole) ───
                 Entity* trigger = world->add();
                 trigger->parent = entity;
                 trigger->name = "ring_score_gate";
-                trigger->localTransform.position = {0, 0.1f, 0};
+                trigger->localTransform.position = {0, 0.20f, 0};
                 
                 auto* col = trigger->addComponent<ColliderComponent>();
-                col->shapeType = ColliderType::AABB;
+                col->shapeType = ColliderType::Sphere;
                 col->objectType = "ring_score";
-                // Tuning: [hole-radius, hole-radius, depth]
-                col->aabbExtents = {0.03f, 0.12f, 0.12f};
-                col->center = glm::vec3(0.0f, 0.1f, 0.0f);
+                col->sphereRadius = 0.10f; // Leaves a safe gap between hole boundary and the frames
             }
 
             // === FINISH LINE ===

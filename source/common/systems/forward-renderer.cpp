@@ -12,6 +12,27 @@ namespace our
         // First, we store the window size for later use
         this->windowSize = windowSize;
 
+        // Initialize Shadow Map FBO and Texture
+        glGenFramebuffers(1, &shadowMapFBO);
+        shadowMapTexture = new Texture2D();
+        glBindFramebuffer(GL_FRAMEBUFFER, shadowMapFBO);
+        shadowMapTexture->bind();
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT24, 2048, 2048, 0, GL_DEPTH_COMPONENT, GL_FLOAT, NULL);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
+        GLint swizzleMask[] = {GL_RED, GL_RED, GL_RED, GL_ONE};
+        glTexParameteriv(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_RGBA, swizzleMask);
+        float borderColor[] = { 1.0f, 1.0f, 1.0f, 1.0f };
+        glTexParameterfv(GL_TEXTURE_2D, GL_TEXTURE_BORDER_COLOR, borderColor);
+        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, shadowMapTexture->getOpenGLName(), 0);
+        glDrawBuffer(GL_NONE);
+        glReadBuffer(GL_NONE);
+        glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
+        shadowShader = AssetLoader<ShaderProgram>::get("shadow");
+
         if (config.contains("sky_lighting"))
         {
             auto skyLight = config["sky_lighting"];
@@ -123,6 +144,9 @@ namespace our
 
     void ForwardRenderer::destroy()
     {
+        if (shadowMapFBO) glDeleteFramebuffers(1, &shadowMapFBO);
+        if (shadowMapTexture) delete shadowMapTexture;
+
         // Delete all objects related to the sky
         if (skyMaterial)
         {
@@ -229,6 +253,90 @@ namespace our
             // HINT: the following return should return true "first" should be drawn before "second". 
             return glm::dot(first.center, cameraForward) > glm::dot(second.center, cameraForward); });
 
+        // =========================================================
+        // SHADOW PASS
+        // =========================================================
+        glm::mat4 lightSpaceMatrix = glm::mat4(1.0f);
+        glm::vec3 cameraPosition = glm::vec3(camera->getOwner()->getLocalToWorldMatrix() * glm::vec4(0, 0, 0, 1));
+
+        if (shadowShader && shadowMapFBO != 0) {
+            glm::vec3 lightDir(0.0f, -1.0f, 0.0f);
+            bool hasDirLight = false;
+            for(auto& ld : activeLights) {
+                if (ld.light->lightType == LightType::DIRECTIONAL) {
+                    lightDir = glm::normalize(glm::vec3(ld.localToWorld * glm::vec4(0.0f, 0.0f, -1.0f, 0.0f)));
+                    hasDirLight = true;
+                    break;
+                }
+            }
+
+            if (hasDirLight) {
+                // Render to the shadow map FBO
+                glBindFramebuffer(GL_FRAMEBUFFER, shadowMapFBO);
+                glViewport(0, 0, 2048, 2048);
+                
+                // FIX: Ensure depth mask is true so we can actually clear and write to the depth buffer!
+                glDepthMask(GL_TRUE);
+                glEnable(GL_DEPTH_TEST);
+                glDepthFunc(GL_LESS);
+                glDisable(GL_CULL_FACE); // Prevent backface culling issues from thinning rings
+                
+                glClear(GL_DEPTH_BUFFER_BIT);
+
+                // Configure light space matrix for an Orthographic directional light calculation
+                float bounds = 80.0f; // Scale to cover the moving player
+                glm::mat4 lightProjection = glm::ortho(-bounds, bounds, -bounds, bounds, 1.0f, 200.0f);
+                glm::vec3 lightPos = cameraPosition - lightDir * 100.0f; // Push light back relative to camera
+                
+                // Avoid singularity if lightDir is straight down or straight up!
+                glm::vec3 up(0.0f, 1.0f, 0.0f);
+                if (glm::abs(lightDir.y) > 0.999f) up = glm::vec3(0.0f, 0.0f, 1.0f);
+                
+                glm::mat4 lightView = glm::lookAt(lightPos, cameraPosition, up);
+                lightSpaceMatrix = lightProjection * lightView;
+
+                shadowShader->use();
+                shadowShader->set("lightSpaceMatrix", lightSpaceMatrix);
+
+                // Draw Opaque items to populate depth
+                glEnable(GL_DEPTH_TEST);
+                for (const auto& cmd : opaqueCommands) {
+                    if (cmd.material != skyMaterial && cmd.mesh != skySphere) {
+                        shadowShader->set("M", cmd.localToWorld);
+                        
+                        Texture2D* alphaTex = nullptr;
+                        float alphaThresh = 0.5f; // Default threshold to chop out exactly 50%
+                        
+                        if (auto litMat = dynamic_cast<LitMaterial*>(cmd.material)) {
+                            alphaTex = litMat->albedo;
+                            alphaThresh = litMat->alphaThreshold > 0.0f ? litMat->alphaThreshold : 0.5f;
+                        } else if (auto texMat = dynamic_cast<TexturedMaterial*>(cmd.material)) {
+                            alphaTex = texMat->texture;
+                            alphaThresh = texMat->alphaThreshold > 0.0f ? texMat->alphaThreshold : 0.5f;
+                        }
+
+                        if (alphaTex) {
+                            shadowShader->set("has_texture", true);
+                            shadowShader->set("alphaThreshold", alphaThresh);
+                            glActiveTexture(GL_TEXTURE5);
+                            alphaTex->bind();
+                            shadowShader->set("tex", 5);
+                        } else {
+                            shadowShader->set("has_texture", false);
+                        }
+                        
+                        cmd.mesh->draw();
+                    }
+                }
+
+                // Unbind our shadow map and restore defaults
+                glBindFramebuffer(GL_FRAMEBUFFER, 0);
+            }
+        }
+
+        // =========================================================
+        // BEAUTY PASS
+        // =========================================================
         // TODO: (Req 9) Get the camera ViewProjection matrix and store it in VP
         glm::mat4 VP = camera->getProjectionMatrix(windowSize) * camera->getViewMatrix();
 
@@ -253,7 +361,7 @@ namespace our
         // TODO: (Req 9) Clear the color and depth buffers
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-        glm::vec3 cameraPosition = glm::vec3(camera->getOwner()->getLocalToWorldMatrix() * glm::vec4(0, 0, 0, 1));
+        cameraPosition = glm::vec3(camera->getOwner()->getLocalToWorldMatrix() * glm::vec4(0, 0, 0, 1));
 
         // TODO: (Req 9) Draw all the opaque commands
         //  Don't forget to set the "transform" uniform to be equal the model-view-projection matrix for each render command
@@ -281,9 +389,16 @@ namespace our
                     command.material->shader->set(prefix + "color", activeLights[i].light->diffuse);
                     command.material->shader->set(prefix + "attenuation", activeLights[i].light->attenuation);
                     glm::vec3 pos = activeLights[i].localToWorld * glm::vec4(0, 0, 0, 1);
-                    glm::vec3 dir = activeLights[i].localToWorld * glm::vec4(0, 0, -1, 0);
-                    command.material->shader->set(prefix + "position", pos);
+                    glm::vec3 dir = activeLights[i].localToWorld * glm::vec4(0, 0, -1, 0);                    command.material->shader->set(prefix + "position", pos);
                     command.material->shader->set(prefix + "direction", glm::normalize(dir));
+                }
+
+                // Pass shadow map parameters
+                command.material->shader->set("lightSpaceMatrix", lightSpaceMatrix);
+                if (shadowMapTexture) {
+                    glActiveTexture(GL_TEXTURE5);
+                    shadowMapTexture->bind();
+                    command.material->shader->set("shadow_map", 5);
                 }
             }
 
@@ -342,9 +457,16 @@ namespace our
                     command.material->shader->set(prefix + "color", activeLights[i].light->diffuse);
                     command.material->shader->set(prefix + "attenuation", activeLights[i].light->attenuation);
                     glm::vec3 pos = activeLights[i].localToWorld * glm::vec4(0, 0, 0, 1);
-                    glm::vec3 dir = activeLights[i].localToWorld * glm::vec4(0, 0, -1, 0);
-                    command.material->shader->set(prefix + "position", pos);
+                    glm::vec3 dir = activeLights[i].localToWorld * glm::vec4(0, 0, -1, 0);                    command.material->shader->set(prefix + "position", pos);
                     command.material->shader->set(prefix + "direction", glm::normalize(dir));
+                }
+
+                // Pass shadow map parameters
+                command.material->shader->set("lightSpaceMatrix", lightSpaceMatrix);
+                if (shadowMapTexture) {
+                    glActiveTexture(GL_TEXTURE5);
+                    shadowMapTexture->bind();
+                    command.material->shader->set("shadow_map", 5);
                 }
             }
 

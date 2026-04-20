@@ -23,7 +23,8 @@ By holding down the mouse button and dragging, you can adjust the angle.
 Referenced the examples of @IQ, and used the method of @nimitz for cloud rendering.
 */
 
-#define QUALITY 2 //1:fast 2:good 3:film
+#define QUALITY 0 //0:game 1:fast 2:good 3:film
+// QUALITY 0 = game mode (best performance, still looks great)
 #if QUALITY == 3
     #define MAX_FAR 40000.
     #define ITER(x) 18-int(log(x*RES_FACTOR)*.693)
@@ -35,6 +36,17 @@ Referenced the examples of @IQ, and used the method of @nimitz for cloud renderi
     #define MARCH_REF_SCALE 1.01
     #define SHADOW_STEP 1.2
     #define SEA_DEEP 2000.
+#elif QUALITY == 2
+    #define MAX_FAR 20000.
+    #define ITER(x) 15-int(log(x*RES_FACTOR)*.693)
+    #define CLOUD_QUALITY 150
+    #define CLOUD_ITER 6
+    #define CLOUD_THICK 0.8
+    #define MARCH_SURFACE .4
+    #define MARCH_STEP .002
+    #define MARCH_REF_SCALE 4.
+    #define SHADOW_STEP 2.
+    #define SEA_DEEP 500.
 #elif QUALITY == 1
     #define MAX_FAR 15000.
     #define ITER(x) 13-int(log(x*RES_FACTOR)*.693)
@@ -47,16 +59,17 @@ Referenced the examples of @IQ, and used the method of @nimitz for cloud renderi
     #define SHADOW_STEP 2.
     #define SEA_DEEP 300.
 #else
-    #define MAX_FAR 20000.
-    #define ITER(x) 15-int(log(x*RES_FACTOR)*.693)
-    #define CLOUD_QUALITY 150
-    #define CLOUD_ITER 6
-    #define CLOUD_THICK 0.8
-    #define MARCH_SURFACE .4
-    #define MARCH_STEP .002
-    #define MARCH_REF_SCALE 4.
-    #define SHADOW_STEP 2.
-    #define SEA_DEEP 500.
+    // QUALITY 0: game-mode — minimal raymarching cost
+    #define MAX_FAR 8000.
+    #define ITER(x) 8-int(log(x*RES_FACTOR)*.693)
+    #define CLOUD_QUALITY 50
+    #define CLOUD_ITER 3
+    #define CLOUD_THICK 0.6
+    #define MARCH_SURFACE 1.0
+    #define MARCH_STEP .004
+    #define MARCH_REF_SCALE 20.
+    #define SHADOW_STEP 4.
+    #define SEA_DEEP 100.
 #endif
 
 #define PI 3.1415926

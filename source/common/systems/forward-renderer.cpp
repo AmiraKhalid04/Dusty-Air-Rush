@@ -245,10 +245,17 @@ namespace our
         {
             this->skyMaterial->setup();
 
-            // Get Camera Position and Forward Vector
+            // Only the camera's VIEW DIRECTION matters for the sky — the sky shader is a
+            // finite procedural scene and passing the actual game-world position causes the
+            // raymarcher to leave its terrain bounds, producing solid-black areas.
+            // We lock `eye` to a fixed vantage point inside the sky world and only
+            // forward the camera's normalized look direction so the sky rotates with the player.
             auto skyM = camera->getOwner()->getLocalToWorldMatrix();
-            glm::vec3 skyEye = glm::vec3(skyM * glm::vec4(0, 0, 0, 1));
-            glm::vec3 skyFwd = glm::vec3(skyM * glm::vec4(0, 0, -1, 0)); // -Z is forward
+            glm::vec3 skyFwd = glm::normalize(glm::vec3(skyM * glm::vec4(0, 0, -1, 0)));
+
+            // Fixed position: 200 units above sea level, near the origin of the sky world.
+            // This ensures the raymarcher always sees terrain, ocean, and clouds.
+            glm::vec3 skyEye = glm::vec3(0.0f, 200.0f, 0.0f);
 
             // Set uniforms for the ShaderToy-style sky shader
             this->skyMaterial->shader->set("iTime", (float)glfwGetTime());

@@ -41,9 +41,9 @@ uniform float time;
 // Rock:  60%  – 80%
 // Snow:  80%  – 100%
 // ---------------------------------------------------------------
-const float H_WATER_SHORE = 0.20;
-const float H_SAND_END    = 0.30;
-const float H_GRASS_END   = 0.60;
+const float H_WATER_SHORE = 0.30;
+const float H_SAND_END    = 0.35;
+const float H_GRASS_END   = 0.45;
 const float H_ROCK_END    = 0.80;
 
 void main() {

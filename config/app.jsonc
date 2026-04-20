@@ -89,7 +89,7 @@
                     "heightmap": "assets/textures/terrain/heightmap.png",
                     "width": 256,
                     "depth": 256,
-                    "heightScale": 20.0,
+                    "heightScale": 30.0,
                     "worldScale": 250.0,
                     "uvScale": 16.0
                 },

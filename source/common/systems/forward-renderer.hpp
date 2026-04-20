@@ -41,7 +41,11 @@ namespace our
         glm::vec3 skyBottom = {1.0f, 1.0f, 1.0f};
 
         // Objects used for rendering the sky (fullscreen ShaderToy-style pass)
+        // Rendered at half resolution then upscaled for ~4x GPU savings.
         GLuint skyVertexArray = 0;
+        GLuint skyFrameBuffer = 0;
+        GLuint skyColorTexture = 0;
+        ShaderProgram* skyBlitShader = nullptr;
         TexturedMaterial* skyMaterial = nullptr;
         // Objects used for Postprocessing
         GLuint postprocessFrameBuffer, postProcessVertexArray;

@@ -24,15 +24,30 @@ namespace our
         if (config.contains("sky"))
         {
             // The sky shader is a ShaderToy-style fullscreen shader.
-            // We use fullscreen.vert so gl_FragCoord covers the whole screen,
-            // and we draw it as a fullscreen triangle (no sphere mesh needed).
+            // We render it at HALF resolution into a dedicated FBO, then upscale
+            // with a blit pass. This gives ~4x GPU savings on the expensive raymarching.
+            glm::ivec2 skyRes = windowSize / 2;
+
+            // --- Half-resolution sky FBO ---
+            glGenFramebuffers(1, &skyFrameBuffer);
+            glBindFramebuffer(GL_FRAMEBUFFER, skyFrameBuffer);
+
+            glGenTextures(1, &skyColorTexture);
+            glBindTexture(GL_TEXTURE_2D, skyColorTexture);
+            glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB8, skyRes.x, skyRes.y, 0, GL_RGB, GL_UNSIGNED_BYTE, nullptr);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+            glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, skyColorTexture, 0);
+            glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
+            // --- Sky raymarching shader (runs at half-res) ---
             ShaderProgram *skyShader = new ShaderProgram();
             skyShader->attach("assets/shaders/fullscreen.vert", GL_VERTEX_SHADER);
             skyShader->attach("assets/shaders/sky.frag", GL_FRAGMENT_SHADER);
             skyShader->link();
 
-            // Draw the sky fullscreen before opaque geometry.
-            // Disable depth write and depth test so it acts as a background.
             PipelineState skyPipelineState{};
             skyPipelineState.depthTesting.enabled = false;
             skyPipelineState.faceCulling.enabled = false;
@@ -40,7 +55,6 @@ namespace our
             skyPipelineState.colorMask = {true, true, true, true};
             skyPipelineState.depthMask = false;
 
-            // Use a plain TexturedMaterial as the container (no actual texture needed).
             this->skyMaterial = new TexturedMaterial();
             this->skyMaterial->shader = skyShader;
             this->skyMaterial->pipelineState = skyPipelineState;
@@ -48,7 +62,13 @@ namespace our
             this->skyMaterial->alphaThreshold = 1.0f;
             this->skyMaterial->transparent = false;
 
-            // Create a VAO for the fullscreen triangle draw call.
+            // --- Blit shader (upscales half-res sky to full screen) ---
+            skyBlitShader = new ShaderProgram();
+            skyBlitShader->attach("assets/shaders/fullscreen.vert", GL_VERTEX_SHADER);
+            skyBlitShader->attach("assets/shaders/blit.frag", GL_FRAGMENT_SHADER);
+            skyBlitShader->link();
+
+            // VAO for the fullscreen triangle draw calls (both sky and blit)
             glGenVertexArrays(1, &skyVertexArray);
         }
 
@@ -108,6 +128,9 @@ namespace our
         if (skyMaterial)
         {
             glDeleteVertexArrays(1, &skyVertexArray);
+            glDeleteFramebuffers(1, &skyFrameBuffer);
+            glDeleteTextures(1, &skyColorTexture);
+            delete skyBlitShader;
             delete skyMaterial->shader;
             delete skyMaterial;
         }
@@ -240,36 +263,53 @@ namespace our
 
         glm::vec3 cameraPosition = glm::vec3(camera->getOwner()->getLocalToWorldMatrix() * glm::vec4(0, 0, 0, 1));
 
-        // Draw the sky as a fullscreen pass FIRST so opaque/transparent objects render on top
+        // --- Sky: two-pass half-resolution rendering ---
+        // Pass 1: run the expensive raymarching shader into the half-res FBO
+        // Pass 2: upscale the result back to the main framebuffer with a blit
         if (this->skyMaterial)
         {
-            this->skyMaterial->setup();
-
-            // Only the camera's VIEW DIRECTION matters for the sky — the sky shader is a
-            // finite procedural scene and passing the actual game-world position causes the
-            // raymarcher to leave its terrain bounds, producing solid-black areas.
-            // We lock `eye` to a fixed vantage point inside the sky world and only
-            // forward the camera's normalized look direction so the sky rotates with the player.
+            // Only the camera's VIEW DIRECTION matters for the sky — lock position to a
+            // fixed point inside the sky world so the raymarcher never goes out of bounds.
             auto skyM = camera->getOwner()->getLocalToWorldMatrix();
             glm::vec3 skyFwd = glm::normalize(glm::vec3(skyM * glm::vec4(0, 0, -1, 0)));
-
-            // Fixed position: 200 units above sea level, near the origin of the sky world.
-            // This ensures the raymarcher always sees terrain, ocean, and clouds.
             glm::vec3 skyEye = glm::vec3(0.0f, 200.0f, 0.0f);
+            glm::ivec2 skyRes = windowSize / 2;
 
-            // Set uniforms for the ShaderToy-style sky shader
-            this->skyMaterial->shader->set("iTime", (float)glfwGetTime());
-            this->skyMaterial->shader->set("iResolution", glm::vec2(windowSize));
-            this->skyMaterial->shader->set("eye", skyEye);
-            this->skyMaterial->shader->set("forward", skyFwd);
+            // --- Pass 1: render sky at half resolution ---
+            glBindFramebuffer(GL_FRAMEBUFFER, skyFrameBuffer);
+            glViewport(0, 0, skyRes.x, skyRes.y);
 
-            // Draw the fullscreen triangle (fullscreen.vert handles positions, no VAO data needed)
+            this->skyMaterial->setup();
+            this->skyMaterial->shader->set("iTime",       (float)glfwGetTime());
+            this->skyMaterial->shader->set("iResolution", glm::vec2(skyRes));  // half-res so UVs stay correct
+            this->skyMaterial->shader->set("eye",         skyEye);
+            this->skyMaterial->shader->set("forward",     skyFwd);
+
             glBindVertexArray(skyVertexArray);
             glDrawArrays(GL_TRIANGLES, 0, 3);
             glBindVertexArray(0);
 
-            // Re-enable depth mask for opaque rendering
+            // --- Pass 2: blit the half-res result to the main framebuffer at full size ---
+            // Restore main (or postprocess) framebuffer and full viewport
+            glBindFramebuffer(GL_FRAMEBUFFER, postprocessMaterial ? postprocessFrameBuffer : 0);
+            glViewport(0, 0, windowSize.x, windowSize.y);
+
+            glDisable(GL_DEPTH_TEST);
+            glDepthMask(GL_FALSE);
+            glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
+
+            skyBlitShader->use();
+            glActiveTexture(GL_TEXTURE0);
+            glBindTexture(GL_TEXTURE_2D, skyColorTexture);
+            skyBlitShader->set("tex", 0);
+
+            glBindVertexArray(skyVertexArray);
+            glDrawArrays(GL_TRIANGLES, 0, 3);
+            glBindVertexArray(0);
+
+            // Re-enable depth writes for opaque geometry
             glDepthMask(GL_TRUE);
+            glEnable(GL_DEPTH_TEST);
         }
 
         // TODO: (Req 9) Draw all the opaque commands

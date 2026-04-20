@@ -50,7 +50,7 @@
                 "tornado": "assets/textures/tornado/material.jpeg",
                 "cone": "assets/textures/cone/baseColor.png",
                 "coin-texture": "assets/textures/coin.jpg",
-                "health-texture": "assets/textures/health.png",
+                "health_pack-texture": "assets/textures/health.png",
                 "dusty-texture": "assets/textures/dusty_baseColor.png",
                 "finish_line": "assets/textures/finish_line/baseColor.png"
             },
@@ -62,7 +62,7 @@
                 "tornado": "assets/models/tornado.obj",
                 "cone": "assets/models/cone.obj",
                 "coin": "assets/models/coin.obj",
-                "health": "assets/models/health.obj",
+                "health_pack": "assets/models/health.obj",
                 "dusty": "assets/models/dusty.obj",
                 "finish_line": "assets/models/finish_line.obj"
             },
@@ -88,14 +88,14 @@
                     "sampler": "default",
                     "tint": [1.0, 1.0, 1.0, 1.0]
                 },
-                "health": {
+                "health_pack": {
                     "type": "lit",
                     "shader": "lit",
                     "pipelineState": {
                         "faceCulling": { "enabled": false },
                         "depthTesting": { "enabled": true }
                     },
-                    "albedo": "health-texture",
+                    "albedo": "health_pack-texture",
                     "specular": "gray",
                     "roughness": "gray",
                     "ambient": "white",

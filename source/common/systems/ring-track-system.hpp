@@ -23,13 +23,15 @@ namespace our
     class RingTrackSystem
     {
     public:
-        void initialize(World *world, const RingTrackConfig &config)
+        std::vector<glm::vec3> initialize(World *world, const RingTrackConfig &config)
         {
+            std::vector<glm::vec3> ringPositions;
             Mesh *ringMesh = AssetLoader<Mesh>::get("ring");
             Material *ringMaterial = AssetLoader<Material>::get("ring");
 
             if (!ringMesh || !ringMaterial)
-                return;
+                return ringPositions;
+            ;
 
             glm::vec3 cursor = glm::vec3(0, 2, 0); // starting position
 
@@ -46,6 +48,7 @@ namespace our
 
                 entity->localTransform.position = cursor;
                 entity->localTransform.scale = glm::vec3(config.ringScale);
+                ringPositions.push_back(cursor); // Store position for coin placement
 
                 // Tilt the ring to face the direction of travel
                 glm::vec3 nextPos = cursor;
@@ -112,6 +115,8 @@ namespace our
 
             std::cout << "Finish line at: "
                       << cursor.x << ", " << cursor.y << ", " << cursor.z << std::endl;
+
+            return ringPositions; // Return finish line position for camera targeting
         }
     };
 

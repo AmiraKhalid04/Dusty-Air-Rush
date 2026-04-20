@@ -20,108 +20,90 @@
 
 namespace our
 {
-
-    // CoinSystem manages dynamic coin spawning and collection.
-    //
-    //  - Each frame it counts living coin entities (tagged with CoinComponent).
-    //  - If fewer than maxCoins exist, it spawns new ones randomly around the player.
-    //  - If the player walks within collectRadius of a coin, that coin is removed.
-    //
-    // Usage: call update(world, deltaTime) every frame from your game state (e.g. play-state.hpp).
+    // CoinSystem spawns coins along the ring track path with small random offsets,
+    // so they guide the player through the course rather than scatter randomly.
     class CoinSystem
     {
+        std::mt19937 rng;
+        std::uniform_real_distribution<float> dist;
 
-        // ── Tuneable constants ─────────────────────────────────────────────────
-        static constexpr int maxCoins = 8;           // max coins alive at once
-        static constexpr float spawnRadius = 15.0f;  // how far from player coins can appear
-        static constexpr float minRadius = 5.0f;     // minimum spawn distance (avoid spawning on player)
-        static constexpr float collectRadius = 2.0f; // distance at which a coin is collected
-        static constexpr float coinHeight = 0.0f;    // Y position of spawned coins
+        // ── Track path parameters — must match RingTrackConfig in play-state ──
+        static constexpr float trackSpacing = 30.0f;    // same as trackConfig.spacing
+        static constexpr float trackHeightVar = 15.0f;  // same as trackConfig.heightVariance
+        static constexpr float trackLateralVar = 10.0f; // same as trackConfig.lateralVariance
+
+        // ── Coin placement tunables ────────────────────────────────────────────
+        static constexpr int coinsPerSegment = 3; // coins between each pair of rings
+        static constexpr float xJitter = 2.5f;    // max random lateral offset
+        static constexpr float yJitter = 3.5f;    // max random vertical offset
+        static constexpr float collectRadius = 2.0f;
         // ──────────────────────────────────────────────────────────────────────
 
-        // Returns a random float in [0, 1]
-        static float randF()
+        // Total coins = ringCount * coinsPerSegment. We lazily spawn up to this.
+        static constexpr int ringCount = 10; // must match trackConfig.ringCount
+        static constexpr int maxCoins = ringCount * coinsPerSegment;
+
+        // Returns the track centre position at a given ring index t (can be fractional).
+        static glm::vec3 trackPosition(float t)
         {
-            return static_cast<float>(std::rand()) / static_cast<float>(RAND_MAX);
+            float z = -t * trackSpacing;
+            float y = trackHeightVar * glm::sin(t * 0.4f);
+            float x = trackLateralVar * glm::sin(t * 0.3f + 1.0f);
+            return {x, y, z};
         }
 
     public:
-        void update(World *world, float deltaTime)
+        CoinSystem()
+            : rng(std::random_device{}()), dist(-1.0f, 1.0f) {}
+
+    public:
+        bool initialized = false;
+
+        void initialize(World *world, const std::vector<glm::vec3> &ringPositions)
         {
-
-            // ── 1. Find the player (entity that has both Camera + FreeCameraController) ──
-            Entity *player = nullptr;
-            for (auto entity : world->getEntities())
-            {
-                if (entity->getComponent<CameraComponent>() &&
-                    entity->getComponent<FreeCameraControllerComponent>())
-                {
-                    player = entity;
-                    break;
-                }
-            }
-            if (!player)
+            if (initialized)
                 return;
+            initialized = true;
 
-            glm::vec3 playerPos = player->localTransform.position;
-
-            // ── 2. Count living coins (collection is handled by CollisionSystem) ──
-            int coinCount = 0;
-            for (auto entity : world->getEntities())
-            {
-                if (!entity->getComponent<CoinComponent>())
-                    continue;
-                coinCount++;
-            }
-
-            // ── 3. Spawn new coins until we reach maxCoins ───────────────────
-            // Grab coin assets once (they are cached by AssetLoader).
             Mesh *coinMesh = AssetLoader<Mesh>::get("coin");
             Material *coinMaterial = AssetLoader<Material>::get("coin");
+            if (!coinMesh || !coinMaterial)
+                return;
 
-            // If coin assets aren't loaded, don't try to spawn any
-            if (!coinMesh || !coinMaterial) return;
-
-            while (coinCount < maxCoins)
+            for (int ring = 0; ring < (int)ringPositions.size() - 1; ring++)
             {
-                // Random angle and random radius in [minRadius, spawnRadius]
-                float angle = randF() * 2.0f * glm::pi<float>();
-                float radius = minRadius + randF() * (spawnRadius - minRadius);
+                std::cout << "ring position size: " << ringPositions.size() << std::endl;
+                glm::vec3 a = ringPositions[ring];
+                glm::vec3 b = ringPositions[ring + 1];
 
-                float offsetX = std::cos(angle) * radius;
-                float offsetZ = std::sin(angle) * radius;
+                for (int j = 0; j < coinsPerSegment; j++)
+                {
+                    float frac = (j + 1.0f) / (coinsPerSegment + 1.0f);
+                    glm::vec3 base = glm::mix(a, b, frac); // Even spacing along the segment
+                    float dx = dist(rng) * xJitter;
+                    float dy = dist(rng) * yJitter;
 
-                Entity *coin = world->add();
-                coin->name = "coin_dynamic";
+                    Entity *coin = world->add();
+                    coin->name = "coin_dynamic";
+                    coin->localTransform.position = {base.x + dx, base.y + dy, base.z};
+                    coin->localTransform.scale = {0.5f, 0.5f, 0.5f};
 
-                coin->localTransform.position = {
-                    playerPos.x + offsetX,
-                    coinHeight,
-                    playerPos.z + offsetZ};
-                coin->localTransform.scale = {0.5f, 0.5f, 0.5f};
+                    auto *mr = coin->addComponent<MeshRendererComponent>();
+                    mr->mesh = coinMesh;
+                    mr->material = coinMaterial;
 
-                // Render the coin mesh
-                auto *mr = coin->addComponent<MeshRendererComponent>();
-                mr->mesh = coinMesh;
-                mr->material = coinMaterial;
+                    coin->addComponent<CoinComponent>();
+                    // Dynamic collider for collision detection
 
-                // Spin around Y axis (180 degrees per second)
-                auto *mv = coin->addComponent<MovementComponent>();
-                mv->angularVelocity = {0.0f, glm::pi<float>(), 0.0f};
-
-                // Tag so CoinSystem can identify it next frame
-                coin->addComponent<CoinComponent>();
-
-                // Dynamic collider for collision detection
-                auto *col = coin->addComponent<ColliderComponent>();
-                col->shapeType = ColliderType::Sphere;
-                col->objectType = "coin";
-                col->sphereRadius = 0.4f;
-                col->center = glm::vec3(0.0f, 0.8f, 0.0f);
-
-                coinCount++;
+                    auto *col = coin->addComponent<ColliderComponent>();
+                    col->shapeType = ColliderType::Sphere;
+                    col->objectType = "coin";
+                    col->sphereRadius = 0.4f;
+                    col->center = glm::vec3(0.0f, 0.8f, 0.0f);
+                }
             }
         }
-    };
 
+        void reset() { initialized = false; }
+    };
 }

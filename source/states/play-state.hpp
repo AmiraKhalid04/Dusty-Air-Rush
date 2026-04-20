@@ -7,6 +7,7 @@
 #include <systems/free-camera-controller.hpp>
 #include <systems/movement.hpp>
 #include <systems/collision.hpp>
+#include <systems/audio-system.hpp>
 #include <asset-loader.hpp>
 #include <systems/ring-track-system.hpp>
 #include <systems/tornado-system.hpp>
@@ -33,9 +34,14 @@ class Playstate : public our::State
     our::CoinSystem coinSystem;
     our::UIRenderSystem uiRenderer;
     our::HealthPackSystem healthPackSystem;
+    our::AudioSystem audioSystem;
 
     void onInitialize() override
     {
+        // Initialize the audio system
+        audioSystem.initialize();
+        collisionSystem.setAudioSystem(&audioSystem);
+
         // First of all, we get the scene configuration from the app config
         auto &config = getApp()->getConfig()["scene"];
         // If we have assets in the scene config, we deserialize them
@@ -122,6 +128,8 @@ class Playstate : public our::State
         uiRenderer.destroy();
         // On exit, we call exit for the camera controller system to make sure that the mouse is unlocked
         cameraController.exit();
+        // Destroy audio system
+        audioSystem.destroy();
         // Clear the world
         world.clear();
         coinSystem.reset();

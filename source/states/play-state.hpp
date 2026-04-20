@@ -40,6 +40,8 @@ class Playstate : public our::State
     {
         // Initialize the audio system
         audioSystem.initialize();
+        // Start ambient wind as background loop (plays underneath all other sounds)
+        audioSystem.playLooping("assets/sounds/sky_wind_loop.wav", 0.3f);
         collisionSystem.setAudioSystem(&audioSystem);
 
         // First of all, we get the scene configuration from the app config

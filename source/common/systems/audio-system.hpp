@@ -23,7 +23,9 @@ namespace our
     class AudioSystem
     {
         ma_engine engine;
+        ma_sound ambientWind;
         bool initialized = false;
+        bool ambientPlaying = false;
 
     public:
         /// Initialize the audio engine. Call once during game startup.
@@ -68,17 +70,50 @@ namespace our
             }
         }
 
-        void playLooping(const std::string& filePath) {
-            ma_sound_init_from_file(&engine, filePath.c_str(), 
-                MA_SOUND_FLAG_STREAM,   // stream from disk, saves memory
+        /**
+         * Play a sound file in a continuous loop (for ambient/background audio).
+         * The sound plays at reduced volume so game-event sounds layer on top.
+         *
+         * @param filePath  Path to the looping sound file,
+         *                  e.g. "assets/sounds/sky_wind_loop.wav"
+         * @param volume    Playback volume 0.0–1.0 (default 0.3)
+         */
+        void playLooping(const std::string &filePath, float volume = 0.3f)
+        {
+            if (!initialized)
+            {
+                std::cerr << "[AudioSystem] Cannot play looping — engine not initialized." << std::endl;
+                return;
+            }
+
+            ma_result result = ma_sound_init_from_file(
+                &engine, filePath.c_str(),
+                MA_SOUND_FLAG_STREAM, // stream from disk to save memory
                 NULL, NULL, &ambientWind);
+            if (result != MA_SUCCESS)
+            {
+                std::cerr << "[AudioSystem] Failed to load looping sound: " << filePath
+                          << " (error: " << result << ")" << std::endl;
+                return;
+            }
+
             ma_sound_set_looping(&ambientWind, MA_TRUE);
-            ma_sound_set_volume(&ambientWind, 0.3f);  // keep it subtle
+            ma_sound_set_volume(&ambientWind, volume);
             ma_sound_start(&ambientWind);
+            ambientPlaying = true;
+
+            std::cout << "[AudioSystem] Looping ambient sound started: " << filePath << std::endl;
         }
+
         /// Shut down the audio engine. Call during game cleanup.
         void destroy()
         {
+            if (ambientPlaying)
+            {
+                ma_sound_stop(&ambientWind);
+                ma_sound_uninit(&ambientWind);
+                ambientPlaying = false;
+            }
             if (initialized)
             {
                 ma_engine_uninit(&engine);

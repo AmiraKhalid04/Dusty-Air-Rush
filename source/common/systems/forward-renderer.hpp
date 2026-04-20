@@ -40,9 +40,9 @@ namespace our
         glm::vec3 skyHorizon = {1.0f, 1.0f, 1.0f};
         glm::vec3 skyBottom = {1.0f, 1.0f, 1.0f};
 
-        // Objects used for rendering a skybox
-        Mesh* skySphere;
-        TexturedMaterial* skyMaterial;
+        // Objects used for rendering the sky (fullscreen ShaderToy-style pass)
+        GLuint skyVertexArray = 0;
+        TexturedMaterial* skyMaterial = nullptr;
         // Objects used for Postprocessing
         GLuint postprocessFrameBuffer, postProcessVertexArray;
         Texture2D *colorTarget, *depthTarget;

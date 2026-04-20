@@ -3,6 +3,7 @@
 #include "../texture/texture-utils.hpp"
 #include "../components/light.hpp"
 #include "../deserialize-utils.hpp"
+#include <GLFW/glfw3.h>
 
 namespace our
 {
@@ -20,55 +21,35 @@ namespace our
             skyBottom = skyLight.value("bottom", glm::vec3(1.0f));
         }
 
-        // Then we check if there is a sky texture in the configuration
         if (config.contains("sky"))
         {
-            // First, we create a sphere which will be used to draw the sky
-            this->skySphere = mesh_utils::sphere(glm::ivec2(16, 16));
-
-            // We can draw the sky using the same shader used to draw textured objects
+            // The sky shader is a ShaderToy-style fullscreen shader.
+            // We use fullscreen.vert so gl_FragCoord covers the whole screen,
+            // and we draw it as a fullscreen triangle (no sphere mesh needed).
             ShaderProgram *skyShader = new ShaderProgram();
-            skyShader->attach("assets/shaders/textured.vert", GL_VERTEX_SHADER);
-            skyShader->attach("assets/shaders/textured.frag", GL_FRAGMENT_SHADER);
+            skyShader->attach("assets/shaders/fullscreen.vert", GL_VERTEX_SHADER);
+            skyShader->attach("assets/shaders/sky.frag", GL_FRAGMENT_SHADER);
             skyShader->link();
 
-            // TODO: (Req 10) Pick the correct pipeline state to draw the sky
-            //  Hints: the sky will be draw after the opaque objects so we would need depth testing but which depth funtion should we pick?
-            //  We will draw the sphere from the inside, so what options should we pick for the face culling.
+            // Draw the sky fullscreen before opaque geometry.
+            // Disable depth write and depth test so it acts as a background.
             PipelineState skyPipelineState{};
-
-            skyPipelineState.depthTesting.enabled = true;
-            skyPipelineState.depthTesting.function = GL_LEQUAL;
-
-            skyPipelineState.faceCulling.enabled = true;
-            skyPipelineState.faceCulling.culledFace = GL_FRONT;
-            skyPipelineState.faceCulling.frontFace = GL_CCW;
-
+            skyPipelineState.depthTesting.enabled = false;
+            skyPipelineState.faceCulling.enabled = false;
             skyPipelineState.blending.enabled = false;
-
             skyPipelineState.colorMask = {true, true, true, true};
-            skyPipelineState.depthMask = true;
+            skyPipelineState.depthMask = false;
 
-            // Load the sky texture (note that we don't need mipmaps since we want to avoid any unnecessary blurring while rendering the sky)
-            std::string skyTextureFile = config.value<std::string>("sky", "");
-            Texture2D *skyTexture = texture_utils::loadImage(skyTextureFile, false);
-
-            // Setup a sampler for the sky
-            Sampler *skySampler = new Sampler();
-            skySampler->set(GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-            skySampler->set(GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-            skySampler->set(GL_TEXTURE_WRAP_S, GL_REPEAT);
-            skySampler->set(GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-
-            // Combine all the aforementioned objects (except the mesh) into a material
+            // Use a plain TexturedMaterial as the container (no actual texture needed).
             this->skyMaterial = new TexturedMaterial();
             this->skyMaterial->shader = skyShader;
-            this->skyMaterial->texture = skyTexture;
-            this->skyMaterial->sampler = skySampler;
             this->skyMaterial->pipelineState = skyPipelineState;
             this->skyMaterial->tint = glm::vec4(1.0f, 1.0f, 1.0f, 1.0f);
             this->skyMaterial->alphaThreshold = 1.0f;
             this->skyMaterial->transparent = false;
+
+            // Create a VAO for the fullscreen triangle draw call.
+            glGenVertexArrays(1, &skyVertexArray);
         }
 
         // Then we check if there is a postprocessing shader in the configuration
@@ -126,10 +107,8 @@ namespace our
         // Delete all objects related to the sky
         if (skyMaterial)
         {
-            delete skySphere;
+            glDeleteVertexArrays(1, &skyVertexArray);
             delete skyMaterial->shader;
-            delete skyMaterial->texture;
-            delete skyMaterial->sampler;
             delete skyMaterial;
         }
         // Delete all objects related to post processing
@@ -151,9 +130,10 @@ namespace our
         CameraComponent *camera = nullptr;
         opaqueCommands.clear();
         transparentCommands.clear();
-        
-        struct LightData {
-            LightComponent* light;
+
+        struct LightData
+        {
+            LightComponent *light;
             glm::mat4 localToWorld;
         };
         std::vector<LightData> activeLights;
@@ -163,9 +143,10 @@ namespace our
             // If we hadn't found a camera yet, we look for a camera in this entity
             if (!camera)
                 camera = entity->getComponent<CameraComponent>();
-            
+
             // If this entity has a light component
-            if (auto light = entity->getComponent<LightComponent>(); light) {
+            if (auto light = entity->getComponent<LightComponent>(); light)
+            {
                 activeLights.push_back({light, entity->getLocalToWorldMatrix()});
             }
 
@@ -189,26 +170,30 @@ namespace our
                     opaqueCommands.push_back(command);
                 }
             }
-            
+
             // Debug rendering for Colliders
-            if (auto collider = entity->getComponent<ColliderComponent>(); collider) 
+            if (auto collider = entity->getComponent<ColliderComponent>(); collider)
             {
-                Material* debugMat = our::AssetLoader<Material>::get("debug_wireframe");
-                if (debugMat) {
+                Material *debugMat = our::AssetLoader<Material>::get("debug_wireframe");
+                if (debugMat)
+                {
                     RenderCommand command;
                     glm::mat4 baseTransform = glm::translate(entity->getLocalToWorldMatrix(), collider->center);
-                    
-                    if (collider->shapeType == ColliderType::Sphere) {
+
+                    if (collider->shapeType == ColliderType::Sphere)
+                    {
                         command.localToWorld = glm::scale(baseTransform, glm::vec3(collider->sphereRadius));
                         command.mesh = our::AssetLoader<Mesh>::get("sphere");
-                    } else {
+                    }
+                    else
+                    {
                         command.localToWorld = glm::scale(baseTransform, collider->aabbExtents);
                         command.mesh = our::AssetLoader<Mesh>::get("cube");
                     }
-                    
+
                     command.center = glm::vec3(command.localToWorld * glm::vec4(0, 0, 0, 1));
                     command.material = debugMat;
-                    
+
                     // Wireframes look better in transparent pass to overlay gracefully
                     transparentCommands.push_back(command);
                 }
@@ -255,6 +240,31 @@ namespace our
 
         glm::vec3 cameraPosition = glm::vec3(camera->getOwner()->getLocalToWorldMatrix() * glm::vec4(0, 0, 0, 1));
 
+        // Draw the sky as a fullscreen pass FIRST so opaque/transparent objects render on top
+        if (this->skyMaterial)
+        {
+            this->skyMaterial->setup();
+
+            // Get Camera Position and Forward Vector
+            auto skyM = camera->getOwner()->getLocalToWorldMatrix();
+            glm::vec3 skyEye = glm::vec3(skyM * glm::vec4(0, 0, 0, 1));
+            glm::vec3 skyFwd = glm::vec3(skyM * glm::vec4(0, 0, -1, 0)); // -Z is forward
+
+            // Set uniforms for the ShaderToy-style sky shader
+            this->skyMaterial->shader->set("iTime", (float)glfwGetTime());
+            this->skyMaterial->shader->set("iResolution", glm::vec2(windowSize));
+            this->skyMaterial->shader->set("eye", skyEye);
+            this->skyMaterial->shader->set("forward", skyFwd);
+
+            // Draw the fullscreen triangle (fullscreen.vert handles positions, no VAO data needed)
+            glBindVertexArray(skyVertexArray);
+            glDrawArrays(GL_TRIANGLES, 0, 3);
+            glBindVertexArray(0);
+
+            // Re-enable depth mask for opaque rendering
+            glDepthMask(GL_TRUE);
+        }
+
         // TODO: (Req 9) Draw all the opaque commands
         //  Don't forget to set the "transform" uniform to be equal the model-view-projection matrix for each render command
         for (const RenderCommand &command : opaqueCommands)
@@ -262,20 +272,22 @@ namespace our
             command.material->setup();
             glm::mat4 transform = VP * command.localToWorld;
             command.material->shader->set("transform", transform);
-            
+
             // Lighting & Advanced Transforms
-            if (auto litMat = dynamic_cast<LitMaterial*>(command.material); litMat) {
+            if (auto litMat = dynamic_cast<LitMaterial *>(command.material); litMat)
+            {
                 command.material->shader->set("VP", VP);
                 command.material->shader->set("M", command.localToWorld);
                 command.material->shader->set("M_IT", glm::transpose(glm::inverse(command.localToWorld)));
                 command.material->shader->set("camera_position", cameraPosition);
-                
+
                 command.material->shader->set("sky.top", skyTop);
                 command.material->shader->set("sky.horizon", skyHorizon);
                 command.material->shader->set("sky.bottom", skyBottom);
 
                 command.material->shader->set("light_count", (int)activeLights.size());
-                for(int i = 0; i < (int)activeLights.size(); i++) {
+                for (int i = 0; i < (int)activeLights.size(); i++)
+                {
                     std::string prefix = "lights[" + std::to_string(i) + "].";
                     command.material->shader->set(prefix + "type", (int)activeLights[i].light->lightType);
                     command.material->shader->set(prefix + "color", activeLights[i].light->diffuse);
@@ -290,32 +302,6 @@ namespace our
             command.mesh->draw();
         }
 
-        // If there is a sky material, draw the sky
-        if (this->skyMaterial)
-        {
-            // TODO: (Req 10) setup the sky material
-            this->skyMaterial->setup();
-
-            // TODO: (Req 10) Create a model matrix for the sy such that it always follows the camera (sky sphere center = camera position)
-            // Subtle parallax: sky follows camera closely but lags slightly (0.95 = 95% of camera movement)
-            // This creates minimal depth perception without breaking the rendering
-            glm::vec3 parallaxCameraPosition = cameraPosition * 0.999f;
-            glm::mat4 skyModel = glm::translate(glm::mat4(1.0f), parallaxCameraPosition);
-
-            // TODO: (Req 10) We want the sky to be drawn behind everything (in NDC space, z=1)
-            //  We can acheive the is by multiplying by an extra matrix after the projection but what values should we put in it?
-            glm::mat4 alwaysBehindTransform = glm::mat4(
-                1.0f, 0.0f, 0.0f, 0.0f,
-                0.0f, 1.0f, 0.0f, 0.0f,
-                0.0f, 0.0f, 0.0f, 0.0f,
-                0.0f, 0.0f, 1.0f, 1.0f);
-            // TODO: (Req 10) set the "transform" uniform
-            glm::mat4 transform = alwaysBehindTransform * VP * skyModel;
-            this->skyMaterial->shader->set("transform", transform);
-
-            // TODO: (Req 10) draw the sky sphere
-            this->skySphere->draw();
-        }
         // TODO: (Req 9) Draw all the transparent commands
         //  Don't forget to set the "transform" uniform to be equal the model-view-projection matrix for each render command
         for (const RenderCommand &command : transparentCommands)
@@ -325,18 +311,20 @@ namespace our
             command.material->shader->set("transform", transform);
 
             // Lighting & Advanced Transforms
-            if (auto litMat = dynamic_cast<LitMaterial*>(command.material); litMat) {
+            if (auto litMat = dynamic_cast<LitMaterial *>(command.material); litMat)
+            {
                 command.material->shader->set("VP", VP);
                 command.material->shader->set("M", command.localToWorld);
                 command.material->shader->set("M_IT", glm::transpose(glm::inverse(command.localToWorld)));
                 command.material->shader->set("camera_position", cameraPosition);
-                
+
                 command.material->shader->set("sky.top", skyTop);
                 command.material->shader->set("sky.horizon", skyHorizon);
                 command.material->shader->set("sky.bottom", skyBottom);
 
                 command.material->shader->set("light_count", (int)activeLights.size());
-                for(int i = 0; i < (int)activeLights.size(); i++) {
+                for (int i = 0; i < (int)activeLights.size(); i++)
+                {
                     std::string prefix = "lights[" + std::to_string(i) + "].";
                     command.material->shader->set(prefix + "type", (int)activeLights[i].light->lightType);
                     command.material->shader->set(prefix + "color", activeLights[i].light->diffuse);

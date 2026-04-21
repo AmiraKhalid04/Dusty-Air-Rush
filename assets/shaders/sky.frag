@@ -541,7 +541,7 @@ void mainImage( out vec4 fragColor, in vec2 fragCoord ) {
     float alpha = 1.0;
 
     // Simple slow day/night cycle
-    TIME = mod(iTime * 0.05, 1.0);
+    TIME = mod(iTime * 0.02, 1.0);
     CLOUDS = 0.1; // Fixed cloud density
 
     mat3 ca = setCamera( ro, ta );

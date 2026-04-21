@@ -126,6 +126,8 @@ namespace our
                     else if (otherCollider->objectType == "health")
                     {
                         std::cout << "[COLLECT] +HP Health pack acquired!" << std::endl;
+                        if (audioSystem)
+                            audioSystem->playSound("assets/sounds/bonus.mp3");
                         world->markForRemoval(other);
                         otherCollider->objectType = "pending_deletion";
                     }

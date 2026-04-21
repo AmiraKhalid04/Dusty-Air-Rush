@@ -110,6 +110,45 @@ namespace our
 
                     frameCollisions.insert(collisionTracker);
 
+                    // Apply physics effects every frame while the player is inside the tornado
+                    if (otherCollider->objectType == "tornado") {
+                        // `playerParts[0]` is the Body Collider. Its parent is the Plane Mesh.
+                        // The Plane Mesh's parent is the Camera/Player root.
+                        Entity* planeMesh = playerParts[0]->parent;
+                        Entity* playerRoot = planeMesh ? planeMesh->parent : nullptr;
+                        
+                        if (playerRoot) {
+                            // Calculate the XZ direction from the player to the tornado center
+                            glm::vec3 pRootPos = glm::vec3(playerRoot->getLocalToWorldMatrix()[3]); 
+                            glm::vec3 toTornado = otherPos - pRootPos;
+                            toTornado.y = 0.0f;
+                            
+                            if (glm::length(toTornado) > 0.001f) {
+                                glm::vec3 dirToTornado = glm::normalize(toTornado);
+                                // The player's forward vector (assuming -Z is forward in local space)
+                                glm::vec3 forwardVec = glm::normalize(glm::vec3(playerRoot->getLocalToWorldMatrix() * glm::vec4(0.0f, 0.0f, -1.0f, 0.0f)));
+                                forwardVec.y = 0.0f;
+                                if (glm::length(forwardVec) > 0.001f) {
+                                    forwardVec = glm::normalize(forwardVec);
+                                }
+
+                                // If dot product is > 0, we are generally facing/approaching the tornado 
+                                float approachDot = glm::dot(forwardVec, dirToTornado);
+
+                                if (approachDot > 0.0f) {
+                                    // Pull the player inside towards the center
+                                    float pullSpeed = 4.0f;
+                                    playerRoot->localTransform.position += dirToTornado * pullSpeed * deltaTime;
+                                    
+                                    // Cross product Y is positive if tornado is to our right, negative if to our left
+                                    float side = glm::cross(forwardVec, dirToTornado).y;
+                                    float turnSpeed = 4.0f; 
+                                    playerRoot->localTransform.rotation.y += side * turnSpeed * deltaTime;
+                                }
+                            }
+                        }
+                    }
+
                     // Only trigger the collision logic if we weren't already colliding with this entity last frame
                     // (and haven't already processed another part of this same compound entity this frame)
                     if (activeCollisions.find(collisionTracker) == activeCollisions.end()) {

@@ -291,8 +291,9 @@
             "spacing": 30.0,
             "heightVariance": 15.0,
             "lateralVariance": 10.0,
-            "ringScale": 10.0,
-            "trackStartZ": 0.0
+            "ringScale": 20.0,
+            "trackStartZ": 0.0,
+            "finishLineScale": 2.0
         },
         "tornado": {
             "tornadoCount": 10,

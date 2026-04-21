@@ -71,6 +71,8 @@ class Playstate : public our::State
                 trackConfig.ringScale = trackJson["ringScale"];
             if (trackJson.contains("trackStartZ"))
                 trackConfig.trackStartZ = trackJson["trackStartZ"];
+            if (trackJson.contains("finishLineScale"))
+                trackConfig.finishLineScale = trackJson["finishLineScale"];
         }
         ringTrack.initialize(&world, trackConfig);
 

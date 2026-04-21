@@ -53,25 +53,34 @@ class Playstate : public our::State
         renderer.initialize(size, config["renderer"]);
         uiRenderer.initialize(getApp());
 
-        our::RingTrackConfig trackConfig;
-        trackConfig.ringCount = 10;
-        trackConfig.spacing = 30.0f;
-        trackConfig.heightVariance = 15.0f;
-        trackConfig.lateralVariance = 10.0f;
-        trackConfig.ringScale = 10.0f;
-        ringTrack.initialize(&world, trackConfig);
+        // Initialize ring track from config if available
+        if (config.contains("ringTrack"))
+        {
+            our::RingTrackConfig trackConfig;
+            const auto &trackJson = config["ringTrack"];
+            if (trackJson.contains("ringCount")) trackConfig.ringCount = trackJson["ringCount"];
+            if (trackJson.contains("spacing")) trackConfig.spacing = trackJson["spacing"];
+            if (trackJson.contains("heightVariance")) trackConfig.heightVariance = trackJson["heightVariance"];
+            if (trackJson.contains("lateralVariance")) trackConfig.lateralVariance = trackJson["lateralVariance"];
+            if (trackJson.contains("ringScale")) trackConfig.ringScale = trackJson["ringScale"];
+            ringTrack.initialize(&world, trackConfig);
+        }
 
-        our::TornadoConfig tornadoConfig;
-        tornadoConfig.tornadoCount = 10;
-        tornadoConfig.spacing = 30.0f;
-        tornadoConfig.heightVariance = 15.0f;
-        tornadoConfig.lateralVariance = 10.0f;
-        tornadoConfig.scale = 2.0f;
-        tornadoConfig.spawnChance = 0.2f;
-        tornadoConfig.sideOffset = 10.0f;
-        tornadoConfig.depthOffset = 10.0f;
-
-        tornado.initialize(&world, tornadoConfig);
+        // Initialize tornado from config if available
+        if (config.contains("tornado"))
+        {
+            our::TornadoConfig tornadoConfig;
+            const auto &tornadoJson = config["tornado"];
+            if (tornadoJson.contains("tornadoCount")) tornadoConfig.tornadoCount = tornadoJson["tornadoCount"];
+            if (tornadoJson.contains("spacing")) tornadoConfig.spacing = tornadoJson["spacing"];
+            if (tornadoJson.contains("heightVariance")) tornadoConfig.heightVariance = tornadoJson["heightVariance"];
+            if (tornadoJson.contains("lateralVariance")) tornadoConfig.lateralVariance = tornadoJson["lateralVariance"];
+            if (tornadoJson.contains("sideOffset")) tornadoConfig.sideOffset = tornadoJson["sideOffset"];
+            if (tornadoJson.contains("depthOffset")) tornadoConfig.depthOffset = tornadoJson["depthOffset"];
+            if (tornadoJson.contains("scale")) tornadoConfig.scale = tornadoJson["scale"];
+            if (tornadoJson.contains("spawnChance")) tornadoConfig.spawnChance = tornadoJson["spawnChance"];
+            tornado.initialize(&world, tornadoConfig);
+        }
     }
 
     void onDraw(double deltaTime) override

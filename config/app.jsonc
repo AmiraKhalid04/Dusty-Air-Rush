@@ -181,6 +181,23 @@
                 }
             }
         },
+        "ringTrack": {
+            "ringCount": 10,
+            "spacing": 30.0,
+            "heightVariance": 15.0,
+            "lateralVariance": 10.0,
+            "ringScale": 10.0
+        },
+        "tornado": {
+            "tornadoCount": 10,
+            "spacing": 30.0,
+            "heightVariance": 15.0,
+            "lateralVariance": 10.0,
+            "sideOffset": 10.0,
+            "depthOffset": 10.0,
+            "scale": 2.0,
+            "spawnChance": 0.2
+        },
         "world": [
             {
                 "position": [0, 10, 0],

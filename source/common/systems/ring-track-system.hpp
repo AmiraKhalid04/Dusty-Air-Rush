@@ -18,6 +18,7 @@ namespace our
         float heightVariance = 3.0f;  // how much rings drift up/down
         float lateralVariance = 2.0f; // how much rings drift left/right
         float ringScale = 4.0f;
+        float trackStartZ = 0.0f;
     };
 
     class RingTrackSystem
@@ -31,7 +32,7 @@ namespace our
             if (!ringMesh || !ringMaterial)
                 return;
 
-            glm::vec3 cursor = glm::vec3(0, 2, 0); // starting position
+            glm::vec3 cursor = glm::vec3(0, config.trackStartZ, 0); // starting position
 
             for (int i = 0; i < config.ringCount; i++)
             {

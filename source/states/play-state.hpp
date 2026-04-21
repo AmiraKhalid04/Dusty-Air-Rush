@@ -10,6 +10,7 @@
 #include <asset-loader.hpp>
 #include <systems/ring-track-system.hpp>
 #include <systems/tornado-system.hpp>
+#include <systems/cone-boundary-system.hpp>
 #include <systems/coin-system.hpp>
 #include <systems/ui-render-system.hpp>
 #include <components/camera.hpp>
@@ -31,6 +32,7 @@ class Playstate : public our::State
     our::TornadoSystem tornado;
     our::CoinSystem coinSystem;
     our::UIRenderSystem uiRenderer;
+    our::ConeBoundarySystem coneBoundarySystem;
 
     void onInitialize() override
     {
@@ -53,34 +55,66 @@ class Playstate : public our::State
         renderer.initialize(size, config["renderer"]);
         uiRenderer.initialize(getApp());
 
-        // Initialize ring track from config if available
+        our::RingTrackConfig trackConfig;
         if (config.contains("ringTrack"))
         {
-            our::RingTrackConfig trackConfig;
             const auto &trackJson = config["ringTrack"];
-            if (trackJson.contains("ringCount")) trackConfig.ringCount = trackJson["ringCount"];
-            if (trackJson.contains("spacing")) trackConfig.spacing = trackJson["spacing"];
-            if (trackJson.contains("heightVariance")) trackConfig.heightVariance = trackJson["heightVariance"];
-            if (trackJson.contains("lateralVariance")) trackConfig.lateralVariance = trackJson["lateralVariance"];
-            if (trackJson.contains("ringScale")) trackConfig.ringScale = trackJson["ringScale"];
-            ringTrack.initialize(&world, trackConfig);
+            if (trackJson.contains("ringCount"))
+                trackConfig.ringCount = trackJson["ringCount"];
+            if (trackJson.contains("spacing"))
+                trackConfig.spacing = trackJson["spacing"];
+            if (trackJson.contains("heightVariance"))
+                trackConfig.heightVariance = trackJson["heightVariance"];
+            if (trackJson.contains("lateralVariance"))
+                trackConfig.lateralVariance = trackJson["lateralVariance"];
+            if (trackJson.contains("ringScale"))
+                trackConfig.ringScale = trackJson["ringScale"];
+            if (trackJson.contains("trackStartZ"))
+                trackConfig.trackStartZ = trackJson["trackStartZ"];
         }
+        ringTrack.initialize(&world, trackConfig);
 
-        // Initialize tornado from config if available
+        our::TornadoConfig tornadoConfig;
         if (config.contains("tornado"))
         {
-            our::TornadoConfig tornadoConfig;
             const auto &tornadoJson = config["tornado"];
-            if (tornadoJson.contains("tornadoCount")) tornadoConfig.tornadoCount = tornadoJson["tornadoCount"];
-            if (tornadoJson.contains("spacing")) tornadoConfig.spacing = tornadoJson["spacing"];
-            if (tornadoJson.contains("heightVariance")) tornadoConfig.heightVariance = tornadoJson["heightVariance"];
-            if (tornadoJson.contains("lateralVariance")) tornadoConfig.lateralVariance = tornadoJson["lateralVariance"];
-            if (tornadoJson.contains("sideOffset")) tornadoConfig.sideOffset = tornadoJson["sideOffset"];
-            if (tornadoJson.contains("depthOffset")) tornadoConfig.depthOffset = tornadoJson["depthOffset"];
-            if (tornadoJson.contains("scale")) tornadoConfig.scale = tornadoJson["scale"];
-            if (tornadoJson.contains("spawnChance")) tornadoConfig.spawnChance = tornadoJson["spawnChance"];
-            tornado.initialize(&world, tornadoConfig);
+            if (tornadoJson.contains("tornadoCount"))
+                tornadoConfig.tornadoCount = tornadoJson["tornadoCount"];
+            if (tornadoJson.contains("spacing"))
+                tornadoConfig.spacing = tornadoJson["spacing"];
+            if (tornadoJson.contains("heightVariance"))
+                tornadoConfig.heightVariance = tornadoJson["heightVariance"];
+            if (tornadoJson.contains("lateralVariance"))
+                tornadoConfig.lateralVariance = tornadoJson["lateralVariance"];
+            if (tornadoJson.contains("sideOffset"))
+                tornadoConfig.sideOffset = tornadoJson["sideOffset"];
+            if (tornadoJson.contains("depthOffset"))
+                tornadoConfig.depthOffset = tornadoJson["depthOffset"];
+            if (tornadoJson.contains("scale"))
+                tornadoConfig.scale = tornadoJson["scale"];
+            if (tornadoJson.contains("spawnChance"))
+                tornadoConfig.spawnChance = tornadoJson["spawnChance"];
         }
+        tornado.initialize(&world, tornadoConfig);
+
+        our::ConeBoundaryConfig coneConfig;
+        coneConfig.trackStartZ = 0.0f;
+        coneConfig.trackEndZ = -(trackConfig.ringCount + 1) * trackConfig.spacing;
+
+        if (config.contains("coneBoundary"))
+        {
+            const auto &coneJson = config["coneBoundary"];
+            if (coneJson.contains("coneSpacing"))
+                coneConfig.coneSpacing = coneJson["coneSpacing"];
+            if (coneJson.contains("coneY"))
+                coneConfig.coneY = coneJson["coneY"];
+            if (coneJson.contains("scale"))
+                coneConfig.scale = coneJson["scale"];
+            if (coneJson.contains("margin"))
+                coneConfig.coneLateralOffset = trackConfig.lateralVariance + (trackConfig.ringScale * 0.5f) + (coneJson["margin"].get<float>());
+        }
+
+        coneBoundarySystem.initialize(&world, coneConfig);
     }
 
     void onDraw(double deltaTime) override
@@ -90,13 +124,13 @@ class Playstate : public our::State
         cameraController.update(&world, (float)deltaTime);
         coinSystem.update(&world, (float)deltaTime);
         collisionSystem.update(&world, (float)deltaTime);
-        
+
         // And finally we use the renderer system to draw the scene
         renderer.render(&world);
-        
+
         // Finally, instantly delete any marked geometry from the ECS engine so they disappear natively
         world.deleteMarkedEntities();
-        
+
         // Render UI elements CHECK if a BUG appeared
         uiRenderer.render(&world, getApp());
 

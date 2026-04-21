@@ -11,6 +11,7 @@
 
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
+#include <GLFW/glfw3.h>
 
 namespace our
 {
@@ -141,6 +142,39 @@ namespace our
                                                 glm::scale(glm::mat4(1.0f), glm::vec3(innerWidth, innerHeight, 1.0f));
                 drawHealthBarQuad(foregroundTransform, fillColor);
             }
+        }
+
+        void renderDangerOverlay(glm::ivec2 screenSize, float intensity)
+        {
+            if (!healthBarMaterial || !healthBarMaterial->shader || !healthBarQuad)
+                return;
+
+            float clampedIntensity = glm::clamp(intensity, 0.0f, 1.0f);
+            if (clampedIntensity <= 0.0f)
+                return;
+
+            glViewport(0, 0, screenSize.x, screenSize.y);
+
+            float time = (float)glfwGetTime();
+            float blink = glm::sin(time * 10.0f) > 0.0f ? 1.0f : 0.0f;
+            float pulse = 0.85f + 0.15f * glm::sin(time * 6.0f);
+            float overlayAlpha = glm::clamp(clampedIntensity * 0.35f * pulse * blink, 0.0f, 1.0f);
+
+            auto previousBlendEquation = healthBarMaterial->pipelineState.blending.equation;
+            auto previousSource = healthBarMaterial->pipelineState.blending.sourceFactor;
+            auto previousDestination = healthBarMaterial->pipelineState.blending.destinationFactor;
+
+            healthBarMaterial->pipelineState.blending.equation = GL_FUNC_ADD;
+            healthBarMaterial->pipelineState.blending.sourceFactor = GL_SRC_ALPHA;
+            healthBarMaterial->pipelineState.blending.destinationFactor = GL_ONE_MINUS_SRC_ALPHA;
+
+            glm::mat4 fullScreenTransform = glm::translate(glm::mat4(1.0f), glm::vec3(-1.0f, -1.0f, 0.0f)) *
+                                            glm::scale(glm::mat4(1.0f), glm::vec3(2.0f, 2.0f, 1.0f));
+            drawHealthBarQuad(fullScreenTransform, {1.0f, 0.0f, 0.0f, overlayAlpha});
+
+            healthBarMaterial->pipelineState.blending.equation = previousBlendEquation;
+            healthBarMaterial->pipelineState.blending.sourceFactor = previousSource;
+            healthBarMaterial->pipelineState.blending.destinationFactor = previousDestination;
         }
 
         // Clean up UI resources

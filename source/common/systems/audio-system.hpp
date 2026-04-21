@@ -24,8 +24,10 @@ namespace our
     {
         ma_engine engine;
         ma_sound ambientWind;
+        ma_sound proximitySfx;
         bool initialized = false;
         bool ambientPlaying = false;
+        bool proximityPlaying = false;
 
     public:
         /// Initialize the audio engine. Call once during game startup.
@@ -105,9 +107,58 @@ namespace our
             std::cout << "[AudioSystem] Looping ambient sound started: " << filePath << std::endl;
         }
 
+        // ── Proximity-based sound (for tornado warning) ──────────────
+
+        /// Start a looping proximity sound if not already playing.
+        void startProximity(const std::string &filePath, float volume = 0.5f)
+        {
+            if (!initialized || proximityPlaying)
+                return;
+
+            ma_result result = ma_sound_init_from_file(
+                &engine, filePath.c_str(),
+                MA_SOUND_FLAG_STREAM,
+                NULL, NULL, &proximitySfx);
+            if (result != MA_SUCCESS)
+            {
+                std::cerr << "[AudioSystem] Failed to load proximity sound: " << filePath
+                          << " (error: " << result << ")" << std::endl;
+                return;
+            }
+
+            ma_sound_set_looping(&proximitySfx, MA_TRUE);
+            ma_sound_set_volume(&proximitySfx, volume);
+            ma_sound_start(&proximitySfx);
+            proximityPlaying = true;
+        }
+
+        /// Stop the proximity sound if it is playing.
+        void stopProximity()
+        {
+            if (!proximityPlaying)
+                return;
+
+            ma_sound_stop(&proximitySfx);
+            ma_sound_uninit(&proximitySfx);
+            proximityPlaying = false;
+        }
+
+        /// Dynamically adjust the volume of the proximity sound (0.0–1.0).
+        void setProximityVolume(float volume)
+        {
+            if (proximityPlaying)
+                ma_sound_set_volume(&proximitySfx, volume);
+        }
+
         /// Shut down the audio engine. Call during game cleanup.
         void destroy()
         {
+            if (proximityPlaying)
+            {
+                ma_sound_stop(&proximitySfx);
+                ma_sound_uninit(&proximitySfx);
+                proximityPlaying = false;
+            }
             if (ambientPlaying)
             {
                 ma_sound_stop(&ambientWind);

@@ -14,9 +14,15 @@ namespace our
         bool initialized = false;
         glm::vec3 playerStartPos = {0, 0, 0};
         AudioSystem *audioSystem = nullptr;
+        float dangerIntensity = 0.0f;
+
+        static constexpr float tornadoProximityRadius = 20.0f;
+        static constexpr float minProximityVolume = 0.1f;
+        static constexpr float maxProximityVolume = 1.0f;
 
     public:
         void setAudioSystem(AudioSystem *audio) { audioSystem = audio; }
+        float getDangerIntensity() const { return dangerIntensity; }
 
         void update(World *world, float deltaTime)
         {
@@ -33,9 +39,61 @@ namespace our
             }
 
             if (playerParts.empty())
+            {
+                dangerIntensity = 0.0f;
+                if (audioSystem)
+                    audioSystem->stopProximity();
                 return;
+            }
 
-            // 2. Check collisions against all other colliders
+            // 2. Proximity scan against tornados (larger radius than collision)
+            float minTornadoDistance = tornadoProximityRadius;
+            bool tornadoInRange = false;
+
+            for (auto other : world->getEntities())
+            {
+                ColliderComponent *otherCollider = other->getComponent<ColliderComponent>();
+                if (!otherCollider || otherCollider->objectType != "tornado")
+                    continue;
+
+                glm::mat4 otherMatrix = other->getLocalToWorldMatrix();
+                glm::vec3 otherPos = glm::vec3(otherMatrix * glm::vec4(otherCollider->center, 1.0f));
+
+                for (auto player : playerParts)
+                {
+                    ColliderComponent *playerCollider = player->getComponent<ColliderComponent>();
+                    glm::mat4 playerMatrix = player->getLocalToWorldMatrix();
+                    glm::vec3 playerPos = glm::vec3(playerMatrix * glm::vec4(playerCollider->center, 1.0f));
+
+                    float distance = glm::distance(playerPos, otherPos);
+                    if (distance < minTornadoDistance)
+                    {
+                        minTornadoDistance = distance;
+                        tornadoInRange = true;
+                    }
+                }
+            }
+
+            if (tornadoInRange)
+            {
+                float closeness = 1.0f - glm::clamp(minTornadoDistance / tornadoProximityRadius, 0.0f, 1.0f);
+                dangerIntensity = closeness;
+
+                if (audioSystem)
+                {
+                    audioSystem->startProximity("assets/sounds/tornado.mp3", minProximityVolume);
+                    float volume = minProximityVolume + (maxProximityVolume - minProximityVolume) * closeness;
+                    audioSystem->setProximityVolume(volume);
+                }
+            }
+            else
+            {
+                dangerIntensity = 0.0f;
+                if (audioSystem)
+                    audioSystem->stopProximity();
+            }
+
+            // 3. Check collisions against all other colliders
             for (auto other : world->getEntities())
             {
                 ColliderComponent *otherCollider = other->getComponent<ColliderComponent>();
@@ -112,7 +170,7 @@ namespace our
                     }
                 }
 
-                // 3. Resolve Collisions Logically
+                // 4. Resolve Collisions Logically
                 if (isColliding)
                 {
                     if (otherCollider->objectType == "coin")

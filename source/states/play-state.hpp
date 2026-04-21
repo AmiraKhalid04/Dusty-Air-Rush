@@ -113,6 +113,7 @@ class Playstate : public our::State
 
         // Render UI elements CHECK if a BUG appeared
         uiRenderer.render(&world, getApp());
+        uiRenderer.renderDangerOverlay(getApp()->getFrameBufferSize(), collisionSystem.getDangerIntensity());
 
         // Get a reference to the keyboard object
         auto &keyboard = getApp()->getKeyboard();

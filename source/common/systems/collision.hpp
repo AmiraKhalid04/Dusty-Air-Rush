@@ -6,6 +6,7 @@
 
 #include <glm/glm.hpp>
 #include <iostream>
+#include <unordered_set>
 
 namespace our
 {
@@ -19,6 +20,9 @@ namespace our
         static constexpr float tornadoProximityRadius = 20.0f;
         static constexpr float minProximityVolume = 0.1f;
         static constexpr float maxProximityVolume = 1.0f;
+        
+        // Track entities that are currently in a state of overlap to prevent repeated triggers
+        std::unordered_set<Entity*> activeCollisions;
 
     public:
         void setAudioSystem(AudioSystem *audio) { audioSystem = audio; }
@@ -50,11 +54,13 @@ namespace our
             float minTornadoDistance = tornadoProximityRadius;
             bool tornadoInRange = false;
 
-            for (auto other : world->getEntities())
-            {
-                ColliderComponent *otherCollider = other->getComponent<ColliderComponent>();
-                if (!otherCollider || otherCollider->objectType != "tornado")
-                    continue;
+            // Track who we hit THIS frame to update activeCollisions at the end
+            std::unordered_set<Entity*> frameCollisions;
+
+            // 2. Check collisions against all other colliders
+            for (auto other : world->getEntities()) {
+                ColliderComponent* otherCollider = other->getComponent<ColliderComponent>();
+                if (!otherCollider || otherCollider->objectType == "player" || otherCollider->objectType == "pending_deletion") continue;
 
                 glm::mat4 otherMatrix = other->getLocalToWorldMatrix();
                 glm::vec3 otherPos = glm::vec3(otherMatrix * glm::vec4(otherCollider->center, 1.0f));
@@ -120,9 +126,13 @@ namespace our
 
                 bool isColliding = false;
 
-                for (auto player : playerParts)
-                {
-                    ColliderComponent *playerCollider = player->getComponent<ColliderComponent>();
+                for (auto player : playerParts) {
+                    // Only the main body can trigger the score gate
+                    if (otherCollider->objectType == "ring_score" && player->name != "Body Collider") {
+                        continue;
+                    }
+
+                    ColliderComponent* playerCollider = player->getComponent<ColliderComponent>();
                     glm::mat4 playerMatrix = player->getLocalToWorldMatrix();
                     glm::vec3 playerPos = glm::vec3(playerMatrix * glm::vec4(playerCollider->center, 1.0f));
                     glm::vec3 playerScale = glm::vec3(glm::length(playerMatrix[0]), glm::length(playerMatrix[1]), glm::length(playerMatrix[2]));
@@ -170,39 +180,90 @@ namespace our
                     }
                 }
 
-                // 4. Resolve Collisions Logically
-                if (isColliding)
-                {
-                    if (otherCollider->objectType == "coin")
-                    {
-                        std::cout << "[COLLECT] +1 Coin picked up!" << std::endl;
-                        if (audioSystem)
+                // 3. Resolve Collisions Logically
+                if (isColliding) {
+                    Entity* collisionTracker = other;
+                    // Group ring parts by their parent ring entity
+                    if (otherCollider->objectType == "ring_score" || otherCollider->objectType == "ring_frame") {
+                        if (other->parent) collisionTracker = other->parent;
+                    }
+
+                    frameCollisions.insert(collisionTracker);
+
+                    // Apply physics effects every frame while the player is inside the tornado
+                    if (otherCollider->objectType == "tornado") {
+                        // `playerParts[0]` is the Body Collider. Its parent is the Plane Mesh.
+                        // The Plane Mesh's parent is the Camera/Player root.
+                        Entity* planeMesh = playerParts[0]->parent;
+                        Entity* playerRoot = planeMesh ? planeMesh->parent : nullptr;
+                        
+                        if (playerRoot) {
+                            // Calculate the XZ direction from the player to the tornado center
+                            glm::vec3 pRootPos = glm::vec3(playerRoot->getLocalToWorldMatrix()[3]); 
+                            glm::vec3 toTornado = otherPos - pRootPos;
+                            toTornado.y = 0.0f;
+                            
+                            if (glm::length(toTornado) > 0.001f) {
+                                glm::vec3 dirToTornado = glm::normalize(toTornado);
+                                // The player's forward vector (assuming -Z is forward in local space)
+                                glm::vec3 forwardVec = glm::normalize(glm::vec3(playerRoot->getLocalToWorldMatrix() * glm::vec4(0.0f, 0.0f, -1.0f, 0.0f)));
+                                forwardVec.y = 0.0f;
+                                if (glm::length(forwardVec) > 0.001f) {
+                                    forwardVec = glm::normalize(forwardVec);
+                                }
+
+                                // If dot product is > 0, we are generally facing/approaching the tornado 
+                                float approachDot = glm::dot(forwardVec, dirToTornado);
+
+                                if (approachDot > 0.0f) {
+                                    // Pull the player inside towards the center
+                                    float pullSpeed = 4.0f;
+                                    playerRoot->localTransform.position += dirToTornado * pullSpeed * deltaTime;
+                                    
+                                    // Cross product Y is positive if tornado is to our right, negative if to our left
+                                    float side = glm::cross(forwardVec, dirToTornado).y;
+                                    float turnSpeed = 4.0f; 
+                                    playerRoot->localTransform.rotation.y += side * turnSpeed * deltaTime;
+                                }
+                            }
+                        }
+                    }
+
+                    // Only trigger the collision logic if we weren't already colliding with this entity last frame
+                    // (and haven't already processed another part of this same compound entity this frame)
+                    if (activeCollisions.find(collisionTracker) == activeCollisions.end()) {
+                        activeCollisions.insert(collisionTracker); // Prevent other parts of this ring dealing damage this frame
+
+                        if (otherCollider->objectType == "coin") {
+                            std::cout << "[COLLECT] +1 Coin picked up!" << std::endl;
+                          if (audioSystem)
                             audioSystem->playSound("assets/sounds/coin.mp3");
-                        world->markForRemoval(other);
-                        otherCollider->objectType = "pending_deletion";
-                    }
-                    else if (otherCollider->objectType == "health")
-                    {
-                        std::cout << "[COLLECT] +HP Health pack acquired!" << std::endl;
-                        if (audioSystem)
+                            world->markForRemoval(other);
+                            otherCollider->objectType = "pending_deletion";
+                        } 
+                        else if (otherCollider->objectType == "health") {
+                            std::cout << "[COLLECT] +HP Health pack acquired!" << std::endl;
+                          if (audioSystem)
                             audioSystem->playSound("assets/sounds/bonus.mp3");
-                        world->markForRemoval(other);
-                        otherCollider->objectType = "pending_deletion";
-                    }
-                    else if (otherCollider->objectType == "ring")
-                    {
-                        std::cout << "[TRIGGER] Flew through a Ring!" << std::endl;
-                        world->markForRemoval(other);
-                        otherCollider->objectType = "pending_deletion";
-                    }
-                    else if (otherCollider->objectType == "tornado" || otherCollider->objectType == "obstacle")
-                    {
-                        std::cout << "[DANGER] Hit a Tornado! Taking damage..." << std::endl;
-                        world->markForRemoval(other);
-                        otherCollider->objectType = "pending_deletion";
+                            world->markForRemoval(other);
+                            otherCollider->objectType = "pending_deletion";
+                        } 
+                        else if (otherCollider->objectType == "ring_score") {
+                            std::cout << "[SCORE] +1! Passed through center!" << std::endl;
+                            world->markForRemoval(other);
+                            otherCollider->objectType = "pending_deletion";
+                        }
+                        else if (otherCollider->objectType == "ring_frame") {
+                            std::cout << "[DAMAGE] Hit the Ring Frame! -20 HP" << std::endl;
+                        }
+                        else if (otherCollider->objectType == "tornado" || otherCollider->objectType == "obstacle") {
+                            std::cout << "[DAMAGE] Hit hazard! -20 HP" << std::endl;
+                        }
                     }
                 }
             }
+            // Sync state: anyone in frameCollisions is now 'active' for next frame
+            activeCollisions = frameCollisions;
         }
     };
 }

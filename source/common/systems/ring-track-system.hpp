@@ -18,6 +18,8 @@ namespace our
         float heightVariance = 3.0f;  // how much rings drift up/down
         float lateralVariance = 2.0f; // how much rings drift left/right
         float ringScale = 4.0f;
+        float trackStartZ = 0.0f;
+        float finishLineScale = 2.0f;
     };
 
     class RingTrackSystem
@@ -33,7 +35,7 @@ namespace our
                 return ringPositions;
             ;
 
-            glm::vec3 cursor = glm::vec3(0, 2, 0); // starting position
+            glm::vec3 cursor = glm::vec3(0, config.trackStartZ, 0); // starting position
 
             for (int i = 0; i < config.ringCount; i++)
             {
@@ -71,12 +73,36 @@ namespace our
                 mr->mesh = ringMesh;
                 mr->material = ringMaterial;
 
-                // Dynamic collider for collision detection
-                auto *col = entity->addComponent<ColliderComponent>();
-                col->shapeType = ColliderType::AABB;
-                col->objectType = "ring";
-                col->aabbExtents = glm::vec3(0.01f, 0.2f, 0.2f);
-                col->center = glm::vec3(0.0f, 0.2f, 0.0f);
+                // ─── PERSISTENT HAZARD SEGMENTS (The outer frame) ───
+                float frameRadius = 0.16f; // Average radius of the ring geometry
+                for (int j = 0; j < 12; j++) {
+                    Entity* segment = world->add();
+                    segment->parent = entity; // Follow the ring's transform
+                    segment->name = "ring_frame_" + std::to_string(j);
+                    
+                    float angle = j * (glm::pi<float>() / 6.0f);
+                    segment->localTransform.position = {
+                        0.0f,
+                        glm::cos(angle) * frameRadius + 0.20f, // 0.16 + 0.04
+                        glm::sin(angle) * frameRadius
+                    };
+                    
+                    auto* col = segment->addComponent<ColliderComponent>();
+                    col->shapeType = ColliderType::Sphere; // Spheres avoid the rotated-box 'fat AABB' issue
+                    col->objectType = "ring_frame";
+                    col->sphereRadius = 0.04f;
+                }
+
+                // // ─── 1 SCORE TRIGGER (The inner hole) ───
+                Entity* trigger = world->add();
+                trigger->parent = entity;
+                trigger->name = "ring_score_gate";
+                trigger->localTransform.position = {0, 0.20f, 0};
+                
+                auto* col = trigger->addComponent<ColliderComponent>();
+                col->shapeType = ColliderType::Sphere;
+                col->objectType = "ring_score";
+                col->sphereRadius = 0.10f; // Leaves a safe gap between hole boundary and the frames
             }
 
             // === FINISH LINE ===
@@ -87,8 +113,8 @@ namespace our
             int i = config.ringCount;
 
             // Compute same track position
-            cursor.y = 2.0f + config.heightVariance * glm::sin(i * 0.4f);
-            cursor.x = config.lateralVariance * glm::sin(i * 0.3f + 1.0f);
+            cursor.y = 2.0f;
+            cursor.x = 0.0f;
 
             // Create entity
             Entity *finish = world->add();
@@ -97,7 +123,7 @@ namespace our
             finish->localTransform.position = cursor;
 
             // Scale (adjust depending on your mesh)
-            finish->localTransform.scale = glm::vec3(2.0f, 2.0f, 2.0f);
+            finish->localTransform.scale = glm::vec3(config.finishLineScale);
 
             // Optional: rotate to face player
             finish->localTransform.rotation = glm::vec3(0, 0, 0);

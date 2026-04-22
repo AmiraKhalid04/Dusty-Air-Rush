@@ -3,6 +3,7 @@
 #include "../texture/texture-utils.hpp"
 #include "../components/light.hpp"
 #include "../deserialize-utils.hpp"
+#include <GLFW/glfw3.h>
 
 namespace our
 {
@@ -24,7 +25,7 @@ namespace our
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
         GLint swizzleMask[] = {GL_RED, GL_RED, GL_RED, GL_ONE};
         glTexParameteriv(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_RGBA, swizzleMask);
-        float borderColor[] = { 1.0f, 1.0f, 1.0f, 1.0f };
+        float borderColor[] = {1.0f, 1.0f, 1.0f, 1.0f};
         glTexParameterfv(GL_TEXTURE_2D, GL_TEXTURE_BORDER_COLOR, borderColor);
         glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, shadowMapTexture->getOpenGLName(), 0);
         glDrawBuffer(GL_NONE);
@@ -41,55 +42,55 @@ namespace our
             skyBottom = skyLight.value("bottom", glm::vec3(1.0f));
         }
 
-        // Then we check if there is a sky texture in the configuration
         if (config.contains("sky"))
         {
-            // First, we create a sphere which will be used to draw the sky
-            this->skySphere = mesh_utils::sphere(glm::ivec2(16, 16));
+            // The sky shader is a ShaderToy-style fullscreen shader.
+            // We render it at HALF resolution into a dedicated FBO, then upscale
+            // with a blit pass. This gives ~4x GPU savings on the expensive raymarching.
+            glm::ivec2 skyRes = windowSize / 2;
 
-            // We can draw the sky using the same shader used to draw textured objects
+            // --- Half-resolution sky FBO ---
+            glGenFramebuffers(1, &skyFrameBuffer);
+            glBindFramebuffer(GL_FRAMEBUFFER, skyFrameBuffer);
+
+            glGenTextures(1, &skyColorTexture);
+            glBindTexture(GL_TEXTURE_2D, skyColorTexture);
+            glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB8, skyRes.x, skyRes.y, 0, GL_RGB, GL_UNSIGNED_BYTE, nullptr);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+            glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, skyColorTexture, 0);
+            glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
+            // --- Sky raymarching shader (runs at half-res) ---
             ShaderProgram *skyShader = new ShaderProgram();
-            skyShader->attach("assets/shaders/textured.vert", GL_VERTEX_SHADER);
-            skyShader->attach("assets/shaders/textured.frag", GL_FRAGMENT_SHADER);
+            skyShader->attach("assets/shaders/fullscreen.vert", GL_VERTEX_SHADER);
+            skyShader->attach("assets/shaders/sky.frag", GL_FRAGMENT_SHADER);
             skyShader->link();
 
-            // TODO: (Req 10) Pick the correct pipeline state to draw the sky
-            //  Hints: the sky will be draw after the opaque objects so we would need depth testing but which depth funtion should we pick?
-            //  We will draw the sphere from the inside, so what options should we pick for the face culling.
             PipelineState skyPipelineState{};
-
-            skyPipelineState.depthTesting.enabled = true;
-            skyPipelineState.depthTesting.function = GL_LEQUAL;
-
-            skyPipelineState.faceCulling.enabled = true;
-            skyPipelineState.faceCulling.culledFace = GL_FRONT;
-            skyPipelineState.faceCulling.frontFace = GL_CCW;
-
+            skyPipelineState.depthTesting.enabled = false;
+            skyPipelineState.faceCulling.enabled = false;
             skyPipelineState.blending.enabled = false;
-
             skyPipelineState.colorMask = {true, true, true, true};
-            skyPipelineState.depthMask = true;
+            skyPipelineState.depthMask = false;
 
-            // Load the sky texture (note that we don't need mipmaps since we want to avoid any unnecessary blurring while rendering the sky)
-            std::string skyTextureFile = config.value<std::string>("sky", "");
-            Texture2D *skyTexture = texture_utils::loadImage(skyTextureFile, false);
-
-            // Setup a sampler for the sky
-            Sampler *skySampler = new Sampler();
-            skySampler->set(GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-            skySampler->set(GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-            skySampler->set(GL_TEXTURE_WRAP_S, GL_REPEAT);
-            skySampler->set(GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-
-            // Combine all the aforementioned objects (except the mesh) into a material
             this->skyMaterial = new TexturedMaterial();
             this->skyMaterial->shader = skyShader;
-            this->skyMaterial->texture = skyTexture;
-            this->skyMaterial->sampler = skySampler;
             this->skyMaterial->pipelineState = skyPipelineState;
             this->skyMaterial->tint = glm::vec4(1.0f, 1.0f, 1.0f, 1.0f);
             this->skyMaterial->alphaThreshold = 1.0f;
             this->skyMaterial->transparent = false;
+
+            // --- Blit shader (upscales half-res sky to full screen) ---
+            skyBlitShader = new ShaderProgram();
+            skyBlitShader->attach("assets/shaders/fullscreen.vert", GL_VERTEX_SHADER);
+            skyBlitShader->attach("assets/shaders/blit.frag", GL_FRAGMENT_SHADER);
+            skyBlitShader->link();
+
+            // VAO for the fullscreen triangle draw calls (both sky and blit)
+            glGenVertexArrays(1, &skyVertexArray);
         }
 
         // Then we check if there is a postprocessing shader in the configuration
@@ -144,16 +145,19 @@ namespace our
 
     void ForwardRenderer::destroy()
     {
-        if (shadowMapFBO) glDeleteFramebuffers(1, &shadowMapFBO);
-        if (shadowMapTexture) delete shadowMapTexture;
+        if (shadowMapFBO)
+            glDeleteFramebuffers(1, &shadowMapFBO);
+        if (shadowMapTexture)
+            delete shadowMapTexture;
 
         // Delete all objects related to the sky
         if (skyMaterial)
         {
-            delete skySphere;
+            glDeleteVertexArrays(1, &skyVertexArray);
+            glDeleteFramebuffers(1, &skyFrameBuffer);
+            glDeleteTextures(1, &skyColorTexture);
+            delete skyBlitShader;
             delete skyMaterial->shader;
-            delete skyMaterial->texture;
-            delete skyMaterial->sampler;
             delete skyMaterial;
         }
         // Delete all objects related to post processing
@@ -175,9 +179,10 @@ namespace our
         CameraComponent *camera = nullptr;
         opaqueCommands.clear();
         transparentCommands.clear();
-        
-        struct LightData {
-            LightComponent* light;
+
+        struct LightData
+        {
+            LightComponent *light;
             glm::mat4 localToWorld;
         };
         std::vector<LightData> activeLights;
@@ -187,9 +192,10 @@ namespace our
             // If we hadn't found a camera yet, we look for a camera in this entity
             if (!camera)
                 camera = entity->getComponent<CameraComponent>();
-            
+
             // If this entity has a light component
-            if (auto light = entity->getComponent<LightComponent>(); light) {
+            if (auto light = entity->getComponent<LightComponent>(); light)
+            {
                 activeLights.push_back({light, entity->getLocalToWorldMatrix()});
             }
 
@@ -213,26 +219,30 @@ namespace our
                     opaqueCommands.push_back(command);
                 }
             }
-            
+
             // Debug rendering for Colliders
-            if (auto collider = entity->getComponent<ColliderComponent>(); collider) 
+            if (auto collider = entity->getComponent<ColliderComponent>(); collider)
             {
-                Material* debugMat = our::AssetLoader<Material>::get("debug_wireframe");
-                if (debugMat) {
+                Material *debugMat = our::AssetLoader<Material>::get("debug_wireframe");
+                if (debugMat)
+                {
                     RenderCommand command;
                     glm::mat4 baseTransform = glm::translate(entity->getLocalToWorldMatrix(), collider->center);
-                    
-                    if (collider->shapeType == ColliderType::Sphere) {
+
+                    if (collider->shapeType == ColliderType::Sphere)
+                    {
                         command.localToWorld = glm::scale(baseTransform, glm::vec3(collider->sphereRadius));
                         command.mesh = our::AssetLoader<Mesh>::get("sphere");
-                    } else {
+                    }
+                    else
+                    {
                         command.localToWorld = glm::scale(baseTransform, collider->aabbExtents);
                         command.mesh = our::AssetLoader<Mesh>::get("cube");
                     }
-                    
+
                     command.center = glm::vec3(command.localToWorld * glm::vec4(0, 0, 0, 1));
                     command.material = debugMat;
-                    
+
                     // Wireframes look better in transparent pass to overlay gracefully
                     transparentCommands.push_back(command);
                 }
@@ -259,39 +269,44 @@ namespace our
         glm::mat4 lightSpaceMatrix = glm::mat4(1.0f);
         glm::vec3 cameraPosition = glm::vec3(camera->getOwner()->getLocalToWorldMatrix() * glm::vec4(0, 0, 0, 1));
 
-        if (shadowShader && shadowMapFBO != 0) {
+        if (shadowShader && shadowMapFBO != 0)
+        {
             glm::vec3 lightDir(0.0f, -1.0f, 0.0f);
             bool hasDirLight = false;
-            for(auto& ld : activeLights) {
-                if (ld.light->lightType == LightType::DIRECTIONAL) {
+            for (auto &ld : activeLights)
+            {
+                if (ld.light->lightType == LightType::DIRECTIONAL)
+                {
                     lightDir = glm::normalize(glm::vec3(ld.localToWorld * glm::vec4(0.0f, 0.0f, -1.0f, 0.0f)));
                     hasDirLight = true;
                     break;
                 }
             }
 
-            if (hasDirLight) {
+            if (hasDirLight)
+            {
                 // Render to the shadow map FBO
                 glBindFramebuffer(GL_FRAMEBUFFER, shadowMapFBO);
                 glViewport(0, 0, 2048, 2048);
-                
+
                 // FIX: Ensure depth mask is true so we can actually clear and write to the depth buffer!
                 glDepthMask(GL_TRUE);
                 glEnable(GL_DEPTH_TEST);
                 glDepthFunc(GL_LESS);
                 glDisable(GL_CULL_FACE); // Prevent backface culling issues from thinning rings
-                
+
                 glClear(GL_DEPTH_BUFFER_BIT);
 
                 // Configure light space matrix for an Orthographic directional light calculation
                 float bounds = 80.0f; // Scale to cover the moving player
                 glm::mat4 lightProjection = glm::ortho(-bounds, bounds, -bounds, bounds, 1.0f, 200.0f);
                 glm::vec3 lightPos = cameraPosition - lightDir * 100.0f; // Push light back relative to camera
-                
+
                 // Avoid singularity if lightDir is straight down or straight up!
                 glm::vec3 up(0.0f, 1.0f, 0.0f);
-                if (glm::abs(lightDir.y) > 0.999f) up = glm::vec3(0.0f, 0.0f, 1.0f);
-                
+                if (glm::abs(lightDir.y) > 0.999f)
+                    up = glm::vec3(0.0f, 0.0f, 1.0f);
+
                 glm::mat4 lightView = glm::lookAt(lightPos, cameraPosition, up);
                 lightSpaceMatrix = lightProjection * lightView;
 
@@ -300,31 +315,39 @@ namespace our
 
                 // Draw Opaque items to populate depth
                 glEnable(GL_DEPTH_TEST);
-                for (const auto& cmd : opaqueCommands) {
-                    if (cmd.material != skyMaterial && cmd.mesh != skySphere) {
+                for (const auto &cmd : opaqueCommands)
+                {
+                    if (cmd.material != skyMaterial)
+                    {
                         shadowShader->set("M", cmd.localToWorld);
-                        
-                        Texture2D* alphaTex = nullptr;
+
+                        Texture2D *alphaTex = nullptr;
                         float alphaThresh = 0.5f; // Default threshold to chop out exactly 50%
-                        
-                        if (auto litMat = dynamic_cast<LitMaterial*>(cmd.material)) {
+
+                        if (auto litMat = dynamic_cast<LitMaterial *>(cmd.material))
+                        {
                             alphaTex = litMat->albedo;
                             alphaThresh = litMat->alphaThreshold > 0.0f ? litMat->alphaThreshold : 0.5f;
-                        } else if (auto texMat = dynamic_cast<TexturedMaterial*>(cmd.material)) {
+                        }
+                        else if (auto texMat = dynamic_cast<TexturedMaterial *>(cmd.material))
+                        {
                             alphaTex = texMat->texture;
                             alphaThresh = texMat->alphaThreshold > 0.0f ? texMat->alphaThreshold : 0.5f;
                         }
 
-                        if (alphaTex) {
+                        if (alphaTex)
+                        {
                             shadowShader->set("has_texture", true);
                             shadowShader->set("alphaThreshold", alphaThresh);
                             glActiveTexture(GL_TEXTURE5);
                             alphaTex->bind();
                             shadowShader->set("tex", 5);
-                        } else {
+                        }
+                        else
+                        {
                             shadowShader->set("has_texture", false);
                         }
-                        
+
                         cmd.mesh->draw();
                     }
                 }
@@ -363,6 +386,55 @@ namespace our
 
         cameraPosition = glm::vec3(camera->getOwner()->getLocalToWorldMatrix() * glm::vec4(0, 0, 0, 1));
 
+        // --- Sky: two-pass half-resolution rendering ---
+        // Pass 1: run the expensive raymarching shader into the half-res FBO
+        // Pass 2: upscale the result back to the main framebuffer with a blit
+        if (this->skyMaterial)
+        {
+            // Only the camera's VIEW DIRECTION matters for the sky — lock position to a
+            // fixed point inside the sky world so the raymarcher never goes out of bounds.
+            auto skyM = camera->getOwner()->getLocalToWorldMatrix();
+            glm::vec3 skyFwd = glm::normalize(glm::vec3(skyM * glm::vec4(0, 0, -1, 0)));
+            glm::vec3 skyEye = glm::vec3(0.0f, 200.0f, 0.0f);
+            glm::ivec2 skyRes = windowSize / 2;
+
+            // --- Pass 1: render sky at half resolution ---
+            glBindFramebuffer(GL_FRAMEBUFFER, skyFrameBuffer);
+            glViewport(0, 0, skyRes.x, skyRes.y);
+
+            this->skyMaterial->setup();
+            this->skyMaterial->shader->set("iTime", (float)glfwGetTime());
+            this->skyMaterial->shader->set("iResolution", glm::vec2(skyRes)); // half-res so UVs stay correct
+            this->skyMaterial->shader->set("eye", skyEye);
+            this->skyMaterial->shader->set("forward", skyFwd);
+
+            glBindVertexArray(skyVertexArray);
+            glDrawArrays(GL_TRIANGLES, 0, 3);
+            glBindVertexArray(0);
+
+            // --- Pass 2: blit the half-res result to the main framebuffer at full size ---
+            // Restore main (or postprocess) framebuffer and full viewport
+            glBindFramebuffer(GL_FRAMEBUFFER, postprocessMaterial ? postprocessFrameBuffer : 0);
+            glViewport(0, 0, windowSize.x, windowSize.y);
+
+            glDisable(GL_DEPTH_TEST);
+            glDepthMask(GL_FALSE);
+            glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
+
+            skyBlitShader->use();
+            glActiveTexture(GL_TEXTURE0);
+            glBindTexture(GL_TEXTURE_2D, skyColorTexture);
+            skyBlitShader->set("tex", 0);
+
+            glBindVertexArray(skyVertexArray);
+            glDrawArrays(GL_TRIANGLES, 0, 3);
+            glBindVertexArray(0);
+
+            // Re-enable depth writes for opaque geometry
+            glDepthMask(GL_TRUE);
+            glEnable(GL_DEPTH_TEST);
+        }
+
         // TODO: (Req 9) Draw all the opaque commands
         //  Don't forget to set the "transform" uniform to be equal the model-view-projection matrix for each render command
         for (const RenderCommand &command : opaqueCommands)
@@ -370,32 +442,36 @@ namespace our
             command.material->setup();
             glm::mat4 transform = VP * command.localToWorld;
             command.material->shader->set("transform", transform);
-            
+
             // Lighting & Advanced Transforms
-            if (auto litMat = dynamic_cast<LitMaterial*>(command.material); litMat) {
+            if (auto litMat = dynamic_cast<LitMaterial *>(command.material); litMat)
+            {
                 command.material->shader->set("VP", VP);
                 command.material->shader->set("M", command.localToWorld);
                 command.material->shader->set("M_IT", glm::transpose(glm::inverse(command.localToWorld)));
                 command.material->shader->set("camera_position", cameraPosition);
-                
+
                 command.material->shader->set("sky.top", skyTop);
                 command.material->shader->set("sky.horizon", skyHorizon);
                 command.material->shader->set("sky.bottom", skyBottom);
 
                 command.material->shader->set("light_count", (int)activeLights.size());
-                for(int i = 0; i < (int)activeLights.size(); i++) {
+                for (int i = 0; i < (int)activeLights.size(); i++)
+                {
                     std::string prefix = "lights[" + std::to_string(i) + "].";
                     command.material->shader->set(prefix + "type", (int)activeLights[i].light->lightType);
                     command.material->shader->set(prefix + "color", activeLights[i].light->diffuse);
                     command.material->shader->set(prefix + "attenuation", activeLights[i].light->attenuation);
                     glm::vec3 pos = activeLights[i].localToWorld * glm::vec4(0, 0, 0, 1);
-                    glm::vec3 dir = activeLights[i].localToWorld * glm::vec4(0, 0, -1, 0);                    command.material->shader->set(prefix + "position", pos);
+                    glm::vec3 dir = activeLights[i].localToWorld * glm::vec4(0, 0, -1, 0);
+                    command.material->shader->set(prefix + "position", pos);
                     command.material->shader->set(prefix + "direction", glm::normalize(dir));
                 }
 
                 // Pass shadow map parameters
                 command.material->shader->set("lightSpaceMatrix", lightSpaceMatrix);
-                if (shadowMapTexture) {
+                if (shadowMapTexture)
+                {
                     glActiveTexture(GL_TEXTURE5);
                     shadowMapTexture->bind();
                     command.material->shader->set("shadow_map", 5);
@@ -405,32 +481,6 @@ namespace our
             command.mesh->draw();
         }
 
-        // If there is a sky material, draw the sky
-        if (this->skyMaterial)
-        {
-            // TODO: (Req 10) setup the sky material
-            this->skyMaterial->setup();
-
-            // TODO: (Req 10) Create a model matrix for the sy such that it always follows the camera (sky sphere center = camera position)
-            // Subtle parallax: sky follows camera closely but lags slightly (0.95 = 95% of camera movement)
-            // This creates minimal depth perception without breaking the rendering
-            glm::vec3 parallaxCameraPosition = cameraPosition * 0.999f;
-            glm::mat4 skyModel = glm::translate(glm::mat4(1.0f), parallaxCameraPosition);
-
-            // TODO: (Req 10) We want the sky to be drawn behind everything (in NDC space, z=1)
-            //  We can acheive the is by multiplying by an extra matrix after the projection but what values should we put in it?
-            glm::mat4 alwaysBehindTransform = glm::mat4(
-                1.0f, 0.0f, 0.0f, 0.0f,
-                0.0f, 1.0f, 0.0f, 0.0f,
-                0.0f, 0.0f, 0.0f, 0.0f,
-                0.0f, 0.0f, 1.0f, 1.0f);
-            // TODO: (Req 10) set the "transform" uniform
-            glm::mat4 transform = alwaysBehindTransform * VP * skyModel;
-            this->skyMaterial->shader->set("transform", transform);
-
-            // TODO: (Req 10) draw the sky sphere
-            this->skySphere->draw();
-        }
         // TODO: (Req 9) Draw all the transparent commands
         //  Don't forget to set the "transform" uniform to be equal the model-view-projection matrix for each render command
         for (const RenderCommand &command : transparentCommands)
@@ -440,30 +490,34 @@ namespace our
             command.material->shader->set("transform", transform);
 
             // Lighting & Advanced Transforms
-            if (auto litMat = dynamic_cast<LitMaterial*>(command.material); litMat) {
+            if (auto litMat = dynamic_cast<LitMaterial *>(command.material); litMat)
+            {
                 command.material->shader->set("VP", VP);
                 command.material->shader->set("M", command.localToWorld);
                 command.material->shader->set("M_IT", glm::transpose(glm::inverse(command.localToWorld)));
                 command.material->shader->set("camera_position", cameraPosition);
-                
+
                 command.material->shader->set("sky.top", skyTop);
                 command.material->shader->set("sky.horizon", skyHorizon);
                 command.material->shader->set("sky.bottom", skyBottom);
 
                 command.material->shader->set("light_count", (int)activeLights.size());
-                for(int i = 0; i < (int)activeLights.size(); i++) {
+                for (int i = 0; i < (int)activeLights.size(); i++)
+                {
                     std::string prefix = "lights[" + std::to_string(i) + "].";
                     command.material->shader->set(prefix + "type", (int)activeLights[i].light->lightType);
                     command.material->shader->set(prefix + "color", activeLights[i].light->diffuse);
                     command.material->shader->set(prefix + "attenuation", activeLights[i].light->attenuation);
                     glm::vec3 pos = activeLights[i].localToWorld * glm::vec4(0, 0, 0, 1);
-                    glm::vec3 dir = activeLights[i].localToWorld * glm::vec4(0, 0, -1, 0);                    command.material->shader->set(prefix + "position", pos);
+                    glm::vec3 dir = activeLights[i].localToWorld * glm::vec4(0, 0, -1, 0);
+                    command.material->shader->set(prefix + "position", pos);
                     command.material->shader->set(prefix + "direction", glm::normalize(dir));
                 }
 
                 // Pass shadow map parameters
                 command.material->shader->set("lightSpaceMatrix", lightSpaceMatrix);
-                if (shadowMapTexture) {
+                if (shadowMapTexture)
+                {
                     glActiveTexture(GL_TEXTURE5);
                     shadowMapTexture->bind();
                     command.material->shader->set("shadow_map", 5);

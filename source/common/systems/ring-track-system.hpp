@@ -18,6 +18,8 @@ namespace our
         float heightVariance = 3.0f;  // how much rings drift up/down
         float lateralVariance = 2.0f; // how much rings drift left/right
         float ringScale = 4.0f;
+        float trackStartZ = 0.0f;
+        float finishLineScale = 2.0f;
     };
 
     class RingTrackSystem
@@ -33,7 +35,7 @@ namespace our
                 return ringPositions;
             ;
 
-            glm::vec3 cursor = glm::vec3(0, 2, 0); // starting position
+            glm::vec3 cursor = glm::vec3(0, config.trackStartZ, 0); // starting position
 
             for (int i = 0; i < config.ringCount; i++)
             {
@@ -111,8 +113,8 @@ namespace our
             int i = config.ringCount;
 
             // Compute same track position
-            cursor.y = 2.0f + config.heightVariance * glm::sin(i * 0.4f);
-            cursor.x = config.lateralVariance * glm::sin(i * 0.3f + 1.0f);
+            cursor.y = 2.0f;
+            cursor.x = 0.0f;
 
             // Create entity
             Entity *finish = world->add();
@@ -121,7 +123,7 @@ namespace our
             finish->localTransform.position = cursor;
 
             // Scale (adjust depending on your mesh)
-            finish->localTransform.scale = glm::vec3(2.0f, 2.0f, 2.0f);
+            finish->localTransform.scale = glm::vec3(config.finishLineScale);
 
             // Optional: rotate to face player
             finish->localTransform.rotation = glm::vec3(0, 0, 0);

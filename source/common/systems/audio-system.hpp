@@ -25,9 +25,11 @@ namespace our
         ma_engine engine;
         ma_sound ambientWind;
         ma_sound proximitySfx;
+        ma_sound motorSound;
         bool initialized = false;
         bool ambientPlaying = false;
         bool proximityPlaying = false;
+        bool motorPlaying = false;
 
     public:
         /// Initialize the audio engine. Call once during game startup.
@@ -150,9 +152,51 @@ namespace our
                 ma_sound_set_volume(&proximitySfx, volume);
         }
 
+        // ── Motor / boost sound (plays while Shift is held) ──────────
+
+        /// Start the motor sound loop if not already playing.
+        void startMotorSound(const std::string &filePath, float volume = 0.5f)
+        {
+            if (!initialized || motorPlaying)
+                return;
+
+            ma_result result = ma_sound_init_from_file(
+                &engine, filePath.c_str(),
+                MA_SOUND_FLAG_STREAM,
+                NULL, NULL, &motorSound);
+            if (result != MA_SUCCESS)
+            {
+                std::cerr << "[AudioSystem] Failed to load motor sound: " << filePath
+                          << " (error: " << result << ")" << std::endl;
+                return;
+            }
+
+            ma_sound_set_looping(&motorSound, MA_TRUE);
+            ma_sound_set_volume(&motorSound, volume);
+            ma_sound_start(&motorSound);
+            motorPlaying = true;
+        }
+
+        /// Stop the motor sound if it is playing.
+        void stopMotorSound()
+        {
+            if (!motorPlaying)
+                return;
+
+            ma_sound_stop(&motorSound);
+            ma_sound_uninit(&motorSound);
+            motorPlaying = false;
+        }
+
         /// Shut down the audio engine. Call during game cleanup.
         void destroy()
         {
+            if (motorPlaying)
+            {
+                ma_sound_stop(&motorSound);
+                ma_sound_uninit(&motorSound);
+                motorPlaying = false;
+            }
             if (proximityPlaying)
             {
                 ma_sound_stop(&proximitySfx);

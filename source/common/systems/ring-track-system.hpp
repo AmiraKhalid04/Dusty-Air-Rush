@@ -25,13 +25,15 @@ namespace our
     class RingTrackSystem
     {
     public:
-        void initialize(World *world, const RingTrackConfig &config)
+        std::vector<glm::vec3> initialize(World *world, const RingTrackConfig &config)
         {
+            std::vector<glm::vec3> ringPositions;
             Mesh *ringMesh = AssetLoader<Mesh>::get("ring");
             Material *ringMaterial = AssetLoader<Material>::get("ring");
 
             if (!ringMesh || !ringMaterial)
-                return;
+                return ringPositions;
+            ;
 
             glm::vec3 cursor = glm::vec3(0, config.trackStartZ, 0); // starting position
 
@@ -48,6 +50,7 @@ namespace our
 
                 entity->localTransform.position = cursor;
                 entity->localTransform.scale = glm::vec3(config.ringScale);
+                ringPositions.push_back(cursor); // Store position for coin placement
 
                 // Tilt the ring to face the direction of travel
                 glm::vec3 nextPos = cursor;
@@ -70,12 +73,36 @@ namespace our
                 mr->mesh = ringMesh;
                 mr->material = ringMaterial;
 
-                // Dynamic collider for collision detection
-                auto *col = entity->addComponent<ColliderComponent>();
-                col->shapeType = ColliderType::AABB;
-                col->objectType = "ring";
-                col->aabbExtents = glm::vec3(0.01f, 0.2f, 0.2f);
-                col->center = glm::vec3(0.0f, 0.2f, 0.0f);
+                // ─── PERSISTENT HAZARD SEGMENTS (The outer frame) ───
+                float frameRadius = 0.16f; // Average radius of the ring geometry
+                for (int j = 0; j < 12; j++) {
+                    Entity* segment = world->add();
+                    segment->parent = entity; // Follow the ring's transform
+                    segment->name = "ring_frame_" + std::to_string(j);
+                    
+                    float angle = j * (glm::pi<float>() / 6.0f);
+                    segment->localTransform.position = {
+                        0.0f,
+                        glm::cos(angle) * frameRadius + 0.20f, // 0.16 + 0.04
+                        glm::sin(angle) * frameRadius
+                    };
+                    
+                    auto* col = segment->addComponent<ColliderComponent>();
+                    col->shapeType = ColliderType::Sphere; // Spheres avoid the rotated-box 'fat AABB' issue
+                    col->objectType = "ring_frame";
+                    col->sphereRadius = 0.04f;
+                }
+
+                // // ─── 1 SCORE TRIGGER (The inner hole) ───
+                Entity* trigger = world->add();
+                trigger->parent = entity;
+                trigger->name = "ring_score_gate";
+                trigger->localTransform.position = {0, 0.20f, 0};
+                
+                auto* col = trigger->addComponent<ColliderComponent>();
+                col->shapeType = ColliderType::Sphere;
+                col->objectType = "ring_score";
+                col->sphereRadius = 0.10f; // Leaves a safe gap between hole boundary and the frames
             }
 
             // === FINISH LINE ===
@@ -114,6 +141,8 @@ namespace our
 
             std::cout << "Finish line at: "
                       << cursor.x << ", " << cursor.y << ", " << cursor.z << std::endl;
+
+            return ringPositions; // Return finish line position for camera targeting
         }
     };
 

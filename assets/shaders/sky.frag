@@ -18,7 +18,7 @@ by Lerrain 2025-02-20
 
 The seashore at the foot of the snowy mountains
 the beautiful scenery during the day, and the moments of sunrise and sunset.
-
+g
 By holding down the mouse button and dragging, you can adjust the angle.
 Referenced the examples of @IQ, and used the method of @nimitz for cloud rendering.
 */

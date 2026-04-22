@@ -19,6 +19,7 @@
 #include <material/material.hpp>
 #include <mesh/mesh.hpp>
 #include <asset-loader.hpp>
+#include "systems/health-system.hpp"
 // This state shows how to use the ECS framework and deserialization.
 class Playstate : public our::State
 {
@@ -32,6 +33,7 @@ class Playstate : public our::State
     our::TornadoSystem tornado;
     our::CoinSystem coinSystem;
     our::UIRenderSystem uiRenderer;
+    our::HealthPackSystem healthPackSystem;
     our::ConeBoundarySystem coneBoundarySystem;
 
     void onInitialize() override
@@ -74,7 +76,7 @@ class Playstate : public our::State
             if (trackJson.contains("finishLineScale"))
                 trackConfig.finishLineScale = trackJson["finishLineScale"];
         }
-        ringTrack.initialize(&world, trackConfig);
+        std::vector<glm::vec3> ringPositions = ringTrack.initialize(&world, trackConfig);
 
         our::TornadoConfig tornadoConfig;
         if (config.contains("tornado"))
@@ -99,6 +101,17 @@ class Playstate : public our::State
         }
         tornado.initialize(&world, tornadoConfig);
 
+        coinSystem.initialize(&world, ringPositions);
+
+        our::HealthPackConfig healthConfig;
+        healthConfig.spawnChance = 0.4f;
+        healthConfig.minRingsBefore = 2;
+        healthConfig.maxSideOffset = 6.0f;
+        healthConfig.maxVertOffset = 4.0f;
+        healthConfig.scale = 0.5f;
+
+        healthPackSystem.initialize(&world, ringPositions, healthConfig);
+
         our::ConeBoundaryConfig coneConfig;
         coneConfig.trackStartZ = 0.0f;
         coneConfig.trackEndZ = -(trackConfig.ringCount + 1) * trackConfig.spacing;
@@ -121,17 +134,20 @@ class Playstate : public our::State
 
     void onDraw(double deltaTime) override
     {
+
         // Here, we just run a bunch of systems to control the world logic
         movementSystem.update(&world, (float)deltaTime);
         cameraController.update(&world, (float)deltaTime);
-        coinSystem.update(&world, (float)deltaTime);
         collisionSystem.update(&world, (float)deltaTime);
+
 
         // And finally we use the renderer system to draw the scene
         renderer.render(&world);
 
+
         // Finally, instantly delete any marked geometry from the ECS engine so they disappear natively
         world.deleteMarkedEntities();
+
 
         // Render UI elements CHECK if a BUG appeared
         uiRenderer.render(&world, getApp());
@@ -156,6 +172,7 @@ class Playstate : public our::State
         cameraController.exit();
         // Clear the world
         world.clear();
+        coinSystem.reset();
         // and we delete all the loaded assets to free memory on the RAM and the VRAM
         our::clearAllAssets();
     }

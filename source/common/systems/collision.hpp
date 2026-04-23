@@ -266,16 +266,22 @@ namespace our
                         else if (otherCollider->objectType == "ring_score")
                         {
                             std::cout << "[SCORE] +1! Passed through center!" << std::endl;
+                            if (audioSystem)
+                                audioSystem->playSound("assets/sounds/all-right.mp3");
                             world->markForRemoval(other);
                             otherCollider->objectType = "pending_deletion";
                         }
                         else if (otherCollider->objectType == "ring_frame")
                         {
                             std::cout << "[DAMAGE] Hit the Ring Frame! -20 HP" << std::endl;
+                            if (audioSystem)
+                                audioSystem->playSound("assets/sounds/ouch.mp3");
                         }
                         else if (otherCollider->objectType == "tornado" || otherCollider->objectType == "obstacle")
                         {
                             std::cout << "[DAMAGE] Hit hazard! -20 HP" << std::endl;
+                            if (audioSystem)
+                                audioSystem->playSound("assets/sounds/ouch.mp3");
                         }
                     }
                 }

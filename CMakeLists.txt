@@ -25,6 +25,7 @@ add_subdirectory(vendor/glfw)                       # Build the GLFW project to 
 
 # A variable with all the source files of GLAD
 set(GLAD_SOURCE vendor/glad/src/gl.c)
+set(MINIAUDIO_SOURCE vendor/miniaudio/miniaudio.c)
 # A variables with all the source files of Dear ImGui
 set(IMGUI_SOURCES
         vendor/imgui/imgui.cpp
@@ -36,7 +37,7 @@ set(IMGUI_SOURCES
         )
 
 # Combine all vendor source files together into a single variable
-set(VENDOR_SOURCES ${GLAD_SOURCE} ${IMGUI_SOURCES})
+set(VENDOR_SOURCES ${GLAD_SOURCE} ${IMGUI_SOURCES} ${MINIAUDIO_SOURCE})
 
 # A variable with all our source files that are common between executable targets (examples)
 set(COMMON_SOURCES
@@ -110,6 +111,7 @@ include_directories(
         vendor/glm
         vendor/imgui
         vendor/utils
+        vendor/miniaudio
 )
 
 
@@ -141,5 +143,5 @@ target_compile_definitions(GAME_APPLICATION PRIVATE
 )
 
 if(UNIX AND NOT APPLE)
-        target_link_libraries(GAME_APPLICATION OpenGL::GL)
+        target_link_libraries(GAME_APPLICATION OpenGL::GL pthread m dl)
 endif()

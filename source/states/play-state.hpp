@@ -7,6 +7,7 @@
 #include <systems/free-camera-controller.hpp>
 #include <systems/movement.hpp>
 #include <systems/collision.hpp>
+#include <systems/audio-system.hpp>
 #include <asset-loader.hpp>
 #include <systems/ring-track-system.hpp>
 #include <systems/tornado-system.hpp>
@@ -34,10 +35,17 @@ class Playstate : public our::State
     our::CoinSystem coinSystem;
     our::UIRenderSystem uiRenderer;
     our::HealthPackSystem healthPackSystem;
+    our::AudioSystem audioSystem;
     our::ConeBoundarySystem coneBoundarySystem;
 
     void onInitialize() override
     {
+        // Initialize the audio system
+        audioSystem.initialize();
+        // Start ambient wind as background loop (plays underneath all other sounds)
+
+        collisionSystem.setAudioSystem(&audioSystem);
+
         // First of all, we get the scene configuration from the app config
         auto &config = getApp()->getConfig()["scene"];
         // If we have assets in the scene config, we deserialize them
@@ -52,6 +60,7 @@ class Playstate : public our::State
         }
         // We initialize the camera controller system since it needs a pointer to the app
         cameraController.enter(getApp());
+        cameraController.setAudioSystem(&audioSystem);
         // Then we initialize the renderer
         auto size = getApp()->getFrameBufferSize();
         renderer.initialize(size, config["renderer"]);
@@ -112,6 +121,7 @@ class Playstate : public our::State
 
         healthPackSystem.initialize(&world, ringPositions, healthConfig);
 
+        audioSystem.playLooping("assets/sounds/sky_wind_loop.wav", 0.3f);
         our::ConeBoundaryConfig coneConfig;
         coneConfig.trackStartZ = 0.0f;
         coneConfig.trackEndZ = -(trackConfig.ringCount + 1) * trackConfig.spacing;
@@ -151,6 +161,7 @@ class Playstate : public our::State
 
         // Render UI elements CHECK if a BUG appeared
         uiRenderer.render(&world, getApp());
+        uiRenderer.renderDangerOverlay(getApp()->getFrameBufferSize(), collisionSystem.getDangerIntensity());
 
         // Get a reference to the keyboard object
         auto &keyboard = getApp()->getKeyboard();
@@ -170,6 +181,8 @@ class Playstate : public our::State
         uiRenderer.destroy();
         // On exit, we call exit for the camera controller system to make sure that the mouse is unlocked
         cameraController.exit();
+        // Destroy audio system
+        audioSystem.destroy();
         // Clear the world
         world.clear();
         coinSystem.reset();

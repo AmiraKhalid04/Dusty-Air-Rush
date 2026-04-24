@@ -8,52 +8,47 @@
 
 namespace our
 {
-    // Configuration for the cone boundary lane that flanks the ring track.
-    // X and Y of every cone are fixed — only Z advances along the track.
-    // Set coneLateralOffset > (lateralVariance + half ring diameter) so cones
-    // always sit outside the playable corridor.
-    struct ConeBoundaryConfig
+    struct RunwayLightConfig
     {
         glm::vec3 startPosition = glm::vec3(0.0f, 0.0f, 0.0f);
         glm::vec3 endPosition = glm::vec3(0.0f, 0.0f, 300.0f);
-        float coneSpacing = 6.0f;       // distance between consecutive pairs along Z
-        float coneY = 0.0f;             // Y position of all cones
-        float scale = 1.0f;             // uniform scale applied to every cone mesh
+        float spacing = 6.0f;
+        float scale = 1.0f;
     };
 
-    class ConeBoundarySystem
+    class RunwayLightSystem
     {
     public:
-        void initialize(World *world, const ConeBoundaryConfig &config)
+        void initialize(World *world, const RunwayLightConfig &config)
         {
-            Mesh *coneMesh = AssetLoader<Mesh>::get("cone");
-            Material *coneMaterial = AssetLoader<Material>::get("cone");
+            Mesh *runwayLightMesh = AssetLoader<Mesh>::get("sphere");
+            Material *runwayLightMaterial = AssetLoader<Material>::get("runway_light");
 
-            if (!coneMesh || !coneMaterial)
+            if (!runwayLightMesh || !runwayLightMaterial)
             {
-                std::cout << "[ConeBoundarySystem] 'cone' mesh or material not found — skipping.\n";
+                std::cout << "[RunwayLightSystem] 'cone' mesh or material not found — skipping.\n";
                 return;
             }
 
             int pairCount = 0;
-            for (float z = config.startPosition.z; z >= config.endPosition.z; z -= config.coneSpacing)
+            for (float z = config.startPosition.z; z >= config.endPosition.z; z -= config.spacing)
             {
                 spawnCone(world,
                           "cone_left_" + std::to_string(pairCount),
                           glm::vec3(config.startPosition.x, config.startPosition.y, z),
                           config.scale,
-                          coneMesh, coneMaterial);
+                          runwayLightMesh, runwayLightMaterial);
 
                 spawnCone(world,
                           "cone_right_" + std::to_string(pairCount),
                           glm::vec3(config.endPosition.x, config.startPosition.y, z),
                           config.scale,
-                          coneMesh, coneMaterial);
+                          runwayLightMesh, runwayLightMaterial);
 
                 ++pairCount;
             }
 
-            std::cout << "[ConeBoundarySystem] Spawned " << pairCount * 2
+            std::cout << "[RunwayLightSystem] Spawned " << pairCount * 2
                       << " cones (" << pairCount << " pairs).\n";
         }
 

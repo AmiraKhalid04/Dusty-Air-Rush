@@ -13,7 +13,7 @@
 #include <systems/track-system.hpp>
 #include <systems/world-boundary-system.hpp>
 #include <systems/tornado-system.hpp>
-#include <systems/cone-boundary-system.hpp>
+#include <systems/runway-light-system.hpp>
 #include <systems/coin-system.hpp>
 #include <systems/ui-render-system.hpp>
 #include <components/camera.hpp>
@@ -38,7 +38,7 @@ class Playstate : public our::State
     our::UIRenderSystem uiRenderer;
     our::HealthPackSystem healthPackSystem;
     our::AudioSystem audioSystem;
-    our::ConeBoundarySystem coneBoundarySystem;
+    our::RunwayLightSystem runwayLightSystem;
     our::WorldBoundarySystem worldBoundarySystem;
 
     void onInitialize() override
@@ -139,22 +139,20 @@ class Playstate : public our::State
 
         audioSystem.playLooping("assets/sounds/sky_wind_loop.wav", 0.3f);
 
-        our::ConeBoundaryConfig coneConfig;
-        coneConfig.startPosition = trackConfig.startPosition;
-        coneConfig.endPosition = trackConfig.endPosition;
+        our::RunwayLightConfig runwayLightConfig;
+        runwayLightConfig.startPosition = trackConfig.startPosition;
+        runwayLightConfig.endPosition = trackConfig.endPosition;
 
-        if (config.contains("coneBoundary"))
+        if (config.contains("runwayLights"))
         {
-            const auto &coneJson = config["coneBoundary"];
-            if (coneJson.contains("coneSpacing"))
-                coneConfig.coneSpacing = coneJson["coneSpacing"];
-            if (coneJson.contains("coneY"))
-                coneConfig.coneY = coneJson["coneY"];
-            if (coneJson.contains("scale"))
-                coneConfig.scale = coneJson["scale"];
+            const auto &runwayLightsJson = config["runwayLights"];
+            if (runwayLightsJson.contains("spacing"))
+                runwayLightConfig.spacing = runwayLightsJson["spacing"];
+            if (runwayLightsJson.contains("scale"))
+                runwayLightConfig.scale = runwayLightsJson["scale"];
         }
 
-        coneBoundarySystem.initialize(&world, coneConfig);
+        runwayLightSystem.initialize(&world, runwayLightConfig);
     }
 
     void onDraw(double deltaTime) override

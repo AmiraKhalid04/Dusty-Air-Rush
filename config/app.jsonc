@@ -302,12 +302,38 @@
                         0.0,
                         0.3
                     ]
+                },
+                "runway_light": {
+                    "type": "tinted",
+                    "shader": "tinted",
+                    "pipelineState": {
+                        "faceCulling": {
+                            "enabled": false
+                        },
+                        "depthTesting": {
+                            "enabled": true
+                        }
+                    },
+                    "tint": [
+                        1.0,
+                        0.6,
+                        0.2,
+                        1.0
+                    ]
                 }
             }
         },
         "track": {
-            "startPosition": [-25.0, 0.0, 0.0],
-            "endPosition": [25.0, 10.0, -500.0],
+            "startPosition": [
+                -25.0,
+                0.0,
+                0.0
+            ],
+            "endPosition": [
+                25.0,
+                10.0,
+                -500.0
+            ],
             "stagesCount": 10,
             "innerMargin": 5.0,
             "outerMargin": 20.0
@@ -321,11 +347,9 @@
             "scale": 2.0,
             "spawnChance": 0.2
         },
-        "coneBoundary": {
-            "margin": 2.0,
-            "coneSpacing": 10.0,
-            "coneY": -4.0,
-            "scale": 4.0
+        "runwayLights": {
+            "spacing": 10.0,
+            "scale": 0.3
         },
         "world": [
             {

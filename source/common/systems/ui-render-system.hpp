@@ -195,6 +195,43 @@ namespace our
             healthBarMaterial->pipelineState.blending.destinationFactor = previousDestination;
         }
 
+        void renderBoundaryFlash(glm::ivec2 screenSize, float intensity)
+        {
+            if (!healthBarMaterial || !healthBarMaterial->shader || !healthBarQuad)
+                return;
+
+            float clampedIntensity = glm::clamp(intensity, 0.0f, 1.0f);
+            if (clampedIntensity <= 0.0f)
+                return;
+
+            glViewport(0, 0, screenSize.x, screenSize.y);
+
+            // Ease-out: quadratic so it snaps bright then fades smoothly
+            float overlayAlpha = clampedIntensity * clampedIntensity * 0.5f;
+
+            // Save blending state
+            auto previousBlendEquation = healthBarMaterial->pipelineState.blending.equation;
+            auto previousSource = healthBarMaterial->pipelineState.blending.sourceFactor;
+            auto previousDestination = healthBarMaterial->pipelineState.blending.destinationFactor;
+
+            healthBarMaterial->pipelineState.blending.equation = GL_FUNC_ADD;
+            healthBarMaterial->pipelineState.blending.sourceFactor = GL_SRC_ALPHA;
+            healthBarMaterial->pipelineState.blending.destinationFactor = GL_ONE_MINUS_SRC_ALPHA;
+
+            // Full-screen quad: same transform used in renderDangerOverlay
+            glm::mat4 fullScreenTransform =
+                glm::translate(glm::mat4(1.0f), glm::vec3(-1.0f, -1.0f, 0.0f)) *
+                glm::scale(glm::mat4(1.0f), glm::vec3(2.0f, 2.0f, 1.0f));
+
+            // White flash instead of red
+            drawHealthBarQuad(fullScreenTransform, {1.0f, 1.0f, 1.0f, overlayAlpha});
+
+            // Restore blending state
+            healthBarMaterial->pipelineState.blending.equation = previousBlendEquation;
+            healthBarMaterial->pipelineState.blending.sourceFactor = previousSource;
+            healthBarMaterial->pipelineState.blending.destinationFactor = previousDestination;
+        }
+
         // Clean up UI resources
         void destroy()
         {

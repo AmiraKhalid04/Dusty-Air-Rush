@@ -9,9 +9,11 @@
 #include <systems/collision.hpp>
 #include <systems/audio-system.hpp>
 #include <asset-loader.hpp>
-#include <systems/ring-track-system.hpp>
+#include <systems/ring-system.hpp>
+#include <systems/track-system.hpp>
+#include <systems/world-boundary-system.hpp>
 #include <systems/tornado-system.hpp>
-#include <systems/cone-boundary-system.hpp>
+#include <systems/runway-light-system.hpp>
 #include <systems/coin-system.hpp>
 #include <systems/ui-render-system.hpp>
 #include <components/camera.hpp>
@@ -30,13 +32,14 @@ class Playstate : public our::State
     our::FreeCameraControllerSystem cameraController;
     our::MovementSystem movementSystem;
     our::CollisionSystem collisionSystem;
-    our::RingTrackSystem ringTrack;
-    our::TornadoSystem tornado;
+    our::RingSystem ringSystem;
+    our::TornadoSystem tornadoSystem;
     our::CoinSystem coinSystem;
     our::UIRenderSystem uiRenderer;
     our::HealthPackSystem healthPackSystem;
     our::AudioSystem audioSystem;
-    our::ConeBoundarySystem coneBoundarySystem;
+    our::RunwayLightSystem runwayLightSystem;
+    our::WorldBoundarySystem worldBoundarySystem;
 
     float playTime = 0.0f;
 
@@ -69,57 +72,76 @@ class Playstate : public our::State
         renderer.initialize(size, config["renderer"]);
         uiRenderer.initialize(getApp());
 
-        our::RingTrackConfig trackConfig;
-        if (config.contains("ringTrack"))
+        our::TrackConfig trackConfig;
+        if (config.contains("track"))
         {
-            const auto &trackJson = config["ringTrack"];
-            if (trackJson.contains("ringCount"))
-                trackConfig.ringCount = trackJson["ringCount"];
-            if (trackJson.contains("spacing"))
-                trackConfig.spacing = trackJson["spacing"];
-            if (trackJson.contains("heightVariance"))
-                trackConfig.heightVariance = trackJson["heightVariance"];
-            if (trackJson.contains("lateralVariance"))
-                trackConfig.lateralVariance = trackJson["lateralVariance"];
-            if (trackJson.contains("ringScale"))
-                trackConfig.ringScale = trackJson["ringScale"];
-            if (trackJson.contains("trackStartZ"))
-                trackConfig.trackStartZ = trackJson["trackStartZ"];
-            if (trackJson.contains("finishLineScale"))
-                trackConfig.finishLineScale = trackJson["finishLineScale"];
+            const auto &trackJson = config["track"];
+            if (trackJson.contains("startPosition"))
+            {
+                auto pos = trackJson["startPosition"].get<std::vector<float>>();
+                trackConfig.startPosition = glm::vec3(pos[0], pos[1], pos[2]);
+            }
+            if (trackJson.contains("endPosition"))
+            {
+                auto pos = trackJson["endPosition"].get<std::vector<float>>();
+                trackConfig.endPosition = glm::vec3(pos[0], pos[1], pos[2]);
+            }
+            if (trackJson.contains("stagesCount"))
+                trackConfig.stagesCount = trackJson["stagesCount"];
+            if (trackJson.contains("innerMargin"))
+                trackConfig.innerMargin = trackJson["innerMargin"];
+            if (trackJson.contains("outerMargin"))
+                trackConfig.outerMargin = trackJson["outerMargin"];
         }
-        std::vector<glm::vec3> ringPositions = ringTrack.initialize(&world, trackConfig);
+        worldBoundarySystem.initialize(trackConfig);
+
+        our::RingConfig ringConfig;
+        ringConfig.trackStartPosition = trackConfig.startPosition;
+        ringConfig.trackEndPosition = trackConfig.endPosition;
+        ringConfig.ringsCount = trackConfig.stagesCount;
+        ringConfig.margin = trackConfig.innerMargin;
+
+        if (config.contains("rings"))
+        {
+            const auto &ringsJson = config["rings"];
+            if (ringsJson.contains("ringScale"))
+                ringConfig.ringScale = ringsJson["ringScale"];
+            if (ringsJson.contains("finishLineScale"))
+                ringConfig.finishLineScale = ringsJson["finishLineScale"];
+        }
+        std::vector<glm::vec3> ringPositions = ringSystem.initialize(&world, ringConfig);
 
         // Assign the generated logic variables (total track rings) to the player's dusty tracker
         for (auto entity : world.getEntities()) {
             if (auto dusty = entity->getComponent<our::DustyComponent>()) {
-                dusty->totalRings = trackConfig.ringCount;
+                dusty->totalRings = trackConfig.stagesCount;
                 break;
             }
         }
 
         our::TornadoConfig tornadoConfig;
+        tornadoConfig.trackStartPosition = trackConfig.startPosition;
+        tornadoConfig.trackEndPosition = trackConfig.endPosition;
+        tornadoConfig.tornadosCount = trackConfig.stagesCount;
+        tornadoConfig.margin = trackConfig.innerMargin;
+
         if (config.contains("tornado"))
         {
             const auto &tornadoJson = config["tornado"];
-            if (tornadoJson.contains("tornadoCount"))
-                tornadoConfig.tornadoCount = tornadoJson["tornadoCount"];
-            if (tornadoJson.contains("spacing"))
-                tornadoConfig.spacing = tornadoJson["spacing"];
-            if (tornadoJson.contains("heightVariance"))
-                tornadoConfig.heightVariance = tornadoJson["heightVariance"];
-            if (tornadoJson.contains("lateralVariance"))
-                tornadoConfig.lateralVariance = tornadoJson["lateralVariance"];
-            if (tornadoJson.contains("sideOffset"))
-                tornadoConfig.sideOffset = tornadoJson["sideOffset"];
             if (tornadoJson.contains("depthOffset"))
                 tornadoConfig.depthOffset = tornadoJson["depthOffset"];
             if (tornadoJson.contains("scale"))
                 tornadoConfig.scale = tornadoJson["scale"];
             if (tornadoJson.contains("spawnChance"))
                 tornadoConfig.spawnChance = tornadoJson["spawnChance"];
+            if (tornadoJson.contains("angularVelocity"))
+                tornadoConfig.angularVelocity = tornadoJson["angularVelocity"];
+            if (tornadoJson.contains("moveSpeedXMin"))
+                tornadoConfig.moveSpeedXMin = tornadoJson["moveSpeedXMin"];
+            if (tornadoJson.contains("moveSpeedXMax"))
+                tornadoConfig.moveSpeedXMax = tornadoJson["moveSpeedXMax"];
         }
-        tornado.initialize(&world, tornadoConfig);
+        tornadoSystem.initialize(&world, tornadoConfig);
 
         coinSystem.initialize(&world, ringPositions);
 
@@ -133,24 +155,21 @@ class Playstate : public our::State
         healthPackSystem.initialize(&world, ringPositions, healthConfig);
 
         audioSystem.playLooping("assets/sounds/sky_wind_loop.wav", 0.3f);
-        our::ConeBoundaryConfig coneConfig;
-        coneConfig.trackStartZ = 0.0f;
-        coneConfig.trackEndZ = -(trackConfig.ringCount + 1) * trackConfig.spacing;
 
-        if (config.contains("coneBoundary"))
+        our::RunwayLightConfig runwayLightConfig;
+        runwayLightConfig.startPosition = trackConfig.startPosition;
+        runwayLightConfig.endPosition = trackConfig.endPosition;
+
+        if (config.contains("runwayLights"))
         {
-            const auto &coneJson = config["coneBoundary"];
-            if (coneJson.contains("coneSpacing"))
-                coneConfig.coneSpacing = coneJson["coneSpacing"];
-            if (coneJson.contains("coneY"))
-                coneConfig.coneY = coneJson["coneY"];
-            if (coneJson.contains("scale"))
-                coneConfig.scale = coneJson["scale"];
-            if (coneJson.contains("margin"))
-                coneConfig.coneLateralOffset = trackConfig.lateralVariance + (trackConfig.ringScale * 0.5f) + (coneJson["margin"].get<float>());
+            const auto &runwayLightsJson = config["runwayLights"];
+            if (runwayLightsJson.contains("spacing"))
+                runwayLightConfig.spacing = runwayLightsJson["spacing"];
+            if (runwayLightsJson.contains("scale"))
+                runwayLightConfig.scale = runwayLightsJson["scale"];
         }
 
-        coneBoundarySystem.initialize(&world, coneConfig);
+        runwayLightSystem.initialize(&world, runwayLightConfig);
     }
 
     void onDraw(double deltaTime) override
@@ -161,19 +180,20 @@ class Playstate : public our::State
         movementSystem.update(&world, (float)deltaTime);
         cameraController.update(&world, (float)deltaTime);
         collisionSystem.update(&world, (float)deltaTime);
+        tornadoSystem.update(&world, (float)deltaTime);
 
+        worldBoundarySystem.update(&world);
 
         // And finally we use the renderer system to draw the scene
         renderer.render(&world);
 
-
         // Finally, instantly delete any marked geometry from the ECS engine so they disappear natively
         world.deleteMarkedEntities();
-
 
         // Render UI elements CHECK if a BUG appeared
         uiRenderer.render(&world, getApp());
         uiRenderer.renderDangerOverlay(getApp()->getFrameBufferSize(), collisionSystem.getDangerIntensity());
+        uiRenderer.renderBoundaryFlash(getApp()->getFrameBufferSize(), worldBoundarySystem.getFlashIntensity());
 
         // Get a reference to the keyboard object
         auto &keyboard = getApp()->getKeyboard();

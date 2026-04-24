@@ -7,20 +7,19 @@
 #include <material/material.hpp>
 #include <mesh/mesh.hpp>
 #include <systems/audio-system.hpp>
+#include <imgui.h>
 
 #include <functional>
 #include <array>
+#include <algorithm>
+#include <cfloat>
+#include <cmath>
 
-// This struct is used to store the location and size of a button and the code it should execute when clicked
 struct Button
 {
-    // The position (of the top-left corner) of the button and its size in pixels
     glm::vec2 position, size;
-    // The function that should be excuted when the button is clicked. It takes no arguments and returns nothing.
     std::function<void()> action;
 
-    // This function returns true if the given vector v is inside the button. Otherwise, false is returned.
-    // This is used to check if the mouse is hovering over the button.
     bool isInside(const glm::vec2 &v) const
     {
         return position.x <= v.x && position.y <= v.y &&
@@ -28,8 +27,6 @@ struct Button
                v.y <= position.y + size.y;
     }
 
-    // This function returns the local to world matrix to transform a rectangle of size 1x1
-    // (and whose top-left corner is at the origin) to be the button.
     glm::mat4 getLocalToWorld() const
     {
         return glm::translate(glm::mat4(1.0f), glm::vec3(position.x, position.y, 0.0f)) *
@@ -37,154 +34,286 @@ struct Button
     }
 };
 
-// This state shows how to use some of the abstractions we created to make a menu.
 class Menustate : public our::State
 {
+    static constexpr const char *GameTitle = "DUSTY AIR RUSH";
+    static constexpr std::array<const char *, 2> ButtonLabels = {
+        "PRESS SPACE TO PLAY",
+        "PRESS ESC TO EXIT"};
 
-    // A meterial holding the menu shader and the menu texture to draw
     our::TexturedMaterial *menuMaterial;
-    // A material to be used to highlight hovered buttons (we will use blending to create a negative effect).
     our::TintedMaterial *highlightMaterial;
-    // A rectangle mesh on which the menu material will be drawn
+    // Dark overlay drawn on top of the background to improve text legibility
+    our::TintedMaterial *darkOverlay;
     our::Mesh *rectangle;
-    // A variable to record the time since the state is entered (it will be used for the fading effect).
-    float time;
-    // An array of the button that we can interact with
+    float time = 0.0f;
+
     std::array<Button, 2> buttons;
-    // Audio system for menu background music
+    std::array<glm::vec2, 2> buttonTextPositions{};
+    std::array<glm::vec2, 2> buttonTextSizes{};
+    glm::vec2 titlePosition{};
+    glm::vec2 titleSize{};
+
+    float titleFontSize = 96.0f;
+    float buttonFontSize = 44.0f;
+    ImFont *titleFont = nullptr;
+    ImFont *buttonFont = nullptr;
+
     our::AudioSystem menuAudio;
 
+    // ─── Layout ──────────────────────────────────────────────────────────────
+    void updateLayout(const glm::ivec2 &fbSize)
+    {
+        ImFont *layoutTitleFont = titleFont ? titleFont : ImGui::GetFont();
+        ImFont *layoutButtonFont = buttonFont ? buttonFont : layoutTitleFont;
+        float W = (float)fbSize.x;
+        float H = (float)fbSize.y;
+
+        // Bigger: 14% of height for title, 6.5% for buttons
+        titleFontSize = std::clamp(H * 0.14f, 90.0f, 150.0f);
+        buttonFontSize = std::clamp(H * 0.065f, 44.0f, 72.0f);
+
+        ImVec2 ts = layoutTitleFont->CalcTextSizeA(titleFontSize, FLT_MAX, 0.0f, GameTitle);
+        titleSize = {ts.x, ts.y};
+        titlePosition = {
+            (W - titleSize.x) * 0.5f,
+            H * 0.52f // roughly middle of screen
+        };
+
+        float padX = std::clamp(W * 0.030f, 32.0f, 56.0f);
+        float padY = std::clamp(H * 0.014f, 14.0f, 22.0f);
+        float titleGap = std::clamp(H * 0.07f, 40.0f, 72.0f);
+        float btnGap = std::clamp(H * 0.008f, 6.0f, 12.0f);
+        float currentY = titlePosition.y + titleSize.y + titleGap;
+
+        for (size_t i = 0; i < buttons.size(); ++i)
+        {
+            ImVec2 bs = layoutButtonFont->CalcTextSizeA(buttonFontSize, FLT_MAX, 0.0f, ButtonLabels[i]);
+            buttonTextSizes[i] = {bs.x, bs.y};
+
+            buttons[i].size = {bs.x + padX * 2.0f, bs.y + padY * 2.0f};
+            buttons[i].position = {(W - buttons[i].size.x) * 0.5f, currentY};
+
+            buttonTextPositions[i] = {
+                buttons[i].position.x + (buttons[i].size.x - bs.x) * 0.5f,
+                buttons[i].position.y + (buttons[i].size.y - bs.y) * 0.5f};
+
+            currentY += buttons[i].size.y + btnGap;
+        }
+    }
+
+    // ─── Shadowed text helper ─────────────────────────────────────────────────
+    static void drawShadowedText(ImDrawList *dl, ImFont *font, float fontSize,
+                                 const glm::vec2 &pos, ImU32 color, const char *text,
+                                 float shadowOpacityMul = 0.85f, float shadowOffset = 4.0f)
+    {
+        float alpha = ((color >> IM_COL32_A_SHIFT) & 0xFF) / 255.0f;
+        ImU32 shadow = ImGui::ColorConvertFloat4ToU32(
+            ImVec4(0.02f, 0.01f, 0.01f, alpha * shadowOpacityMul));
+        dl->AddText(font, fontSize, ImVec2(pos.x + shadowOffset, pos.y + shadowOffset), shadow, text);
+        dl->AddText(font, fontSize, ImVec2(pos.x + shadowOffset * 0.5f, pos.y + shadowOffset * 0.5f), shadow, text);
+        dl->AddText(font, fontSize, ImVec2(pos.x, pos.y), color, text);
+    }
+
+    // ─── Decorative horizontal rule ───────────────────────────────────────────
+    static void drawDivider(ImDrawList *dl, float x1, float x2, float y, float alpha)
+    {
+        ImU32 col = ImGui::ColorConvertFloat4ToU32(ImVec4(0.96f, 0.82f, 0.50f, 0.50f * alpha));
+        dl->AddLine(ImVec2(x1, y), ImVec2(x2, y), col, 2.0f);
+    }
+
+    // ─── onInitialize ─────────────────────────────────────────────────────────
     void onInitialize() override
     {
-        // First, we create a material for the menu's background
+        ImGuiIO &io = ImGui::GetIO();
+        io.Fonts->Clear();
+
+        titleFont = io.Fonts->AddFontFromFileTTF("assets/fonts/Cinzel-Bold.ttf", 128.0f);
+        buttonFont = io.Fonts->AddFontFromFileTTF("assets/fonts/Rajdhani-SemiBold.ttf", 128.0f);
+        if (!buttonFont)
+        {
+            buttonFont = io.Fonts->AddFontDefault();
+        }
+        if (!titleFont)
+        {
+            titleFont = io.Fonts->AddFontDefault();
+        }
+
+        getApp()->rebuildImGuiFonts();
+
+        // Background image material
         menuMaterial = new our::TexturedMaterial();
-        // Here, we load the shader that will be used to draw the background
         menuMaterial->shader = new our::ShaderProgram();
         menuMaterial->shader->attach("assets/shaders/textured.vert", GL_VERTEX_SHADER);
         menuMaterial->shader->attach("assets/shaders/textured.frag", GL_FRAGMENT_SHADER);
         menuMaterial->shader->link();
-        // Then we load the menu texture
-        menuMaterial->texture = our::texture_utils::loadImage("assets/textures/menu.png");
-        // Initially, the menu material will be black, then it will fade in
+        menuMaterial->texture = our::texture_utils::loadImage("assets/textures/dusty-menu.jpeg");
         menuMaterial->tint = glm::vec4(0.0f, 0.0f, 0.0f, 0.0f);
 
-        // Second, we create a material to highlight the hovered buttons
+        // Dark overlay — standard alpha blending, tint driven per-frame
+        darkOverlay = new our::TintedMaterial();
+        darkOverlay->shader = new our::ShaderProgram();
+        darkOverlay->shader->attach("assets/shaders/tinted.vert", GL_VERTEX_SHADER);
+        darkOverlay->shader->attach("assets/shaders/tinted.frag", GL_FRAGMENT_SHADER);
+        darkOverlay->shader->link();
+        darkOverlay->tint = glm::vec4(0.0f, 0.0f, 0.0f, 0.0f);
+        darkOverlay->pipelineState.blending.enabled = true;
+        darkOverlay->pipelineState.blending.equation = GL_FUNC_ADD;
+        darkOverlay->pipelineState.blending.sourceFactor = GL_SRC_ALPHA;
+        darkOverlay->pipelineState.blending.destinationFactor = GL_ONE_MINUS_SRC_ALPHA;
+
+        // Highlight material (subtract blend for inversion effect on hover)
         highlightMaterial = new our::TintedMaterial();
-        // Since the highlight is not textured, we used the tinted material shaders
         highlightMaterial->shader = new our::ShaderProgram();
         highlightMaterial->shader->attach("assets/shaders/tinted.vert", GL_VERTEX_SHADER);
         highlightMaterial->shader->attach("assets/shaders/tinted.frag", GL_FRAGMENT_SHADER);
         highlightMaterial->shader->link();
-        // The tint is white since we will subtract the background color from it to create a negative effect.
         highlightMaterial->tint = glm::vec4(1.0f, 1.0f, 1.0f, 1.0f);
-        // To create a negative effect, we enable blending, set the equation to be subtract,
-        // and set the factors to be one for both the source and the destination.
         highlightMaterial->pipelineState.blending.enabled = true;
         highlightMaterial->pipelineState.blending.equation = GL_FUNC_SUBTRACT;
         highlightMaterial->pipelineState.blending.sourceFactor = GL_ONE;
         highlightMaterial->pipelineState.blending.destinationFactor = GL_ONE;
 
-        // Then we create a rectangle whose top-left corner is at the origin and its size is 1x1.
-        // Note that the texture coordinates at the origin is (0.0, 1.0) since we will use the
-        // projection matrix to make the origin at the the top-left corner of the screen.
-        rectangle = new our::Mesh({
-                                      {{0.0f, 0.0f, 0.0f}, {255, 255, 255, 255}, {0.0f, 1.0f}, {0.0f, 0.0f, 1.0f}},
-                                      {{1.0f, 0.0f, 0.0f}, {255, 255, 255, 255}, {1.0f, 1.0f}, {0.0f, 0.0f, 1.0f}},
-                                      {{1.0f, 1.0f, 0.0f}, {255, 255, 255, 255}, {1.0f, 0.0f}, {0.0f, 0.0f, 1.0f}},
-                                      {{0.0f, 1.0f, 0.0f}, {255, 255, 255, 255}, {0.0f, 0.0f}, {0.0f, 0.0f, 1.0f}},
-                                  },
-                                  {
-                                      0,
-                                      1,
-                                      2,
-                                      2,
-                                      3,
-                                      0,
-                                  });
+        rectangle = new our::Mesh(
+            {
+                {{0, 0, 0}, {255, 255, 255, 255}, {0, 1}, {0, 0, 1}},
+                {{1, 0, 0}, {255, 255, 255, 255}, {1, 1}, {0, 0, 1}},
+                {{1, 1, 0}, {255, 255, 255, 255}, {1, 0}, {0, 0, 1}},
+                {{0, 1, 0}, {255, 255, 255, 255}, {0, 0}, {0, 0, 1}},
+            },
+            {0, 1, 2, 2, 3, 0});
 
-        // Reset the time elapsed since the state is entered.
-        time = 0;
-
-        // Initialize and start menu background music
+        time = 0.0f;
         menuAudio.initialize();
         menuAudio.playLooping("assets/sounds/menu-start.mp3", 0.5f);
 
-        // Fill the positions, sizes and actions for the menu buttons
-        // Note that we use lambda expressions to set the actions of the buttons.
-        // A lambda expression consists of 3 parts:
-        // - The capture list [] which is the variables that the lambda should remember because it will use them during execution.
-        //      We store [this] in the capture list since we will use it in the action.
-        // - The argument list () which is the arguments that the lambda should receive when it is called.
-        //      We leave it empty since button actions receive no input.
-        // - The body {} which contains the code to be executed.
-        buttons[0].position = {830.0f, 607.0f};
-        buttons[0].size = {400.0f, 33.0f};
         buttons[0].action = [this]()
-        { this->getApp()->changeState("play"); };
-
-        buttons[1].position = {830.0f, 644.0f};
-        buttons[1].size = {400.0f, 33.0f};
+        { getApp()->changeState("play"); };
         buttons[1].action = [this]()
-        { this->getApp()->close(); };
+        { getApp()->close(); };
     }
 
+    // ─── onImmediateGui ───────────────────────────────────────────────────────
+    void onImmediateGui() override
+    {
+        glm::ivec2 fbSize = getApp()->getFrameBufferSize();
+        updateLayout(fbSize);
+
+        float titleFade = glm::smoothstep(0.35f, 1.10f, time);
+        float btnFade = glm::smoothstep(0.55f, 1.30f, time);
+        float pulse = 0.5f + 0.5f * std::sin(time * 3.5f);
+
+        ImDrawList *dl = ImGui::GetForegroundDrawList();
+        glm::vec2 mp = getApp()->getMouse().getMousePosition();
+
+        // ── Title ────────────────────────────────────────────────────────────
+        float sOff = titleFontSize * 0.045f;
+        ImU32 titleShadow = ImGui::ColorConvertFloat4ToU32(
+            ImVec4(0.08f, 0.04f, 0.01f, titleFade * 0.95f));
+        ImU32 titleBase = ImGui::ColorConvertFloat4ToU32(
+            ImVec4(0.98f, 0.85f, 0.40f, titleFade));
+        ImU32 titleShine = ImGui::ColorConvertFloat4ToU32(
+            ImVec4(1.00f, 0.97f, 0.80f, titleFade * 0.55f));
+
+        dl->AddText(titleFont, titleFontSize,
+                    ImVec2(titlePosition.x + sOff, titlePosition.y + sOff), titleShadow, GameTitle);
+        dl->AddText(titleFont, titleFontSize,
+                    ImVec2(titlePosition.x + sOff * 0.4f, titlePosition.y + sOff * 0.4f), titleShadow, GameTitle);
+        dl->AddText(titleFont, titleFontSize,
+                    ImVec2(titlePosition.x, titlePosition.y), titleBase, GameTitle);
+        dl->AddText(titleFont, titleFontSize,
+                    ImVec2(titlePosition.x - 1.0f, titlePosition.y - 1.5f), titleShine, GameTitle);
+
+        // Divider
+        float divY = titlePosition.y + titleSize.y + std::clamp(titleSize.y * 0.28f, 8.0f, 20.0f);
+        float divHalfW = titleSize.x * 0.42f;
+        float centerX = titlePosition.x + titleSize.x * 0.5f;
+        drawDivider(dl, centerX - divHalfW, centerX + divHalfW, divY, titleFade);
+
+        // ── Buttons ──────────────────────────────────────────────────────────
+        for (size_t i = 0; i < buttons.size(); ++i)
+        {
+            bool hovered = buttons[i].isInside(mp);
+
+            if (hovered)
+            {
+                float gAlpha = 0.20f + 0.08f * pulse;
+                ImU32 hoverBg = ImGui::ColorConvertFloat4ToU32(
+                    ImVec4(0.96f, 0.82f, 0.30f, gAlpha * btnFade));
+                dl->AddRectFilled(
+                    ImVec2(buttons[i].position.x, buttons[i].position.y),
+                    ImVec2(buttons[i].position.x + buttons[i].size.x,
+                           buttons[i].position.y + buttons[i].size.y),
+                    hoverBg, 10.0f);
+
+                ImU32 hoverBorder = ImGui::ColorConvertFloat4ToU32(
+                    ImVec4(1.0f, 0.92f, 0.55f, (0.55f + 0.25f * pulse) * btnFade));
+                dl->AddRect(
+                    ImVec2(buttons[i].position.x, buttons[i].position.y),
+                    ImVec2(buttons[i].position.x + buttons[i].size.x,
+                           buttons[i].position.y + buttons[i].size.y),
+                    hoverBorder, 10.0f, 0, 1.5f);
+            }
+
+            ImVec4 c = hovered
+                           ? ImVec4(1.00f, 0.97f, 0.72f, btnFade)
+                           : ImVec4(0.90f, 0.85f, 0.74f, btnFade * 0.85f);
+
+            drawShadowedText(dl, buttonFont, buttonFontSize,
+                             buttonTextPositions[i],
+                             ImGui::ColorConvertFloat4ToU32(c),
+                             ButtonLabels[i],
+                             0.75f, buttonFontSize * 0.06f);
+        }
+    }
+
+    // ─── onDraw ───────────────────────────────────────────────────────────────
     void onDraw(double deltaTime) override
     {
-        // Get a reference to the keyboard object
-        auto &keyboard = getApp()->getKeyboard();
+        glm::ivec2 size = getApp()->getFrameBufferSize();
+        updateLayout(size);
 
+        auto &keyboard = getApp()->getKeyboard();
         if (keyboard.justPressed(GLFW_KEY_SPACE))
         {
-            // If the space key is pressed in this frame, go to the play state
             getApp()->changeState("play");
+            return;
         }
-        else if (keyboard.justPressed(GLFW_KEY_ESCAPE))
+        if (keyboard.justPressed(GLFW_KEY_ESCAPE))
         {
-            // If the escape key is pressed in this frame, exit the game
             getApp()->close();
+            return;
         }
 
-        // Get a reference to the mouse object and get the current mouse position
         auto &mouse = getApp()->getMouse();
         glm::vec2 mousePosition = mouse.getMousePosition();
 
-        // If the mouse left-button is just pressed, check if the mouse was inside
-        // any menu button. If it was inside a menu button, run the action of the button.
         if (mouse.justPressed(0))
-        {
-            for (auto &button : buttons)
-            {
-                if (button.isInside(mousePosition))
-                    button.action();
-            }
-        }
+            for (auto &b : buttons)
+                if (b.isInside(mousePosition))
+                    b.action();
 
-        // Get the framebuffer size to set the viewport and the create the projection matrix.
-        glm::ivec2 size = getApp()->getFrameBufferSize();
-        // Make sure the viewport covers the whole size of the framebuffer.
         glViewport(0, 0, size.x, size.y);
-
-        // The view matrix is an identity (there is no camera that moves around).
-        // The projection matrix applys an orthographic projection whose size is the framebuffer size in pixels
-        // so that the we can define our object locations and sizes in pixels.
-        // Note that the top is at 0.0 and the bottom is at the framebuffer height. This allows us to consider the top-left
-        // corner of the window to be the origin which makes dealing with the mouse input easier.
         glm::mat4 VP = glm::ortho(0.0f, (float)size.x, (float)size.y, 0.0f, 1.0f, -1.0f);
-        // The local to world (model) matrix of the background which is just a scaling matrix to make the menu cover the whole
-        // window. Note that we defind the scale in pixels.
         glm::mat4 M = glm::scale(glm::mat4(1.0f), glm::vec3(size.x, size.y, 1.0f));
 
-        // First, we apply the fading effect.
         time += (float)deltaTime;
+
+        // 1. Background image fades in over 2 seconds
         menuMaterial->tint = glm::vec4(glm::smoothstep(0.00f, 2.00f, time));
-        // Then we render the menu background
-        // Notice that I don't clear the screen first, since I assume that the menu rectangle will draw over the whole
-        // window anyway.
         menuMaterial->setup();
         menuMaterial->shader->set("transform", VP * M);
         rectangle->draw();
 
-        // For every button, check if the mouse is inside it. If the mouse is inside, we draw the highlight rectangle over it.
+        // 2. Dark overlay fades in from t=1 to t=2.5, settling at 72% opacity
+        //    This dims the photo so the text pops without hiding the scene entirely
+        float overlayAlpha = glm::smoothstep(1.0f, 2.5f, time) * 0.72f;
+        darkOverlay->tint = glm::vec4(0.0f, 0.0f, 0.0f, overlayAlpha);
+        darkOverlay->setup();
+        darkOverlay->shader->set("transform", VP * M);
+        rectangle->draw();
+
+        // 3. Hover highlight (subtract blend) on top of everything
         for (auto &button : buttons)
         {
             if (button.isInside(mousePosition))
@@ -196,16 +325,23 @@ class Menustate : public our::State
         }
     }
 
+    // ─── onDestroy ────────────────────────────────────────────────────────────
     void onDestroy() override
     {
-        // Stop and clean up menu music
         menuAudio.destroy();
-        // Delete all the allocated resources
         delete rectangle;
         delete menuMaterial->texture;
         delete menuMaterial->shader;
         delete menuMaterial;
+        delete darkOverlay->shader;
+        delete darkOverlay;
         delete highlightMaterial->shader;
         delete highlightMaterial;
+        ImGuiIO &io = ImGui::GetIO();
+        io.Fonts->Clear();
+        io.Fonts->AddFontDefault();
+        getApp()->rebuildImGuiFonts();
+        titleFont = nullptr;
+        buttonFont = nullptr;
     }
 };

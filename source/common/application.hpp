@@ -126,6 +126,9 @@ namespace our {
             return size;
         }
 
+        // Rebuild the ImGui font atlas and refresh the backend font texture after runtime font changes.
+        void rebuildImGuiFonts();
+
         // Get the window size. In most cases, it is equal to the frame buffer size.
         // But on some platforms, the framebuffer size may be different from the window size.
         glm::ivec2 getWindowSize() {

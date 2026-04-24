@@ -1,27 +1,31 @@
 #pragma once
 
 #include "../ecs/component.hpp"
+#include <algorithm>
 #include <string>
 
 namespace our
 {
-
-    // A tag component that marks an entity as a collectible coin.
-    // CoinSystem looks for this component to identify coins in the world.
     class DustyComponent : public Component
     {
     public:
+        float maxHealth = 100.0f;
+        float currentHealth = 100.0f;
+        int coins = 0;
         int score = 0;
-        int health = 100;
+        int totalRings = 0;
+        bool isDead = false;
+        bool isWon = false;
 
         static std::string getID() { return "dusty"; }
 
-        // Deserialize score from json if available
         void deserialize(const nlohmann::json &data) override
         {
-            score = data.value("score", 0);
-            health = data.value("health", 100);
+            maxHealth = data.value("maxHealth", maxHealth);
+            currentHealth = maxHealth; // Always start at full health
+            coins = data.value("coins", coins);
+            score = data.value("score", score);
+            totalRings = data.value("totalRings", totalRings);
         }
     };
-
 }

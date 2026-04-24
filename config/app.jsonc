@@ -9,6 +9,7 @@
         "fullscreen": false
     },
     "scene": {
+        "plane_flapping": false,
         "renderer": {
             "sky_lighting": {
                 "top": [
@@ -75,7 +76,10 @@
                 "cone": "assets/models/cone.obj",
                 "coin": "assets/models/coin.obj",
                 "health_pack": "assets/models/health.obj",
-                "dusty": "assets/models/dusty.obj",
+                "dusty_body": "assets/models/dusty_body.obj",
+                "dusty_fan": "assets/models/dusty_fan.obj",
+                "dusty_left_wing": "assets/models/dusty_left_wing.obj",
+                "dusty_right_wing": "assets/models/dusty_right_wing.obj",
                 "finish_line": "assets/models/finish_line.obj"
             },
             "samplers": {
@@ -134,8 +138,8 @@
                     ]
                 },
                 "ring": {
-                    "type": "textured",
-                    "shader": "textured",
+                    "type": "lit",
+                    "shader": "lit",
                     "pipelineState": {
                         "faceCulling": {
                             "enabled": false
@@ -174,8 +178,8 @@
                     "sampler": "default"
                 },
                 "cone": {
-                    "type": "textured",
-                    "shader": "textured",
+                    "type": "lit",
+                    "shader": "lit",
                     "pipelineState": {
                         "faceCulling": {
                             "enabled": false
@@ -302,38 +306,70 @@
                         0.0,
                         0.3
                     ]
+                },
+                "runway_light": {
+                    "type": "tinted",
+                    "shader": "tinted",
+                    "pipelineState": {
+                        "faceCulling": {
+                            "enabled": false
+                        },
+                        "depthTesting": {
+                            "enabled": true
+                        }
+                    },
+                    "tint": [
+                        1.0,
+                        0.6,
+                        0.2,
+                        1.0
+                    ]
                 }
             }
         },
-        "ringTrack": {
-            "ringCount": 10,
-            "spacing": 30.0,
-            "heightVariance": 15.0,
-            "lateralVariance": 10.0,
+        "track": {
+            "startPosition": [
+                -25.0,
+                0.0,
+                0.0
+            ],
+            "endPosition": [
+                25.0,
+                10.0,
+                -500.0
+            ],
+            "stagesCount": 10,
+            "innerMargin": 5.0,
+            "outerMargin": 20.0
+        },
+        "rings": {
             "ringScale": 20.0,
-            "trackStartZ": 0.0,
             "finishLineScale": 2.0
         },
         "tornado": {
-            "tornadoCount": 10,
-            "spacing": 30.0,
-            "heightVariance": 15.0,
-            "lateralVariance": 10.0,
-            "sideOffset": 10.0,
             "depthOffset": 10.0,
             "scale": 2.0,
-            "spawnChance": 0.2
+            "spawnChance": 0.2,
+            "angularVelocity": 3.0,
+            "moveSpeedXMin": 2.0,
+            "moveSpeedXMax": 20.0
         },
-        "coneBoundary": {
-            "margin": 2.0,
-            "coneSpacing": 10.0,
-            "coneY":-4.0,
-            "scale": 4.0
+        "runwayLights": {
+            "spacing": 10.0,
+            "scale": 0.3
         },
         "world": [
             {
-                "position": [0, 10, 0],
-                "rotation": [-45, -45, 0],
+                "position": [
+                    0,
+                    10,
+                    0
+                ],
+                "rotation": [
+                    -45,
+                    -45,
+                    0
+                ],
                 "components": [
                     {
                         "type": "Light",
@@ -383,81 +419,152 @@
                         "type": "Free Camera Controller"
                     },
                     {
-                        "type": "Health",
-                        "maxHealth": 100.0,
-                        "currentHealth": 100.0
+                        "type": "dusty",
+                        "maxHealth": 100.0
                     }
                 ],
                 "children": [
                     {
-                        "position": [0, -3, -4],
-                        "rotation": [0, 180, 0],
-                        "scale": [0.2, 0.2, 0.2],
-                        "components": [
-                            {
-                                "type": "Mesh Renderer",
-                                "mesh": "dusty",
-                                "material": "dusty"
-                            }
-                        ],
+                        "name": "Plane Visuals",
+                        "position": [0, -3, -6],
+                        "rotation": [-90, 0, 0],
+                        "scale": [0.5, 0.5, 0.5],
                         "children": [
                             {
+                                "name": "Body",
+                                "components": [
+                                    {
+                                        "type": "Mesh Renderer",
+                                        "mesh": "dusty_body",
+                                        "material": "dusty"
+                                    }
+                                ]
+                            },
+                            {
+                                "name": "Propeller",
+                                "components": [
+                                    {
+                                        "type": "Mesh Renderer",
+                                        "mesh": "dusty_fan",
+                                        "material": "dusty"
+                                    },
+                                    {
+                                        "type": "Movement",
+                                        "angularVelocity": [0, 720, 0]
+                                    }
+                                ]
+                            },
+                            {
+                                "name": "Left Wing Mesh",
+                                "position": [-1.2, 2.0, -3],
+                                "components": [
+                                    {
+                                        "type": "Mesh Renderer",
+                                        "mesh": "dusty_left_wing",
+                                        "material": "dusty"
+                                    }
+                                ]
+                            },
+                            {
+                                "name": "Right Wing Mesh",
+                                "position": [1.2, 2.0, -3],
+                                "components": [
+                                    {
+                                        "type": "Mesh Renderer",
+                                        "mesh": "dusty_right_wing",
+                                        "material": "dusty"
+                                    }
+                                ]
+                            },
+                            {
                                 "name": "Body Collider",
-                                "position": [
-                                    0,
-                                    2.0,
-                                    -0.5
-                                ],
+                                "position": [0, 2.0, -0.5],
                                 "components": [
                                     {
                                         "type": "Collider",
                                         "shapeType": "aabb",
                                         "objectType": "player",
-                                        "aabbExtents": [
-                                            0.5,
-                                            0.7,
-                                            3.0
-                                        ]
+                                        "aabbExtents": [0.5, 0.7, 3.0]
                                     }
                                 ]
                             },
                             {
                                 "name": "Left Wing",
-                                "position": [
-                                    2.4,
-                                    2.0,
-                                    0.2
-                                ],
+                                "position": [2.4, 2.0, 0.2],
                                 "components": [
                                     {
                                         "type": "Collider",
                                         "shapeType": "aabb",
                                         "objectType": "player",
-                                        "aabbExtents": [
-                                            1.8,
-                                            0.25,
-                                            0.8
+                                        "aabbExtents": [1.8, 0.25, 0.8]
+                                    }
+                                ]
+                            },
+                            {
+                                "name": "Left Flashlight",
+                                "position": [ 2.4, 2.0, 1.25 ],
+                                "rotation": [ 0, 0, 0 ],
+                                "components": [
+                                    {
+                                        "type": "Light",
+                                        "lightType": "spot",
+                                        "color": [ 1.0, 1.0, 1.0 ],
+                                "children": [
+                                    {
+                                        "position": [0, 0, -4.5],
+                                        "rotation": [90, 0, 0],
+                                        "scale": [3.0, 10.0, 3.0],
+                                        "components": [
+                                            {
+                                                "type": "Mesh Renderer",
+                                                "mesh": "cone",
+                                                "material": "light_beam"
+                                            }
                                         ]
+                                    }
+                                ],
+                                        "attenuation": [ 1.0, 0.0, 0.01 ],
+                                        "cone_angles": [ 20.0, 30.0 ]
+                                    }
+                                ]
+                            },
+                            {
+                                "name": "Right Flashlight",
+                                "position": [ -2.4, 2.0, 1.25 ],
+                                "rotation": [ 0, 0, 0 ],
+                                "components": [
+                                    {
+                                        "type": "Light",
+                                        "lightType": "spot",
+                                        "color": [ 1.0, 1.0, 1.0 ],
+                                "children": [
+                                    {
+                                        "position": [0, 0, -4.5],
+                                        "rotation": [90, 0, 0],
+                                        "scale": [3.0, 10.0, 3.0],
+                                        "components": [
+                                            {
+                                                "type": "Mesh Renderer",
+                                                "mesh": "cone",
+                                                "material": "light_beam"
+                                            }
+                                        ]
+                                    }
+                                ],
+                                        "attenuation": [ 1.0, 0.0, 0.01 ],
+                                        "cone_angles": [ 20.0, 30.0 ]
                                     }
                                 ]
                             },
                             {
                                 "name": "Right Wing",
-                                "position": [
-                                    -2.4,
-                                    2.0,
-                                    0.2
-                                ],
+                                "position": [-2.4, 2.0, 0.2],
                                 "components": [
                                     {
                                         "type": "Collider",
                                         "shapeType": "aabb",
                                         "objectType": "player",
-                                        "aabbExtents": [
-                                            1.8,
-                                            0.25,
-                                            0.8
-                                        ]
+                                        "aabbExtents": [1.8, 0.25, 0.8]
                                     }
                                 ]
                             }

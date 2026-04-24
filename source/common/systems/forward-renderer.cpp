@@ -187,6 +187,15 @@ namespace our
         };
         std::vector<LightData> activeLights;
 
+        float time = std::fmod((float)glfwGetTime() * 0.02f, 1.0f);
+        float xk = std::pow(time, 1.5f);
+        float toD = xk / (xk + std::pow(1.0f - time, 1.5f));
+        toD = -toD * 6.283853f - 1.5708f + 0.1f;
+        glm::vec3 sunDir = glm::normalize(glm::vec3(std::sin(toD)*0.4f+0.4f, std::sin(toD) + 0.69f, std::cos(toD)));
+        float sunUp = glm::max(glm::dot(sunDir, glm::vec3(0.0f, 1.0f, 0.0f)), 0.0f);
+        float sunStrength = glm::clamp(sunUp * sunUp * sunUp * 6.0f, 0.0f, 1.0f);
+        float directionalStrength = glm::max(sunStrength, 0.05f); // Keep a bit of light at night
+
         for (auto entity : world->getEntities())
         {
             // If we hadn't found a camera yet, we look for a camera in this entity
@@ -220,7 +229,7 @@ namespace our
                 }
             }
 
-            // Debug rendering for Colliders
+            // // Debug rendering for Colliders
             if (auto collider = entity->getComponent<ColliderComponent>(); collider)
             {
                 Material *debugMat = our::AssetLoader<Material>::get("debug_wireframe");
@@ -277,7 +286,7 @@ namespace our
             {
                 if (ld.light->lightType == LightType::DIRECTIONAL)
                 {
-                    lightDir = glm::normalize(glm::vec3(ld.localToWorld * glm::vec4(0.0f, 0.0f, -1.0f, 0.0f)));
+                    lightDir = -sunDir;
                     hasDirLight = true;
                     break;
                 }
@@ -460,12 +469,19 @@ namespace our
                 {
                     std::string prefix = "lights[" + std::to_string(i) + "].";
                     command.material->shader->set(prefix + "type", (int)activeLights[i].light->lightType);
-                    command.material->shader->set(prefix + "color", activeLights[i].light->diffuse);
+                    
+                    glm::vec3 lightColor = activeLights[i].light->diffuse;
+                    glm::vec3 dir = activeLights[i].localToWorld * glm::vec4(0, 0, -1, 0);
+                    if (activeLights[i].light->lightType == LightType::DIRECTIONAL) {
+                        lightColor *= directionalStrength;
+                        dir = -sunDir;
+                    }
+                    command.material->shader->set(prefix + "color", lightColor);
                     command.material->shader->set(prefix + "attenuation", activeLights[i].light->attenuation);
                     glm::vec3 pos = activeLights[i].localToWorld * glm::vec4(0, 0, 0, 1);
-                    glm::vec3 dir = activeLights[i].localToWorld * glm::vec4(0, 0, -1, 0);
                     command.material->shader->set(prefix + "position", pos);
-                    command.material->shader->set(prefix + "direction", glm::normalize(dir));
+                    command.material->shader->set(prefix + "direction", glm::normalize(dir)); 
+                    command.material->shader->set(prefix + "cone_angles", activeLights[i].light->cone_angles);
                 }
 
                 // Pass shadow map parameters
@@ -506,12 +522,19 @@ namespace our
                 {
                     std::string prefix = "lights[" + std::to_string(i) + "].";
                     command.material->shader->set(prefix + "type", (int)activeLights[i].light->lightType);
-                    command.material->shader->set(prefix + "color", activeLights[i].light->diffuse);
+                    
+                    glm::vec3 lightColor = activeLights[i].light->diffuse;
+                    glm::vec3 dir = activeLights[i].localToWorld * glm::vec4(0, 0, -1, 0);
+                    if (activeLights[i].light->lightType == LightType::DIRECTIONAL) {
+                        lightColor *= directionalStrength;
+                        dir = -sunDir;
+                    }
+                    command.material->shader->set(prefix + "color", lightColor);
                     command.material->shader->set(prefix + "attenuation", activeLights[i].light->attenuation);
                     glm::vec3 pos = activeLights[i].localToWorld * glm::vec4(0, 0, 0, 1);
-                    glm::vec3 dir = activeLights[i].localToWorld * glm::vec4(0, 0, -1, 0);
                     command.material->shader->set(prefix + "position", pos);
-                    command.material->shader->set(prefix + "direction", glm::normalize(dir));
+                    command.material->shader->set(prefix + "direction", glm::normalize(dir)); 
+                    command.material->shader->set(prefix + "cone_angles", activeLights[i].light->cone_angles);
                 }
 
                 // Pass shadow map parameters

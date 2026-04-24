@@ -214,7 +214,6 @@ int our::Application::run(int run_for_frames)
     glfwMakeContextCurrent(window); // Tell GLFW to make the context of our window the main context on the current thread.
 
     gladLoadGL(glfwGetProcAddress); // Load the OpenGL functions from the driver
-
     glEnable(GL_MULTISAMPLE);
 
     // Print information about the OpenGL context
@@ -242,6 +241,9 @@ int our::Application::run(int run_for_frames)
     IMGUI_CHECKVERSION();
     ImGui::CreateContext();
     ImGuiIO &io = ImGui::GetIO();
+    // io.Fonts->Clear();
+    // io.Fonts->AddFontFromFileTTF("assets/fonts/Cinzel-Bold.ttf", 128.0f);
+    // io.Fonts->Build();
     ImGui::StyleColorsDark();
 
     // Initialize ImGui for GLFW and OpenGL
@@ -460,4 +462,12 @@ void our::Application::setupCallbacks()
             app->getMouse().ScrollEvent(x_offset, y_offset);
             if(app->currentState) app->currentState->onScrollEvent(x_offset, y_offset);
         } });
+}
+
+void our::Application::rebuildImGuiFonts()
+{
+    ImGuiIO &io = ImGui::GetIO();
+    io.Fonts->Build();
+    ImGui_ImplOpenGL3_DestroyFontsTexture();
+    ImGui_ImplOpenGL3_CreateFontsTexture();
 }

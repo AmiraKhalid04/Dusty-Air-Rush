@@ -383,9 +383,8 @@
                         "type": "Free Camera Controller"
                     },
                     {
-                        "type": "Health",
-                        "maxHealth": 100.0,
-                        "currentHealth": 100.0
+                        "type": "dusty",
+                        "maxHealth": 100.0
                     }
                 ],
                 "children": [

@@ -126,7 +126,7 @@ void main() {
             float d = length(world_to_light_dir);
             world_to_light_dir /= d;
             attenuation = 1.0 / max(dot(light.attenuation, vec3(1.0, d, d*d)), 0.00001);
-            float angle = acos(clamp(dot(-world_to_light_dir, normalize(-light.direction)), -1.0, 1.0));
+            float angle = acos(clamp(dot(-world_to_light_dir, normalize(light.direction)), -1.0, 1.0));
             attenuation *= 1.0 - smoothstep(light.cone_angles.x, light.cone_angles.y, angle);
         }
 

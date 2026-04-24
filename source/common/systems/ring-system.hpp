@@ -7,65 +7,71 @@
 #include <vector>
 #include <cmath>
 #include <iostream>
+#include <random>
 
 namespace our
 {
 
-    struct RingTrackConfig
+    struct RingConfig
     {
-        int ringCount = 20;
-        float spacing = 12.0f;        // distance between rings
-        float heightVariance = 3.0f;  // how much rings drift up/down
-        float lateralVariance = 2.0f; // how much rings drift left/right
+        // Track boundaries
+        glm::vec3 trackStartPosition = glm::vec3(0.0f, 0.0f, 0.0f);
+        glm::vec3 trackEndPosition = glm::vec3(0.0f, 0.0f, 300.0f);
+        int ringsCount = 10;
+        float margin = 5.0f;
+
+        // Calculated at runtime
+        float spacing = 0.0f; // will be calculated as (endPosition.z - startPosition.z) / ringsCount
+
+        // Ring appearance
         float ringScale = 4.0f;
-        float trackStartZ = 0.0f;
         float finishLineScale = 2.0f;
     };
 
-    class RingTrackSystem
+    class RingSystem
     {
     public:
-        std::vector<glm::vec3> initialize(World *world, const RingTrackConfig &config)
+        std::vector<glm::vec3> initialize(World *world, RingConfig &config)
         {
+            // Calculate spacing from track depth and ring count
+            float trackDepth = config.trackStartPosition.z - config.trackEndPosition.z;
+            config.spacing = trackDepth / (config.ringsCount + 1.0f);
+
+            // Calculate x and y ranges based on track start/end positions with margin
+            float xMin = std::min(config.trackStartPosition.x, config.trackEndPosition.x) + config.margin;
+            float xMax = std::max(config.trackStartPosition.x, config.trackEndPosition.x) - config.margin;
+            float yMin = std::min(config.trackStartPosition.y, config.trackEndPosition.y) + config.margin;
+            float yMax = std::max(config.trackStartPosition.y, config.trackEndPosition.y) - config.margin;
+
+            // Set up random number generator
+            std::random_device rd;
+            std::mt19937 gen(rd());
+            std::uniform_real_distribution<> disX(xMin, xMax);
+            std::uniform_real_distribution<> disY(yMin, yMax);
+
             std::vector<glm::vec3> ringPositions;
             Mesh *ringMesh = AssetLoader<Mesh>::get("ring");
             Material *ringMaterial = AssetLoader<Material>::get("ring");
 
             if (!ringMesh || !ringMaterial)
                 return ringPositions;
-            ;
 
-            glm::vec3 cursor = glm::vec3(0, config.trackStartZ, 0); // starting position
+            glm::vec3 cursor = config.trackStartPosition; // starting position
 
-            for (int i = 0; i < config.ringCount; i++)
+            for (int i = 0; i < config.ringsCount; i++)
             {
                 Entity *entity = world->add();
                 entity->name = "ring_" + std::to_string(i);
 
-                // Advance along Z, with sinusoidal height & lateral drift
+                // Advance along Z, with random x and y within defined ranges
                 cursor.z -= config.spacing;
-                cursor.y = config.heightVariance * glm::sin(i * 0.4f);
-                cursor.x = config.lateralVariance * glm::sin(i * 0.3f + 1.0f);
+                cursor.x = disX(gen);
+                cursor.y = disY(gen);
                 std::cout << "Ring " << i << " position: " << cursor.x << ", " << cursor.y << ", " << cursor.z << std::endl;
 
                 entity->localTransform.position = cursor;
                 entity->localTransform.scale = glm::vec3(config.ringScale);
                 ringPositions.push_back(cursor); // Store position for coin placement
-
-                // Tilt the ring to face the direction of travel
-                glm::vec3 nextPos = cursor;
-                nextPos.z -= config.spacing;
-                nextPos.y = config.heightVariance * glm::sin((i + 1) * 0.4f);
-                nextPos.x = config.lateralVariance * glm::sin((i + 1) * 0.3f + 1.0f);
-
-                glm::vec3 dir = glm::normalize(nextPos - cursor);
-                std::cout << "Ring " << i << " direction: " << dir.x << ", " << dir.y << ", " << dir.z << std::endl;
-
-                // Compute rotation to align ring normal with direction
-                float pitch = glm::degrees(glm::asin(glm::clamp(-dir.y, -1.0f, 1.0f)));
-                float yaw = glm::degrees(std::atan2(dir.x, -dir.z));
-
-                std::cout << "Ring " << i << " pitch: " << glm::degrees(pitch) << ", yaw: " << glm::degrees(yaw) / 2 << std::endl;
 
                 entity->localTransform.rotation = glm::vec3(0, glm::pi<float>() / 2, 0.0f);
 
@@ -75,31 +81,31 @@ namespace our
 
                 // ─── PERSISTENT HAZARD SEGMENTS (The outer frame) ───
                 float frameRadius = 0.16f; // Average radius of the ring geometry
-                for (int j = 0; j < 12; j++) {
-                    Entity* segment = world->add();
+                for (int j = 0; j < 12; j++)
+                {
+                    Entity *segment = world->add();
                     segment->parent = entity; // Follow the ring's transform
                     segment->name = "ring_frame_" + std::to_string(j);
-                    
+
                     float angle = j * (glm::pi<float>() / 6.0f);
                     segment->localTransform.position = {
                         0.0f,
                         glm::cos(angle) * frameRadius + 0.20f, // 0.16 + 0.04
-                        glm::sin(angle) * frameRadius
-                    };
-                    
-                    auto* col = segment->addComponent<ColliderComponent>();
+                        glm::sin(angle) * frameRadius};
+
+                    auto *col = segment->addComponent<ColliderComponent>();
                     col->shapeType = ColliderType::Sphere; // Spheres avoid the rotated-box 'fat AABB' issue
                     col->objectType = "ring_frame";
                     col->sphereRadius = 0.04f;
                 }
 
                 // // ─── 1 SCORE TRIGGER (The inner hole) ───
-                Entity* trigger = world->add();
+                Entity *trigger = world->add();
                 trigger->parent = entity;
                 trigger->name = "ring_score_gate";
                 trigger->localTransform.position = {0, 0.20f, 0};
-                
-                auto* col = trigger->addComponent<ColliderComponent>();
+
+                auto *col = trigger->addComponent<ColliderComponent>();
                 col->shapeType = ColliderType::Sphere;
                 col->objectType = "ring_score";
                 col->sphereRadius = 0.10f; // Leaves a safe gap between hole boundary and the frames
@@ -110,11 +116,11 @@ namespace our
             // Move one more step forward (after last ring)
             cursor.z -= config.spacing;
 
-            int i = config.ringCount;
+            int i = config.ringsCount;
 
             // Compute same track position
-            cursor.y = 2.0f;
-            cursor.x = 0.0f;
+            cursor.y = config.trackStartPosition.y;
+            cursor.x = (config.trackStartPosition.x + config.trackEndPosition.x) / 2.0f;
 
             // Create entity
             Entity *finish = world->add();
@@ -137,6 +143,11 @@ namespace our
                 auto *mr = finish->addComponent<MeshRendererComponent>();
                 mr->mesh = finishMesh;
                 mr->material = finishMaterial;
+
+                auto* col = finish->addComponent<ColliderComponent>();
+                col->shapeType = ColliderType::AABB;
+                col->objectType = "finish_line";
+                col->aabbExtents = {20.0f, 20.0f, 0.5f}; // BIG trigger to ensure we hit it
             }
 
             std::cout << "Finish line at: "

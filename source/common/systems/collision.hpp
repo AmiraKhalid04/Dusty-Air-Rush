@@ -8,6 +8,7 @@
 #include <glm/glm.hpp>
 #include <iostream>
 #include <unordered_set>
+#include "../components/dusty.hpp"
 
 namespace our
 {
@@ -200,6 +201,15 @@ namespace our
 
                     frameCollisions.insert(collisionTracker);
 
+                    DustyComponent* dusty = nullptr;
+                    for (auto p : playerParts) {
+                        Entity* root = p->parent ? p->parent->parent : nullptr;
+                        if (root) {
+                            dusty = root->getComponent<DustyComponent>();
+                            if (dusty) break;
+                        }
+                    }
+
                     // Apply physics effects every frame while the player is inside the tornado
                     if (otherCollider->objectType == "tornado")
                     {
@@ -253,6 +263,7 @@ namespace our
                         if (otherCollider->objectType == "coin")
                         {
                             std::cout << "[COLLECT] +1 Coin picked up!" << std::endl;
+                            if (dusty) dusty->coins += 1;
                             if (audioSystem)
                                 audioSystem->playSound("assets/sounds/coin.mp3");
                             if (textPopupSystem)
@@ -263,6 +274,7 @@ namespace our
                         else if (otherCollider->objectType == "health")
                         {
                             std::cout << "[COLLECT] +HP Health pack acquired!" << std::endl;
+                            if (dusty) dusty->currentHealth = std::min(dusty->currentHealth + 20.0f, dusty->maxHealth);
                             if (audioSystem)
                                 audioSystem->playSound("assets/sounds/bonus.mp3");
                             if (textPopupSystem)
@@ -273,6 +285,7 @@ namespace our
                         else if (otherCollider->objectType == "ring_score")
                         {
                             std::cout << "[SCORE] +1! Passed through center!" << std::endl;
+                            if (dusty) dusty->score += 1;
                             if (audioSystem)
                                 audioSystem->playSound("assets/sounds/all-right.mp3");
                             if (textPopupSystem)
@@ -283,18 +296,43 @@ namespace our
                         else if (otherCollider->objectType == "ring_frame")
                         {
                             std::cout << "[DAMAGE] Hit the Ring Frame! -20 HP" << std::endl;
+                            if (dusty) dusty->currentHealth -= 20.0f;
                             if (audioSystem)
                                 audioSystem->playSound("assets/sounds/ouch.mp3");
                             if (textPopupSystem)
                                 textPopupSystem->spawn("-20 HP", {1.0f, 0.2f, 0.2f, 1.0f});
+                            if (dusty && dusty->currentHealth <= 0.0f) {
+                                dusty->isDead = true;
+                            }
                         }
-                        else if (otherCollider->objectType == "tornado" || otherCollider->objectType == "obstacle")
+                        else if (otherCollider->objectType == "tornado")
                         {
                             std::cout << "[DAMAGE] Hit hazard! -20 HP" << std::endl;
+                            if (dusty) dusty->currentHealth -= 20.0f;
                             if (audioSystem)
                                 audioSystem->playSound("assets/sounds/ouch.mp3");
                             if (textPopupSystem)
                                 textPopupSystem->spawn("-20 HP", {1.0f, 0.2f, 0.2f, 1.0f});
+                            if (dusty && dusty->currentHealth <= 0.0f) {
+                                dusty->isDead = true;
+                            }
+                        }
+                        else if (otherCollider->objectType == "finish_line")
+                        {
+                            if (dusty) {
+                                if (dusty->score >= dusty->totalRings) {
+                                    dusty->isWon = true;
+
+                                    std::cout << "\n=============================================" << std::endl;
+                                    std::cout << "               GAME FINISHED!                " << std::endl;
+                                    std::cout << " Rings Passed: " << dusty->score << std::endl;
+                                    std::cout << " Coins Collected: " << dusty->coins << std::endl;
+                                    std::cout << " Final Health: " << dusty->currentHealth << "%" << std::endl;
+                                    std::cout << "=============================================\n" << std::endl;
+                                } else {
+                                    std::cout << "You still need to collect " << (dusty->totalRings - dusty->score) << " rings! Finish line rejected\n" << std::endl;
+                                }
+                            }
                         }
                     }
                 }

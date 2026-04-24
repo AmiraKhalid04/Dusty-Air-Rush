@@ -16,6 +16,7 @@
 #include <systems/runway-light-system.hpp>
 #include <systems/coin-system.hpp>
 #include <systems/ui-render-system.hpp>
+#include <systems/text-popup-system.hpp>
 #include <components/camera.hpp>
 #include <components/free-camera-controller.hpp>
 #include <components/dusty.hpp>
@@ -38,6 +39,8 @@ class Playstate : public our::State
     our::UIRenderSystem uiRenderer;
     our::HealthPackSystem healthPackSystem;
     our::AudioSystem audioSystem;
+    our::TextPopupSystem textPopupSystem;
+    float lastDeltaTime = 0.0f;
     our::RunwayLightSystem runwayLightSystem;
     our::WorldBoundarySystem worldBoundarySystem;
 
@@ -51,6 +54,7 @@ class Playstate : public our::State
         // Start ambient wind as background loop (plays underneath all other sounds)
 
         collisionSystem.setAudioSystem(&audioSystem);
+        collisionSystem.setTextPopupSystem(&textPopupSystem);
 
         // First of all, we get the scene configuration from the app config
         auto &config = getApp()->getConfig()["scene"];
@@ -174,6 +178,7 @@ class Playstate : public our::State
 
     void onDraw(double deltaTime) override
     {
+        lastDeltaTime = (float)deltaTime;
         playTime += (float)deltaTime;
 
         // Here, we just run a bunch of systems to control the world logic
@@ -182,6 +187,7 @@ class Playstate : public our::State
         collisionSystem.update(&world, (float)deltaTime);
         tornadoSystem.update(&world, (float)deltaTime);
 
+        textPopupSystem.update((float)deltaTime);
         worldBoundarySystem.update(&world);
 
         // And finally we use the renderer system to draw the scene
@@ -231,6 +237,11 @@ class Playstate : public our::State
         }
     }
 
+    void onImmediateGui() override
+    {
+        textPopupSystem.render();
+    }
+
     void onDestroy() override
     {
         // Don't forget to destroy the renderer
@@ -244,6 +255,7 @@ class Playstate : public our::State
         // Clear the world
         world.clear();
         coinSystem.reset();
+        textPopupSystem.clear();
         // and we delete all the loaded assets to free memory on the RAM and the VRAM
         our::clearAllAssets();
     }

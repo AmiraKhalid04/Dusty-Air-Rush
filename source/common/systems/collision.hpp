@@ -3,6 +3,7 @@
 #include "../ecs/world.hpp"
 #include "../components/collider.hpp"
 #include "audio-system.hpp"
+#include "text-popup-system.hpp"
 
 #include <glm/glm.hpp>
 #include <iostream>
@@ -16,6 +17,7 @@ namespace our
         bool initialized = false;
         glm::vec3 playerStartPos = {0, 0, 0};
         AudioSystem *audioSystem = nullptr;
+        TextPopupSystem *textPopupSystem = nullptr;
         float dangerIntensity = 0.0f;
 
         static constexpr float tornadoProximityRadius = 20.0f;
@@ -27,6 +29,7 @@ namespace our
 
     public:
         void setAudioSystem(AudioSystem *audio) { audioSystem = audio; }
+        void setTextPopupSystem(TextPopupSystem *tps) { textPopupSystem = tps; }
         float getDangerIntensity() const { return dangerIntensity; }
 
         void update(World *world, float deltaTime)
@@ -263,6 +266,8 @@ namespace our
                             if (dusty) dusty->coins += 1;
                             if (audioSystem)
                                 audioSystem->playSound("assets/sounds/coin.mp3");
+                            if (textPopupSystem)
+                                textPopupSystem->spawn("+10", {1.0f, 0.84f, 0.0f, 1.0f});
                             world->markForRemoval(other);
                             otherCollider->objectType = "pending_deletion";
                         }
@@ -272,6 +277,8 @@ namespace our
                             if (dusty) dusty->currentHealth = std::min(dusty->currentHealth + 20.0f, dusty->maxHealth);
                             if (audioSystem)
                                 audioSystem->playSound("assets/sounds/bonus.mp3");
+                            if (textPopupSystem)
+                                textPopupSystem->spawn("+40 HP", {0.2f, 1.0f, 0.4f, 1.0f});
                             world->markForRemoval(other);
                             otherCollider->objectType = "pending_deletion";
                         }
@@ -281,6 +288,8 @@ namespace our
                             if (dusty) dusty->score += 1;
                             if (audioSystem)
                                 audioSystem->playSound("assets/sounds/all-right.mp3");
+                            if (textPopupSystem)
+                                textPopupSystem->spawn("+20", {0.4f, 0.8f, 1.0f, 1.0f});
                             world->markForRemoval(other);
                             otherCollider->objectType = "pending_deletion";
                         }
@@ -290,6 +299,8 @@ namespace our
                             if (dusty) dusty->currentHealth -= 20.0f;
                             if (audioSystem)
                                 audioSystem->playSound("assets/sounds/ouch.mp3");
+                            if (textPopupSystem)
+                                textPopupSystem->spawn("-20 HP", {1.0f, 0.2f, 0.2f, 1.0f});
                             if (dusty && dusty->currentHealth <= 0.0f) {
                                 dusty->isDead = true;
                             }
@@ -300,6 +311,8 @@ namespace our
                             if (dusty) dusty->currentHealth -= 20.0f;
                             if (audioSystem)
                                 audioSystem->playSound("assets/sounds/ouch.mp3");
+                            if (textPopupSystem)
+                                textPopupSystem->spawn("-20 HP", {1.0f, 0.2f, 0.2f, 1.0f});
                             if (dusty && dusty->currentHealth <= 0.0f) {
                                 dusty->isDead = true;
                             }

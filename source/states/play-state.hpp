@@ -162,6 +162,16 @@ class Playstate : public our::State
         cameraController.update(&world, (float)deltaTime);
         collisionSystem.update(&world, (float)deltaTime);
 
+        // Animate wings (flapping)
+        float flapAngle = std::sin(playTime * 15.0f) * glm::radians(25.0f);
+        for (auto entity : world.getEntities()) {
+            if (entity->name.find("Left Wing") != std::string::npos) {
+                entity->localTransform.rotation.y = flapAngle;
+            } else if (entity->name.find("Right Wing") != std::string::npos) {
+                entity->localTransform.rotation.y = -flapAngle;
+            }
+        }
+
 
         // And finally we use the renderer system to draw the scene
         renderer.render(&world);

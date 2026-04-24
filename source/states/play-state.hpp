@@ -45,7 +45,6 @@ class Playstate : public our::State
     our::WorldBoundarySystem worldBoundarySystem;
 
     float playTime = 0.0f;
-    our::ConeBoundarySystem coneBoundarySystem;
     bool planeFlapping = true;
 
     void onInitialize() override

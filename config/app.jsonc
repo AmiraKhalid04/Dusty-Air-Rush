@@ -307,14 +307,12 @@
         },
         "track": {
             "startPosition": [0.0, 0.0, 0.0],
-            "endPosition": [50.0, 0.0, -300.0],
-            "stagesCount": 10,
+            "endPosition": [50.0, 0.0, -250.0],
+            "stagesCount": 5,
             "innerMargin": 5.0,
             "outerMargin": 20.0
         },
         "rings": {
-            "heightVariance": 15.0,
-            "lateralVariance": 10.0,
             "ringScale": 20.0,
             "finishLineScale": 2.0
         },

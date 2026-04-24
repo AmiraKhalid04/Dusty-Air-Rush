@@ -90,17 +90,14 @@ class Playstate : public our::State
         }
 
         our::RingConfig ringConfig;
-        ringConfig.startPosition = trackConfig.startPosition;
-        ringConfig.endPosition = trackConfig.endPosition;
+        ringConfig.trackStartPosition = trackConfig.startPosition;
+        ringConfig.trackEndPosition = trackConfig.endPosition;
         ringConfig.ringsCount = trackConfig.stagesCount;
+        ringConfig.margin = trackConfig.innerMargin;
 
         if (config.contains("rings"))
         {
             const auto &ringsJson = config["rings"];
-            if (ringsJson.contains("heightVariance"))
-                ringConfig.heightVariance = ringsJson["heightVariance"];
-            if (ringsJson.contains("lateralVariance"))
-                ringConfig.lateralVariance = ringsJson["lateralVariance"];
             if (ringsJson.contains("ringScale"))
                 ringConfig.ringScale = ringsJson["ringScale"];
             if (ringsJson.contains("finishLineScale"))

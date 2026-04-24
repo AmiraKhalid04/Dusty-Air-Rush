@@ -8,6 +8,7 @@ uniform vec2 iResolution;
 uniform vec4 iMouse;
 uniform vec3 eye;      // Camera Position
 uniform vec3 forward;  // Camera Forward Vector
+uniform vec3 up;       // Camera Up Vector (carries roll/bank)
 // Note: This shader generates its own noise using n3d/n2d functions,
 // so you don't strictly need the noise texture uniform anymore.
 
@@ -91,9 +92,9 @@ float RES_FACTOR = 1.;
 float TIME = 0.33;
 float BRIGHT = .5;
 
-mat3 setCamera(in vec3 ro, in vec3 ta) {
+mat3 setCamera(in vec3 ro, in vec3 ta, in vec3 worldUp) {
     vec3 cw = normalize(ta-ro);
-    vec3 cp = vec3(0, 1, 0);
+    vec3 cp = normalize(worldUp);
     vec3 cu = normalize( cross(cw,cp) );
     vec3 cv = normalize( cross(cu,cw) );
     return mat3( cu, cv, cw );
@@ -207,10 +208,9 @@ float ground(in vec2 pos, int iter) {
     float a = 0.;
     if (x > 0.)
         a = mountain(pos * 0.0007, iter) * pow(smoothstep(0., 5000., x), 3.0);
-    float h = smoothstep(5000., 0., x);
-    if (h > 0.)
-        a += hill(pos * 0.005, iter) * h + min((x + 1000.) * 0.001, 0.) * 10.;
-    return a + x * 0.005;
+    // Hills and the x*0.005 base slope are removed — the non-mountain side
+    // stays at or below SEA_MAX so raymarch() always classifies it as sea.
+    return a;
 }
 
 vec3 calcNormal(in vec3 pos, int iter, float f) {
@@ -492,32 +492,18 @@ vec3 drawSea(vec3 pos, vec3 rd, float resT) {
     vec3 seaColor = vec3(0.25, 0.5, 0.75);
     vec3 normal = waterNormal(pos.xz, pow(resT*0.05, 2.7)*.0005*RES_FACTOR);
 
-    //折射
-    vec3 ret = refract( rd, normal, 1.0f / 1.3333f );
-    float rT = MARCH_STEP;
-    vec3 pis;
-    for(float a; rT < SEA_DEEP; rT += 0.01 + max(a*MARCH_SURFACE, (resT+rT)*MARCH_STEP*RES_FACTOR)) {
-        pis = pos + rT*ret;
-        a = pis.y - ground(pis.xz, ITER(resT+rT));
-        if (a <= MARCH_STEP*RES_FACTOR*(resT+rT))
-            break;
-    }
-    vec3 lightRet = -refract(-LIGHT, normal, 1.0f / 1.3333f);
-    float m = (1. - ret.y / lightRet.y);
-    float k = log(0.94) * m;
-    seaColor *= 0.01 / k * (exp(rT*k) - 1.);
-    if (rT < SEA_DEEP) {
-        float sst = clamp(resT*0.1,0.1,150.0);
-        float ssh = clamp(softShadow(pos, sst, min(MAX_FAR, SURFACE_MAX / max(0.01, LIGHT.y)), SHADOW_STEP, max(1,ITER(sst)-4)), 0., 1.);
-        vec3 col = drawMountain(pis, ret, lightRet, resT + rT, rT, ssh);
-        seaColor += col * pow(0.94, rT*m);
-    }
-    seaColor *= 0.98 - 0.98 * pow(1. - max(dot(LIGHT, normal), 0.), 5.);
+    // Deep open ocean — no seafloor raymarch, just exponential depth extinction.
+    // This eliminates the green ring artefacts that appeared when the flat
+    // ground() at y=0 was shaded by drawMountain() through refraction.
+    vec3 lightRet = normalize(LIGHT + normal * 0.1);
+    float m = max(dot(LIGHT, normal), 0.0);
+    float k = log(0.94) * 1.0;
+    seaColor *= 0.01 / abs(k) * (1.0 - exp(SEA_DEEP * k));
+    seaColor *= 0.98 - 0.98 * pow(1. - m, 5.);
 
-    //反射
+    // Reflections — unchanged
     float fresnel = 0.02 + 0.98 * pow(1. - max(dot(-rd, normal), 0.), 5.);
     vec3 ref = normalize(reflect(rd, normal));
-    //ref.y = abs(ref.y);
     vec3 fCol;
     int refType;
     float sun = 0.;
@@ -544,7 +530,7 @@ void mainImage( out vec4 fragColor, in vec2 fragCoord ) {
     TIME = mod(iTime * 0.02, 1.0);
     CLOUDS = 0.1; // Fixed cloud density
 
-    mat3 ca = setCamera( ro, ta );
+    mat3 ca = setCamera( ro, ta, up );
     vec2 p = (2.0*fragCoord - iResolution.xy) / iResolution.y;
     float pl = length(p) + 0.0001;
     vec3 rd = ca * normalize(vec3(p*tan(pl/3.)*3./pl, 1.732));

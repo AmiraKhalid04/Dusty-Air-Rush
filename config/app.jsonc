@@ -307,7 +307,7 @@
         },
         "track": {
             "startPosition": [-25.0, 0.0, 0.0],
-            "endPosition": [25.0, 0.0, -500.0],
+            "endPosition": [25.0, 10.0, -500.0],
             "stagesCount": 10,
             "innerMargin": 5.0,
             "outerMargin": 20.0
@@ -317,10 +317,6 @@
             "finishLineScale": 2.0
         },
         "tornado": {
-            "margin": 10.0,
-            "heightVariance": 15.0,
-            "lateralVariance": 10.0,
-            "sideOffset": 10.0,
             "depthOffset": 10.0,
             "scale": 2.0,
             "spawnChance": 0.2
@@ -330,9 +326,6 @@
             "coneSpacing": 10.0,
             "coneY": -4.0,
             "scale": 4.0
-        },
-        "worldBoundary": {
-            "margin": 20.0
         },
         "world": [
             {

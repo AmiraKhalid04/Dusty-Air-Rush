@@ -38,6 +38,7 @@ class Playstate : public our::State
     our::HealthPackSystem healthPackSystem;
     our::AudioSystem audioSystem;
     our::ConeBoundarySystem coneBoundarySystem;
+    our::WorldBoundarySystem worldBoundarySystem;
 
     void onInitialize() override
     {
@@ -88,6 +89,7 @@ class Playstate : public our::State
             if (trackJson.contains("outerMargin"))
                 trackConfig.outerMargin = trackJson["outerMargin"];
         }
+        worldBoundarySystem.initialize(trackConfig);
 
         our::RingConfig ringConfig;
         ringConfig.trackStartPosition = trackConfig.startPosition;
@@ -161,6 +163,8 @@ class Playstate : public our::State
         movementSystem.update(&world, (float)deltaTime);
         cameraController.update(&world, (float)deltaTime);
         collisionSystem.update(&world, (float)deltaTime);
+
+        worldBoundarySystem.update(&world);
 
         // And finally we use the renderer system to draw the scene
         renderer.render(&world);

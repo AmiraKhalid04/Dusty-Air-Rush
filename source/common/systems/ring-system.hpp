@@ -35,7 +35,7 @@ namespace our
         {
             // Calculate spacing from track depth and ring count
             float trackDepth = config.trackStartPosition.z - config.trackEndPosition.z;
-            config.spacing = trackDepth / config.ringsCount;
+            config.spacing = trackDepth / (config.ringsCount + 1.0f);
 
             // Calculate x and y ranges based on track start/end positions with margin
             float xMin = std::min(config.trackStartPosition.x, config.trackEndPosition.x) + config.margin;

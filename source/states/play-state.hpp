@@ -11,6 +11,7 @@
 #include <asset-loader.hpp>
 #include <systems/ring-system.hpp>
 #include <systems/track-system.hpp>
+#include <systems/world-boundary-system.hpp>
 #include <systems/tornado-system.hpp>
 #include <systems/cone-boundary-system.hpp>
 #include <systems/coin-system.hpp>

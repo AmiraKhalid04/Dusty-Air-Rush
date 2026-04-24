@@ -14,6 +14,7 @@
 #include <systems/cone-boundary-system.hpp>
 #include <systems/coin-system.hpp>
 #include <systems/ui-render-system.hpp>
+#include <systems/text-popup-system.hpp>
 #include <components/camera.hpp>
 #include <components/free-camera-controller.hpp>
 #include <components/health-component.hpp>
@@ -37,6 +38,8 @@ class Playstate : public our::State
     our::HealthPackSystem healthPackSystem;
     our::AudioSystem audioSystem;
     our::ConeBoundarySystem coneBoundarySystem;
+    our::TextPopupSystem textPopupSystem;
+    float lastDeltaTime = 0.0f;
 
     void onInitialize() override
     {
@@ -45,6 +48,7 @@ class Playstate : public our::State
         // Start ambient wind as background loop (plays underneath all other sounds)
 
         collisionSystem.setAudioSystem(&audioSystem);
+        collisionSystem.setTextPopupSystem(&textPopupSystem);
 
         // First of all, we get the scene configuration from the app config
         auto &config = getApp()->getConfig()["scene"];
@@ -144,20 +148,20 @@ class Playstate : public our::State
 
     void onDraw(double deltaTime) override
     {
+        lastDeltaTime = (float)deltaTime;
 
         // Here, we just run a bunch of systems to control the world logic
         movementSystem.update(&world, (float)deltaTime);
         cameraController.update(&world, (float)deltaTime);
         collisionSystem.update(&world, (float)deltaTime);
 
+        textPopupSystem.update((float)deltaTime);
 
         // And finally we use the renderer system to draw the scene
         renderer.render(&world);
 
-
         // Finally, instantly delete any marked geometry from the ECS engine so they disappear natively
         world.deleteMarkedEntities();
-
 
         // Render UI elements CHECK if a BUG appeared
         uiRenderer.render(&world, getApp());
@@ -173,6 +177,11 @@ class Playstate : public our::State
         }
     }
 
+    void onImmediateGui() override
+    {
+        textPopupSystem.render();
+    }
+
     void onDestroy() override
     {
         // Don't forget to destroy the renderer
@@ -186,6 +195,7 @@ class Playstate : public our::State
         // Clear the world
         world.clear();
         coinSystem.reset();
+        textPopupSystem.clear();
         // and we delete all the loaded assets to free memory on the RAM and the VRAM
         our::clearAllAssets();
     }

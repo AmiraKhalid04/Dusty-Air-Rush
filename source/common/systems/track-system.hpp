@@ -37,6 +37,11 @@ namespace our
         WorldBounds bounds;
         bool initialized = false;
 
+        float flashIntensity = 0.0f; // 0 = no flash, 1 = full white
+        static constexpr float FLASH_SPIKE = 1.0f;
+        static constexpr float FLASH_DECAY = 3.0f; // units per second
+        float lastDeltaTime = 0.016f;              // fallback if update() has no dt overload
+
     public:
         // ------------------------------------------------------------------ //
         //  Initialization                                                      //
@@ -73,12 +78,13 @@ namespace our
         //  Per-Frame Update                                                    //
         // ------------------------------------------------------------------ //
 
-        // Clamps the position of every entity that owns a CameraComponent
-        // (i.e. the player) to stay within the computed world bounds.
-        void update(World *world)
+        void update(World *world, float deltaTime = 0.016f)
         {
             if (!initialized)
                 return;
+
+            // Decay the flash every frame
+            flashIntensity = glm::max(0.0f, flashIntensity - FLASH_DECAY * deltaTime);
 
             for (auto entity : world->getEntities())
             {
@@ -86,7 +92,6 @@ namespace our
                     continue;
 
                 glm::vec3 &pos = entity->localTransform.position;
-
                 bool clamped = false;
 
                 if (pos.x < bounds.min.x)
@@ -120,7 +125,9 @@ namespace our
                     clamped = true;
                 }
 
-                (void)clamped; // suppress unused-variable warning in release
+                // --- NEW: spike the flash when we hit a wall ---
+                if (clamped)
+                    flashIntensity = FLASH_SPIKE;
             }
         }
 
@@ -129,5 +136,7 @@ namespace our
         // ------------------------------------------------------------------ //
 
         const WorldBounds &getBounds() const { return bounds; }
+
+        float getFlashIntensity() const { return flashIntensity; }
     };
 }

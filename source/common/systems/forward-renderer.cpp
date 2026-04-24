@@ -391,10 +391,9 @@ namespace our
         // Pass 2: upscale the result back to the main framebuffer with a blit
         if (this->skyMaterial)
         {
-            // Only the camera's VIEW DIRECTION matters for the sky — lock position to a
-            // fixed point inside the sky world so the raymarcher never goes out of bounds.
             auto skyM = camera->getOwner()->getLocalToWorldMatrix();
             glm::vec3 skyFwd = glm::normalize(glm::vec3(skyM * glm::vec4(0, 0, -1, 0)));
+            glm::vec3 skyUp  = glm::normalize(glm::vec3(skyM * glm::vec4(0, 1,  0, 0)));
             glm::vec3 skyEye = glm::vec3(0.0f, 200.0f, 0.0f);
             glm::ivec2 skyRes = windowSize / 2;
 
@@ -407,6 +406,7 @@ namespace our
             this->skyMaterial->shader->set("iResolution", glm::vec2(skyRes)); // half-res so UVs stay correct
             this->skyMaterial->shader->set("eye", skyEye);
             this->skyMaterial->shader->set("forward", skyFwd);
+            this->skyMaterial->shader->set("up", skyUp);
 
             glBindVertexArray(skyVertexArray);
             glDrawArrays(GL_TRIANGLES, 0, 3);

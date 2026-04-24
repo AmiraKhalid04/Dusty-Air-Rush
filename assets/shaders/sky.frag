@@ -8,6 +8,7 @@ uniform vec2 iResolution;
 uniform vec4 iMouse;
 uniform vec3 eye;      // Camera Position
 uniform vec3 forward;  // Camera Forward Vector
+uniform vec3 up;       // Camera Up Vector (carries roll/bank)
 // Note: This shader generates its own noise using n3d/n2d functions,
 // so you don't strictly need the noise texture uniform anymore.
 
@@ -91,9 +92,9 @@ float RES_FACTOR = 1.;
 float TIME = 0.33;
 float BRIGHT = .5;
 
-mat3 setCamera(in vec3 ro, in vec3 ta) {
+mat3 setCamera(in vec3 ro, in vec3 ta, in vec3 worldUp) {
     vec3 cw = normalize(ta-ro);
-    vec3 cp = vec3(0, 1, 0);
+    vec3 cp = normalize(worldUp);
     vec3 cu = normalize( cross(cw,cp) );
     vec3 cv = normalize( cross(cu,cw) );
     return mat3( cu, cv, cw );
@@ -544,7 +545,7 @@ void mainImage( out vec4 fragColor, in vec2 fragCoord ) {
     TIME = mod(iTime * 0.02, 1.0);
     CLOUDS = 0.1; // Fixed cloud density
 
-    mat3 ca = setCamera( ro, ta );
+    mat3 ca = setCamera( ro, ta, up );
     vec2 p = (2.0*fragCoord - iResolution.xy) / iResolution.y;
     float pl = length(p) + 0.0001;
     vec3 rd = ca * normalize(vec3(p*tan(pl/3.)*3./pl, 1.732));

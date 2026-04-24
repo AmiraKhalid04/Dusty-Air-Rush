@@ -9,6 +9,8 @@ namespace our {
         std::string type = data.value("lightType", "directional");
         if (type == "point") {
             lightType = LightType::POINT;
+        } else if (type == "spot") {
+            lightType = LightType::SPOT;
         } else {
             lightType = LightType::DIRECTIONAL;
         }
@@ -16,5 +18,10 @@ namespace our {
         diffuse = data.value("color", diffuse);
         specular = data.value("color", specular);
         attenuation = data.value("attenuation", attenuation);
+        
+        if (data.contains("cone_angles")) {
+            cone_angles.x = glm::radians(data["cone_angles"][0].get<float>());
+            cone_angles.y = glm::radians(data["cone_angles"][1].get<float>());
+        }
     }
 }

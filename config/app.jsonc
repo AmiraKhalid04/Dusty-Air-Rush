@@ -137,8 +137,8 @@
                     ]
                 },
                 "ring": {
-                    "type": "textured",
-                    "shader": "textured",
+                    "type": "lit",
+                    "shader": "lit",
                     "pipelineState": {
                         "faceCulling": {
                             "enabled": false
@@ -177,8 +177,8 @@
                     "sampler": "default"
                 },
                 "cone": {
-                    "type": "textured",
-                    "shader": "textured",
+                    "type": "lit",
+                    "shader": "lit",
                     "pipelineState": {
                         "faceCulling": {
                             "enabled": false
@@ -496,6 +496,62 @@
                                         "shapeType": "aabb",
                                         "objectType": "player",
                                         "aabbExtents": [1.8, 0.25, 0.8]
+                                    }
+                                ]
+                            },
+                            {
+                                "name": "Left Flashlight",
+                                "position": [ 2.4, 2.0, 1.25 ],
+                                "rotation": [ 0, 0, 0 ],
+                                "components": [
+                                    {
+                                        "type": "Light",
+                                        "lightType": "spot",
+                                        "color": [ 1.0, 1.0, 1.0 ],
+                                "children": [
+                                    {
+                                        "position": [0, 0, -4.5],
+                                        "rotation": [90, 0, 0],
+                                        "scale": [3.0, 10.0, 3.0],
+                                        "components": [
+                                            {
+                                                "type": "Mesh Renderer",
+                                                "mesh": "cone",
+                                                "material": "light_beam"
+                                            }
+                                        ]
+                                    }
+                                ],
+                                        "attenuation": [ 1.0, 0.0, 0.01 ],
+                                        "cone_angles": [ 20.0, 30.0 ]
+                                    }
+                                ]
+                            },
+                            {
+                                "name": "Right Flashlight",
+                                "position": [ -2.4, 2.0, 1.25 ],
+                                "rotation": [ 0, 0, 0 ],
+                                "components": [
+                                    {
+                                        "type": "Light",
+                                        "lightType": "spot",
+                                        "color": [ 1.0, 1.0, 1.0 ],
+                                "children": [
+                                    {
+                                        "position": [0, 0, -4.5],
+                                        "rotation": [90, 0, 0],
+                                        "scale": [3.0, 10.0, 3.0],
+                                        "components": [
+                                            {
+                                                "type": "Mesh Renderer",
+                                                "mesh": "cone",
+                                                "material": "light_beam"
+                                            }
+                                        ]
+                                    }
+                                ],
+                                        "attenuation": [ 1.0, 0.0, 0.01 ],
+                                        "cone_angles": [ 20.0, 30.0 ]
                                     }
                                 ]
                             },

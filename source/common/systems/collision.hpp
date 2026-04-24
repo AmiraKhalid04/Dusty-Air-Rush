@@ -3,6 +3,7 @@
 #include "../ecs/world.hpp"
 #include "../components/collider.hpp"
 #include "audio-system.hpp"
+#include "text-popup-system.hpp"
 
 #include <glm/glm.hpp>
 #include <iostream>
@@ -15,6 +16,7 @@ namespace our
         bool initialized = false;
         glm::vec3 playerStartPos = {0, 0, 0};
         AudioSystem *audioSystem = nullptr;
+        TextPopupSystem *textPopupSystem = nullptr;
         float dangerIntensity = 0.0f;
 
         static constexpr float tornadoProximityRadius = 20.0f;
@@ -26,6 +28,7 @@ namespace our
 
     public:
         void setAudioSystem(AudioSystem *audio) { audioSystem = audio; }
+        void setTextPopupSystem(TextPopupSystem *tps) { textPopupSystem = tps; }
         float getDangerIntensity() const { return dangerIntensity; }
 
         void update(World *world, float deltaTime)
@@ -252,6 +255,8 @@ namespace our
                             std::cout << "[COLLECT] +1 Coin picked up!" << std::endl;
                             if (audioSystem)
                                 audioSystem->playSound("assets/sounds/coin.mp3");
+                            if (textPopupSystem)
+                                textPopupSystem->spawn("+10", {1.0f, 0.84f, 0.0f, 1.0f});
                             world->markForRemoval(other);
                             otherCollider->objectType = "pending_deletion";
                         }
@@ -260,6 +265,8 @@ namespace our
                             std::cout << "[COLLECT] +HP Health pack acquired!" << std::endl;
                             if (audioSystem)
                                 audioSystem->playSound("assets/sounds/bonus.mp3");
+                            if (textPopupSystem)
+                                textPopupSystem->spawn("+40 HP", {0.2f, 1.0f, 0.4f, 1.0f});
                             world->markForRemoval(other);
                             otherCollider->objectType = "pending_deletion";
                         }
@@ -268,6 +275,8 @@ namespace our
                             std::cout << "[SCORE] +1! Passed through center!" << std::endl;
                             if (audioSystem)
                                 audioSystem->playSound("assets/sounds/all-right.mp3");
+                            if (textPopupSystem)
+                                textPopupSystem->spawn("+20", {0.4f, 0.8f, 1.0f, 1.0f});
                             world->markForRemoval(other);
                             otherCollider->objectType = "pending_deletion";
                         }
@@ -276,12 +285,16 @@ namespace our
                             std::cout << "[DAMAGE] Hit the Ring Frame! -20 HP" << std::endl;
                             if (audioSystem)
                                 audioSystem->playSound("assets/sounds/ouch.mp3");
+                            if (textPopupSystem)
+                                textPopupSystem->spawn("-20 HP", {1.0f, 0.2f, 0.2f, 1.0f});
                         }
                         else if (otherCollider->objectType == "tornado" || otherCollider->objectType == "obstacle")
                         {
                             std::cout << "[DAMAGE] Hit hazard! -20 HP" << std::endl;
                             if (audioSystem)
                                 audioSystem->playSound("assets/sounds/ouch.mp3");
+                            if (textPopupSystem)
+                                textPopupSystem->spawn("-20 HP", {1.0f, 0.2f, 0.2f, 1.0f});
                         }
                     }
                 }

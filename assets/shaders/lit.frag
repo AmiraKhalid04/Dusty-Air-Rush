@@ -2,6 +2,7 @@
 
 #define DIRECTIONAL 0
 #define POINT       1
+#define SPOT        2
 
 struct Light {
     int type;
@@ -9,6 +10,7 @@ struct Light {
     vec3 direction;
     vec3 color;
     vec3 attenuation;
+    vec2 cone_angles;
 };
 
 #define MAX_LIGHTS 8
@@ -114,12 +116,18 @@ void main() {
         if(light.type == DIRECTIONAL){
             world_to_light_dir = -light.direction;
             shadow = ShadowCalculation(fs_in.fragPosLightSpace, normal, world_to_light_dir);
-        } else {
+        } else if(light.type == POINT){
             world_to_light_dir = light.position - fs_in.world;
             float d = length(world_to_light_dir);
             world_to_light_dir /= d;
-
-            attenuation = 1.0 / dot(light.attenuation, vec3(d*d, d, 1.0));
+            attenuation = 1.0 / dot(light.attenuation, vec3(1.0, d, d*d));
+        } else if(light.type == SPOT){
+            world_to_light_dir = light.position - fs_in.world;
+            float d = length(world_to_light_dir);
+            world_to_light_dir /= d;
+            attenuation = 1.0 / max(dot(light.attenuation, vec3(1.0, d, d*d)), 0.00001);
+            float angle = acos(clamp(dot(-world_to_light_dir, normalize(-light.direction)), -1.0, 1.0));
+            attenuation *= 1.0 - smoothstep(light.cone_angles.x, light.cone_angles.y, angle);
         }
 
         vec3 computed_diffuse = light.color * diffuse * lambert(normal, world_to_light_dir);

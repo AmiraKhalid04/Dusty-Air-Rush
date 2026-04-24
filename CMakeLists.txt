@@ -106,11 +106,11 @@ set(COMMON_SOURCES
         source/common/systems/collision.hpp
         source/common/systems/audio-system.hpp
         source/common/systems/coin-system.hpp
-        source/common/systems/ring-track-system.hpp
+        source/common/systems/ring-system.hpp
         source/common/systems/tornado-system.hpp
         source/common/systems/ui-render-system.hpp
         source/common/systems/health-system.hpp
-        source/common/systems/cone-boundary-system.hpp
+        source/common/systems/runway-light-system.hpp
 )
 
 # Define the directories in which to search for the included headers

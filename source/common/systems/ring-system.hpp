@@ -143,6 +143,11 @@ namespace our
                 auto *mr = finish->addComponent<MeshRendererComponent>();
                 mr->mesh = finishMesh;
                 mr->material = finishMaterial;
+
+                auto* col = finish->addComponent<ColliderComponent>();
+                col->shapeType = ColliderType::AABB;
+                col->objectType = "finish_line";
+                col->aabbExtents = {20.0f, 20.0f, 0.5f}; // BIG trigger to ensure we hit it
             }
 
             std::cout << "Finish line at: "

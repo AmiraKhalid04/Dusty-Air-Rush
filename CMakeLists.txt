@@ -86,7 +86,10 @@ set(COMMON_SOURCES
 
         source/common/components/free-camera-controller.hpp
         source/common/components/free-camera-controller.cpp
-         source/common/components/health-component.hpp
+        source/common/components/dusty.hpp
+        source/common/components/coin-component.hpp
+        source/common/components/ring-tag.hpp
+        source/common/components/tornado-tag.hpp
 
         source/common/components/movement.hpp
         source/common/components/movement.cpp
@@ -101,6 +104,13 @@ set(COMMON_SOURCES
         source/common/systems/free-camera-controller.hpp
         source/common/systems/movement.hpp
         source/common/systems/collision.hpp
+        source/common/systems/audio-system.hpp
+        source/common/systems/coin-system.hpp
+        source/common/systems/ring-system.hpp
+        source/common/systems/tornado-system.hpp
+        source/common/systems/ui-render-system.hpp
+        source/common/systems/health-system.hpp
+        source/common/systems/runway-light-system.hpp
 )
 
 # Define the directories in which to search for the included headers

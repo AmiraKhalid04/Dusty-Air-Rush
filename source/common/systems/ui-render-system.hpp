@@ -3,7 +3,7 @@
 #include "../ecs/world.hpp"
 #include "../components/camera.hpp"
 #include "../components/free-camera-controller.hpp"
-#include "../components/health-component.hpp"
+#include "../components/dusty.hpp"
 #include "../mesh/mesh.hpp"
 #include "../material/material.hpp"
 #include "../asset-loader.hpp"
@@ -25,14 +25,14 @@ namespace our
 
         // Find the player's health component by looking for an entity with both
         // CameraComponent and FreeCameraControllerComponent
-        HealthComponent *findPlayerHealth(World *world)
+        DustyComponent *findPlayerHealth(World *world)
         {
             for (auto entity : world->getEntities())
             {
                 if (entity->getComponent<CameraComponent>() &&
                     entity->getComponent<FreeCameraControllerComponent>())
                 {
-                    return entity->getComponent<HealthComponent>();
+                    return entity->getComponent<DustyComponent>();
                 }
             }
             return nullptr;
@@ -95,51 +95,69 @@ namespace our
             constexpr float bottom = 0.85f;
             constexpr float maxWidth = 0.3f;
             constexpr float barHeight = 0.05f;
-            constexpr float borderThickness = 0.004f;
+            constexpr float borderThickness = 0.005f;
 
-            glm::vec4 fillColor = {1.0f, 0.0f, 0.0f, 1.0f};
-            if (healthRatio > 0.6f)
+            // 5-tier color matching the provided image palette
+            glm::vec4 fillColor;
+            if (healthRatio > 0.8f)
             {
-                fillColor = {0.0f, 1.0f, 0.0f, 1.0f};
+                fillColor = {0.23f, 0.80f, 0.15f, 1.0f};   // Green
             }
-            else if (healthRatio > 0.3f)
+            else if (healthRatio > 0.6f)
             {
-                fillColor = {1.0f, 1.0f, 0.0f, 1.0f};
+                fillColor = {0.71f, 0.87f, 0.27f, 1.0f};   // Light Green / Lime
+            }
+            else if (healthRatio > 0.4f)
+            {
+                fillColor = {0.97f, 0.87f, 0.40f, 1.0f};   // Yellow
+            }
+            else if (healthRatio > 0.2f)
+            {
+                fillColor = {0.94f, 0.61f, 0.20f, 1.0f};   // Orange
+            }
+            else
+            {
+                fillColor = {0.89f, 0.14f, 0.15f, 1.0f};   // Red
             }
 
-            const float visibleWidth = maxWidth * healthRatio;
-            if (visibleWidth <= 0.0f)
-            {
-                return;
-            }
+            // ── Fixed-width frame (always renders at maxWidth) ──
+            glm::vec4 frameColor = {0.15f, 0.15f, 0.15f, 0.9f}; // Dark grey frame 
 
-            // Draw border quads
+            // Top border
+            drawHealthBarQuad(
+                glm::translate(glm::mat4(1.0f), glm::vec3(left - borderThickness, bottom + barHeight, 0.0f)) *
+                    glm::scale(glm::mat4(1.0f), glm::vec3(maxWidth + 2.0f * borderThickness, borderThickness, 1.0f)),
+                frameColor);
+            // Bottom border
+            drawHealthBarQuad(
+                glm::translate(glm::mat4(1.0f), glm::vec3(left - borderThickness, bottom - borderThickness, 0.0f)) *
+                    glm::scale(glm::mat4(1.0f), glm::vec3(maxWidth + 2.0f * borderThickness, borderThickness, 1.0f)),
+                frameColor);
+            // Left border
+            drawHealthBarQuad(
+                glm::translate(glm::mat4(1.0f), glm::vec3(left - borderThickness, bottom - borderThickness, 0.0f)) *
+                    glm::scale(glm::mat4(1.0f), glm::vec3(borderThickness, barHeight + 2.0f * borderThickness, 1.0f)),
+                frameColor);
+            // Right border
+            drawHealthBarQuad(
+                glm::translate(glm::mat4(1.0f), glm::vec3(left + maxWidth, bottom - borderThickness, 0.0f)) *
+                    glm::scale(glm::mat4(1.0f), glm::vec3(borderThickness, barHeight + 2.0f * borderThickness, 1.0f)),
+                frameColor);
+
+            // ── Background (empty portion) ──
             drawHealthBarQuad(
                 glm::translate(glm::mat4(1.0f), glm::vec3(left, bottom, 0.0f)) *
-                    glm::scale(glm::mat4(1.0f), glm::vec3(visibleWidth, borderThickness, 1.0f)),
-                {0.0f, 0.0f, 0.0f, 1.0f});
-            drawHealthBarQuad(
-                glm::translate(glm::mat4(1.0f), glm::vec3(left, bottom + barHeight - borderThickness, 0.0f)) *
-                    glm::scale(glm::mat4(1.0f), glm::vec3(visibleWidth, borderThickness, 1.0f)),
-                {0.0f, 0.0f, 0.0f, 1.0f});
-            drawHealthBarQuad(
-                glm::translate(glm::mat4(1.0f), glm::vec3(left, bottom, 0.0f)) *
-                    glm::scale(glm::mat4(1.0f), glm::vec3(borderThickness, barHeight, 1.0f)),
-                {0.0f, 0.0f, 0.0f, 1.0f});
-            drawHealthBarQuad(
-                glm::translate(glm::mat4(1.0f), glm::vec3(left + visibleWidth - borderThickness, bottom, 0.0f)) *
-                    glm::scale(glm::mat4(1.0f), glm::vec3(borderThickness, barHeight, 1.0f)),
-                {0.0f, 0.0f, 0.0f, 1.0f});
+                    glm::scale(glm::mat4(1.0f), glm::vec3(maxWidth, barHeight, 1.0f)),
+                {0.1f, 0.1f, 0.1f, 0.6f}); // Dark semi-transparent background
 
-            // Draw fill quad
-            if (visibleWidth > 2.0f * borderThickness)
+            // ── Fill (health portion) ──
+            const float fillWidth = maxWidth * healthRatio;
+            if (fillWidth > 0.0f)
             {
-                const float innerWidth = visibleWidth - (2.0f * borderThickness);
-                const float innerHeight = barHeight - (2.0f * borderThickness);
                 glm::mat4 foregroundTransform = glm::translate(
                                                     glm::mat4(1.0f),
-                                                    glm::vec3(left + borderThickness, bottom + borderThickness, 0.0f)) *
-                                                glm::scale(glm::mat4(1.0f), glm::vec3(innerWidth, innerHeight, 1.0f));
+                                                    glm::vec3(left, bottom, 0.0f)) *
+                                                glm::scale(glm::mat4(1.0f), glm::vec3(fillWidth, barHeight, 1.0f));
                 drawHealthBarQuad(foregroundTransform, fillColor);
             }
         }

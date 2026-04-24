@@ -75,7 +75,10 @@
                 "cone": "assets/models/cone.obj",
                 "coin": "assets/models/coin.obj",
                 "health_pack": "assets/models/health.obj",
-                "dusty": "assets/models/dusty.obj",
+                "dusty_body": "assets/models/dusty_body.obj",
+                "dusty_fan": "assets/models/dusty_fan.obj",
+                "dusty_left_wing": "assets/models/dusty_left_wing.obj",
+                "dusty_right_wing": "assets/models/dusty_right_wing.obj",
                 "finish_line": "assets/models/finish_line.obj"
             },
             "samplers": {
@@ -389,74 +392,90 @@
                 ],
                 "children": [
                     {
-                        "position": [0, -3, -4],
-                        "rotation": [0, 180, 0],
-                        "scale": [0.2, 0.2, 0.2],
-                        "components": [
-                            {
-                                "type": "Mesh Renderer",
-                                "mesh": "dusty",
-                                "material": "dusty"
-                            }
-                        ],
+                        "name": "Plane Visuals",
+                        "position": [0, -3, -6],
+                        "rotation": [-90, 0, 0],
+                        "scale": [0.5, 0.5, 0.5],
                         "children": [
                             {
+                                "name": "Body",
+                                "components": [
+                                    {
+                                        "type": "Mesh Renderer",
+                                        "mesh": "dusty_body",
+                                        "material": "dusty"
+                                    }
+                                ]
+                            },
+                            {
+                                "name": "Propeller",
+                                "components": [
+                                    {
+                                        "type": "Mesh Renderer",
+                                        "mesh": "dusty_fan",
+                                        "material": "dusty"
+                                    },
+                                    {
+                                        "type": "Movement",
+                                        "angularVelocity": [0, 720, 0]
+                                    }
+                                ]
+                            },
+                            {
+                                "name": "Left Wing Mesh",
+                                "position": [-1.2, 2.0, -3],
+                                "components": [
+                                    {
+                                        "type": "Mesh Renderer",
+                                        "mesh": "dusty_left_wing",
+                                        "material": "dusty"
+                                    }
+                                ]
+                            },
+                            {
+                                "name": "Right Wing Mesh",
+                                "position": [1.2, 2.0, -3],
+                                "components": [
+                                    {
+                                        "type": "Mesh Renderer",
+                                        "mesh": "dusty_right_wing",
+                                        "material": "dusty"
+                                    }
+                                ]
+                            },
+                            {
                                 "name": "Body Collider",
-                                "position": [
-                                    0,
-                                    2.0,
-                                    -0.5
-                                ],
+                                "position": [0, 2.0, -0.5],
                                 "components": [
                                     {
                                         "type": "Collider",
                                         "shapeType": "aabb",
                                         "objectType": "player",
-                                        "aabbExtents": [
-                                            0.5,
-                                            0.7,
-                                            3.0
-                                        ]
+                                        "aabbExtents": [0.5, 0.7, 3.0]
                                     }
                                 ]
                             },
                             {
                                 "name": "Left Wing",
-                                "position": [
-                                    2.4,
-                                    2.0,
-                                    0.2
-                                ],
+                                "position": [2.4, 2.0, 0.2],
                                 "components": [
                                     {
                                         "type": "Collider",
                                         "shapeType": "aabb",
                                         "objectType": "player",
-                                        "aabbExtents": [
-                                            1.8,
-                                            0.25,
-                                            0.8
-                                        ]
+                                        "aabbExtents": [1.8, 0.25, 0.8]
                                     }
                                 ]
                             },
                             {
                                 "name": "Right Wing",
-                                "position": [
-                                    -2.4,
-                                    2.0,
-                                    0.2
-                                ],
+                                "position": [-2.4, 2.0, 0.2],
                                 "components": [
                                     {
                                         "type": "Collider",
                                         "shapeType": "aabb",
                                         "objectType": "player",
-                                        "aabbExtents": [
-                                            1.8,
-                                            0.25,
-                                            0.8
-                                        ]
+                                        "aabbExtents": [1.8, 0.25, 0.8]
                                     }
                                 ]
                             }

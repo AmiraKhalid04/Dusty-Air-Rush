@@ -106,19 +106,14 @@ class Playstate : public our::State
         std::vector<glm::vec3> ringPositions = ringSystem.initialize(&world, ringConfig);
 
         our::TornadoConfig tornadoConfig;
+        tornadoConfig.trackStartPosition = trackConfig.startPosition;
+        tornadoConfig.trackEndPosition = trackConfig.endPosition;
         tornadoConfig.tornadosCount = trackConfig.stagesCount;
+        tornadoConfig.margin = trackConfig.innerMargin;
 
         if (config.contains("tornado"))
         {
             const auto &tornadoJson = config["tornado"];
-            if (tornadoJson.contains("heightVariance"))
-                tornadoConfig.heightVariance = tornadoJson["heightVariance"];
-            if (tornadoJson.contains("lateralVariance"))
-                tornadoConfig.lateralVariance = tornadoJson["lateralVariance"];
-            if (tornadoJson.contains("margin"))
-                tornadoConfig.margin = tornadoJson["margin"];
-            if (tornadoJson.contains("sideOffset"))
-                tornadoConfig.sideOffset = tornadoJson["sideOffset"];
             if (tornadoJson.contains("depthOffset"))
                 tornadoConfig.depthOffset = tornadoJson["depthOffset"];
             if (tornadoJson.contains("scale"))
@@ -126,7 +121,7 @@ class Playstate : public our::State
             if (tornadoJson.contains("spawnChance"))
                 tornadoConfig.spawnChance = tornadoJson["spawnChance"];
         }
-        tornado.initialize(&world, tornadoConfig, trackConfig.startPosition, trackConfig.endPosition);
+        tornado.initialize(&world, tornadoConfig);
 
         coinSystem.initialize(&world, ringPositions);
 

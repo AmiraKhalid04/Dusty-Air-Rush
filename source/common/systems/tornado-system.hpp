@@ -14,14 +14,13 @@ namespace our
 
     struct TornadoConfig
     {
-        int tornadosCount = 10;
-        float spacing = 0.0f;  // will be calculated same as rings
-        
-        float heightVariance = 15.0f;  // MUST match ring config
-        float lateralVariance = 10.0f; // MUST match ring config
+        glm::vec3 trackStartPosition = glm::vec3(0.0f, 0.0f, 0.0f);
+        glm::vec3 trackEndPosition = glm::vec3(0.0f, 0.0f, 300.0f);
 
-        float margin = 10.0f;      // margin from X boundaries of track
-        float sideOffset = 20.0f;  // distance from ring center (left/right)
+        int tornadosCount = 10;
+        float spacing = 0.0f; // will be calculated same as rings
+
+        float margin = 10.0f;      // fixed distance from X boundaries of track (left or right)
         float depthOffset = 20.0f; // offset to start tornadoes before rings
         float scale = 10.0f;
 
@@ -31,7 +30,7 @@ namespace our
     class TornadoSystem
     {
     public:
-        void initialize(World *world, const TornadoConfig &config, const glm::vec3 &trackStart, const glm::vec3 &trackEnd)
+        void initialize(World *world, TornadoConfig &config)
         {
             Mesh *mesh = AssetLoader<Mesh>::get("tornado");
             Material *mat = AssetLoader<Material>::get("tornado");
@@ -43,21 +42,27 @@ namespace our
             std::mt19937 rng(rd());
             std::uniform_real_distribution<float> chanceDist(0.0f, 1.0f);
 
+            // Calculate Y range for random height
+            float yMin = std::min(config.trackStartPosition.y, config.trackEndPosition.y) + config.margin;
+            float yMax = std::max(config.trackStartPosition.y, config.trackEndPosition.y) - config.margin;
+            std::uniform_real_distribution<float> yDist(yMin, yMax);
+
+            // Calculate X boundaries with margin
+            float xLeft = std::min(config.trackStartPosition.x, config.trackEndPosition.x) + config.margin;
+            float xRight = std::max(config.trackStartPosition.x, config.trackEndPosition.x) - config.margin;
+            std::uniform_real_distribution<float> sideDist(0.0f, 1.0f);
+
             // Calculate spacing based on track depth and rings count
-            float trackDepth = trackEnd.z - trackStart.z;
-            float spacing = trackDepth / config.tornadosCount;
-            
-            glm::vec3 cursor = trackStart;
+            float trackDepth = config.trackStartPosition.z - config.trackEndPosition.z;
+            config.spacing = trackDepth / config.tornadosCount;
+
+            glm::vec3 cursor = config.trackStartPosition;
             // Start offset (before first ring position)
-            cursor.z -= config.depthOffset;
+            cursor.z += config.depthOffset;
 
             for (int i = 0; i < config.tornadosCount; i++)
             {
                 cursor.z -= config.spacing;
-
-                // SAME track logic as rings
-                float baseY = config.heightVariance * sin(i * 0.4f);
-                float baseX = config.lateralVariance * sin(i * 0.3f + 1.0f);
 
                 // decide spawn
                 if (chanceDist(rng) > config.spawnChance)
@@ -66,21 +71,23 @@ namespace our
                 Entity *entity = world->add();
                 entity->name = "tornado_" + std::to_string(i);
 
-                // left or right of ring center
-                float side = (rand() % 2 == 0) ? 1.0f : -1.0f;
+                // Random height within track Y range
+                float randomY = yDist(rng);
+
+                // Random left or right at fixed margin distance
+                float randomSide = sideDist(rng);
+                float posX = (randomSide < 0.5f) ? xLeft : xRight;
 
                 glm::vec3 pos;
-                pos.z = cursor.z + config.depthOffset;
-                pos.y = baseY;
-                pos.x = baseX + side * config.sideOffset;
+                pos.z = cursor.z;
+                pos.y = randomY;
+                pos.x = posX;
 
                 entity->localTransform.position = pos;
 
-                // scale (2,1,2 style but configurable)
                 float base = config.scale;
                 entity->localTransform.scale = glm::vec3(base, base * 0.5f, base);
 
-                // optional rotation
                 entity->localTransform.rotation = glm::vec3(0, 0, 0);
 
                 auto *mr = entity->addComponent<MeshRendererComponent>();

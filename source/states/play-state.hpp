@@ -16,7 +16,7 @@
 #include <systems/ui-render-system.hpp>
 #include <components/camera.hpp>
 #include <components/free-camera-controller.hpp>
-#include <components/health-component.hpp>
+#include <components/dusty.hpp>
 #include <material/material.hpp>
 #include <mesh/mesh.hpp>
 #include <asset-loader.hpp>
@@ -38,8 +38,11 @@ class Playstate : public our::State
     our::AudioSystem audioSystem;
     our::ConeBoundarySystem coneBoundarySystem;
 
+    float playTime = 0.0f;
+
     void onInitialize() override
     {
+        playTime = 0.0f;
         // Initialize the audio system
         audioSystem.initialize();
         // Start ambient wind as background loop (plays underneath all other sounds)
@@ -86,6 +89,14 @@ class Playstate : public our::State
                 trackConfig.finishLineScale = trackJson["finishLineScale"];
         }
         std::vector<glm::vec3> ringPositions = ringTrack.initialize(&world, trackConfig);
+
+        // Assign the generated logic variables (total track rings) to the player's dusty tracker
+        for (auto entity : world.getEntities()) {
+            if (auto dusty = entity->getComponent<our::DustyComponent>()) {
+                dusty->totalRings = trackConfig.ringCount;
+                break;
+            }
+        }
 
         our::TornadoConfig tornadoConfig;
         if (config.contains("tornado"))
@@ -144,6 +155,7 @@ class Playstate : public our::State
 
     void onDraw(double deltaTime) override
     {
+        playTime += (float)deltaTime;
 
         // Here, we just run a bunch of systems to control the world logic
         movementSystem.update(&world, (float)deltaTime);
@@ -170,6 +182,32 @@ class Playstate : public our::State
         {
             // If the escape  key is pressed in this frame, go to the play state
             getApp()->changeState("menu");
+        }
+
+        // Check win/loss state from Player's dusty component
+        for (auto entity : world.getEntities()) {
+            if (auto dusty = entity->getComponent<our::DustyComponent>()) {
+                if (dusty->isDead) {
+                    std::cout << "\n=============================================" << std::endl;
+                    std::cout << "          MISSION FAILED - HEALTH DEPLETED    " << std::endl;
+                    std::cout << " Rings Passed: " << dusty->score << " / " << dusty->totalRings << std::endl;
+                    std::cout << " Coins Collected: " << dusty->coins << std::endl;
+                    std::cout << " Time Survived: " << playTime << "s" << std::endl;
+                    std::cout << "=============================================\n" << std::endl;
+                    getApp()->changeState("menu");
+                }
+                else if (dusty->isWon) {
+                    std::cout << "\n=============================================" << std::endl;
+                    std::cout << "            MISSION COMPLETE!                 " << std::endl;
+                    std::cout << " Rings Passed: " << dusty->score << " / " << dusty->totalRings << std::endl;
+                    std::cout << " Coins Collected: " << dusty->coins << std::endl;
+                    std::cout << " Final Health: " << dusty->currentHealth << " / " << dusty->maxHealth << std::endl;
+                    std::cout << " Time: " << playTime << "s" << std::endl;
+                    std::cout << "=============================================\n" << std::endl;
+                    getApp()->changeState("menu");
+                }
+                break; // Dusty component handled
+            }
         }
     }
 

@@ -7,7 +7,6 @@
 #include "movement.hpp"
 #include "collider.hpp"
 #include "coin-component.hpp"
-#include "health-component.hpp"
 #include "dusty.hpp"
 #include "light.hpp"
 
@@ -44,10 +43,6 @@ namespace our
         else if (type == CoinComponent::getID())
         {
             component = entity->addComponent<CoinComponent>();
-        }
-        else if (type == HealthComponent::getID())
-        {
-            component = entity->addComponent<HealthComponent>();
         }
         else if (type == DustyComponent::getID())
         {

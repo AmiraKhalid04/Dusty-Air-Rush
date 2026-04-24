@@ -180,8 +180,8 @@ class LossState : public our::State
             {0, 1, 2, 2, 3, 0});
 
         time = 0.0f;
-        lossAudio.initialize();
-        lossAudio.playLooping("assets/sounds/menu-start.mp3", 0.35f);
+        // lossAudio.initialize();
+        // lossAudio.playLooping("assets/sounds/menu-start.mp3", 0.35f);
 
         buttons[0].action = [this]()
         { getApp()->changeState("play"); };

@@ -116,8 +116,10 @@ class Playstate : public our::State
         std::vector<glm::vec3> ringPositions = ringSystem.initialize(&world, ringConfig);
 
         // Assign the generated logic variables (total track rings) to the player's dusty tracker
-        for (auto entity : world.getEntities()) {
-            if (auto dusty = entity->getComponent<our::DustyComponent>()) {
+        for (auto entity : world.getEntities())
+        {
+            if (auto dusty = entity->getComponent<our::DustyComponent>())
+            {
                 dusty->totalRings = trackConfig.stagesCount;
                 break;
             }
@@ -211,26 +213,32 @@ class Playstate : public our::State
         }
 
         // Check win/loss state from Player's dusty component
-        for (auto entity : world.getEntities()) {
-            if (auto dusty = entity->getComponent<our::DustyComponent>()) {
-                if (dusty->isDead) {
+        for (auto entity : world.getEntities())
+        {
+            if (auto dusty = entity->getComponent<our::DustyComponent>())
+            {
+                if (dusty->isDead)
+                {
                     std::cout << "\n=============================================" << std::endl;
                     std::cout << "          MISSION FAILED - HEALTH DEPLETED    " << std::endl;
                     std::cout << " Rings Passed: " << dusty->score << " / " << dusty->totalRings << std::endl;
                     std::cout << " Coins Collected: " << dusty->coins << std::endl;
                     std::cout << " Time Survived: " << playTime << "s" << std::endl;
-                    std::cout << "=============================================\n" << std::endl;
-                    getApp()->changeState("menu");
+                    std::cout << "=============================================\n"
+                              << std::endl;
+                    getApp()->changeState("loss");
                 }
-                else if (dusty->isWon) {
+                else if (dusty->isWon)
+                {
                     std::cout << "\n=============================================" << std::endl;
                     std::cout << "            MISSION COMPLETE!                 " << std::endl;
                     std::cout << " Rings Passed: " << dusty->score << " / " << dusty->totalRings << std::endl;
                     std::cout << " Coins Collected: " << dusty->coins << std::endl;
                     std::cout << " Final Health: " << dusty->currentHealth << " / " << dusty->maxHealth << std::endl;
                     std::cout << " Time: " << playTime << "s" << std::endl;
-                    std::cout << "=============================================\n" << std::endl;
-                    getApp()->changeState("menu");
+                    std::cout << "=============================================\n"
+                              << std::endl;
+                    getApp()->changeState("win");
                 }
                 break; // Dusty component handled
             }

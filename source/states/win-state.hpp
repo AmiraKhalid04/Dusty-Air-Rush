@@ -248,7 +248,7 @@ class WinState : public our::State
         initStars((float)fb.x, (float)fb.y);
 
         winAudio.initialize();
-        winAudio.playLooping("assets/sounds/win-fanfare.mp3", 0.40f);
+        winAudio.playLooping("assets/sounds/finish-line.mp3", 0.40f);
 
         buttons[0].action = [this]()
         { getApp()->changeState("play"); };

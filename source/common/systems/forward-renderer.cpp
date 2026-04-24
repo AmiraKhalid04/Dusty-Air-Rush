@@ -220,33 +220,33 @@ namespace our
                 }
             }
 
-            // Debug rendering for Colliders
-            if (auto collider = entity->getComponent<ColliderComponent>(); collider)
-            {
-                Material *debugMat = our::AssetLoader<Material>::get("debug_wireframe");
-                if (debugMat)
-                {
-                    RenderCommand command;
-                    glm::mat4 baseTransform = glm::translate(entity->getLocalToWorldMatrix(), collider->center);
+            // // Debug rendering for Colliders
+            // if (auto collider = entity->getComponent<ColliderComponent>(); collider)
+            // {
+            //     Material *debugMat = our::AssetLoader<Material>::get("debug_wireframe");
+            //     if (debugMat)
+            //     {
+            //         RenderCommand command;
+            //         glm::mat4 baseTransform = glm::translate(entity->getLocalToWorldMatrix(), collider->center);
 
-                    if (collider->shapeType == ColliderType::Sphere)
-                    {
-                        command.localToWorld = glm::scale(baseTransform, glm::vec3(collider->sphereRadius));
-                        command.mesh = our::AssetLoader<Mesh>::get("sphere");
-                    }
-                    else
-                    {
-                        command.localToWorld = glm::scale(baseTransform, collider->aabbExtents);
-                        command.mesh = our::AssetLoader<Mesh>::get("cube");
-                    }
+            //         if (collider->shapeType == ColliderType::Sphere)
+            //         {
+            //             command.localToWorld = glm::scale(baseTransform, glm::vec3(collider->sphereRadius));
+            //             command.mesh = our::AssetLoader<Mesh>::get("sphere");
+            //         }
+            //         else
+            //         {
+            //             command.localToWorld = glm::scale(baseTransform, collider->aabbExtents);
+            //             command.mesh = our::AssetLoader<Mesh>::get("cube");
+            //         }
 
-                    command.center = glm::vec3(command.localToWorld * glm::vec4(0, 0, 0, 1));
-                    command.material = debugMat;
+            //         command.center = glm::vec3(command.localToWorld * glm::vec4(0, 0, 0, 1));
+            //         command.material = debugMat;
 
-                    // Wireframes look better in transparent pass to overlay gracefully
-                    transparentCommands.push_back(command);
-                }
-            }
+            //         // Wireframes look better in transparent pass to overlay gracefully
+            //         transparentCommands.push_back(command);
+            //     }
+            // }
         }
 
         // If there is no camera, we return (we cannot render without a camera)
@@ -465,7 +465,8 @@ namespace our
                     glm::vec3 pos = activeLights[i].localToWorld * glm::vec4(0, 0, 0, 1);
                     glm::vec3 dir = activeLights[i].localToWorld * glm::vec4(0, 0, -1, 0);
                     command.material->shader->set(prefix + "position", pos);
-                    command.material->shader->set(prefix + "direction", glm::normalize(dir));
+                    command.material->shader->set(prefix + "direction", glm::normalize(dir)); 
+                    command.material->shader->set(prefix + "cone_angles", activeLights[i].light->cone_angles);
                 }
 
                 // Pass shadow map parameters
@@ -511,7 +512,8 @@ namespace our
                     glm::vec3 pos = activeLights[i].localToWorld * glm::vec4(0, 0, 0, 1);
                     glm::vec3 dir = activeLights[i].localToWorld * glm::vec4(0, 0, -1, 0);
                     command.material->shader->set(prefix + "position", pos);
-                    command.material->shader->set(prefix + "direction", glm::normalize(dir));
+                    command.material->shader->set(prefix + "direction", glm::normalize(dir)); 
+                    command.material->shader->set(prefix + "cone_angles", activeLights[i].light->cone_angles);
                 }
 
                 // Pass shadow map parameters

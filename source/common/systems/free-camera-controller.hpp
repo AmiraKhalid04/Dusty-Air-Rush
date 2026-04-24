@@ -126,15 +126,18 @@ namespace our
             // Moves the player forward automatically
             position += front * (deltaTime * current_sensitivity.z);
 
-            // S & W moves the player pitch back and forth
+            // S & W moves the player pitch back and forth (swapped and with arrows)
             float max_pitch = glm::pi<float>() / 3.0f; // Limit tilt to 60 degrees
             float pitch_speed = controller->tiltingSensitivity; // How fast it tilts
             
-            if(app->getKeyboard().isPressed(GLFW_KEY_W)) {
+            bool pitchingUp = app->getKeyboard().isPressed(GLFW_KEY_S) || app->getKeyboard().isPressed(GLFW_KEY_DOWN);
+            bool pitchingDown = app->getKeyboard().isPressed(GLFW_KEY_W) || app->getKeyboard().isPressed(GLFW_KEY_UP);
+
+            if(pitchingUp) {
                 rotation.x += (deltaTime * pitch_speed) * glm::cos(rotation.z); 
                 rotation.y += (deltaTime * pitch_speed) * glm::sin(rotation.z);
             }
-            else if (app->getKeyboard().isPressed(GLFW_KEY_S))
+            else if (pitchingDown)
             {
                 rotation.x -= (deltaTime * pitch_speed) * glm::cos(rotation.z);
                 rotation.y -= (deltaTime * pitch_speed) * glm::sin(rotation.z);
@@ -158,18 +161,34 @@ namespace our
             float max_roll = glm::pi<float>(); // Limit tilt to 45 degrees
             float roll_speed = controller->tiltingSensitivity; // How fast it tilts
             bool turning = false;
-            if (app->getKeyboard().isPressed(GLFW_KEY_D))
+
+            bool turningRight = app->getKeyboard().isPressed(GLFW_KEY_D) || app->getKeyboard().isPressed(GLFW_KEY_RIGHT);
+            bool turningLeft = app->getKeyboard().isPressed(GLFW_KEY_A) || app->getKeyboard().isPressed(GLFW_KEY_LEFT);
+
+            if (turningRight)
             {
                 rotation.y -= (deltaTime * roll_speed);
                 if (rotation.z > -max_roll)
                     rotation.z -= deltaTime * roll_speed; // Tilt right
                 turning = true;
             }
-            if (app->getKeyboard().isPressed(GLFW_KEY_A))
+            if (turningLeft)
             {
                 rotation.y += (deltaTime * roll_speed);
                 if (rotation.z < max_roll)
                     rotation.z += deltaTime * roll_speed; // Tilt left
+                turning = true;
+            }
+
+            // Q & E just do direct rotation around Z (rolling)
+            if (app->getKeyboard().isPressed(GLFW_KEY_E))
+            {
+                rotation.z -= deltaTime * roll_speed * 1.5f; // Pure roll right
+                turning = true;
+            }
+            if (app->getKeyboard().isPressed(GLFW_KEY_Q))
+            {
+                rotation.z += deltaTime * roll_speed * 1.5f; // Pure roll left
                 turning = true;
             }
 

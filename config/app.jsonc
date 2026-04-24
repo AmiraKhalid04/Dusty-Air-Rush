@@ -345,7 +345,10 @@
         "tornado": {
             "depthOffset": 10.0,
             "scale": 2.0,
-            "spawnChance": 0.2
+            "spawnChance": 0.2,
+            "angularVelocity": 3.0,
+            "moveSpeedXMin": 2.0,
+            "moveSpeedXMax": 20.0
         },
         "runwayLights": {
             "spacing": 10.0,

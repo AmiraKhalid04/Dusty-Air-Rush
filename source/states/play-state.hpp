@@ -33,7 +33,7 @@ class Playstate : public our::State
     our::MovementSystem movementSystem;
     our::CollisionSystem collisionSystem;
     our::RingSystem ringSystem;
-    our::TornadoSystem tornado;
+    our::TornadoSystem tornadoSystem;
     our::CoinSystem coinSystem;
     our::UIRenderSystem uiRenderer;
     our::HealthPackSystem healthPackSystem;
@@ -123,8 +123,14 @@ class Playstate : public our::State
                 tornadoConfig.scale = tornadoJson["scale"];
             if (tornadoJson.contains("spawnChance"))
                 tornadoConfig.spawnChance = tornadoJson["spawnChance"];
+            if (tornadoJson.contains("angularVelocity"))
+                tornadoConfig.angularVelocity = tornadoJson["angularVelocity"];
+            if (tornadoJson.contains("moveSpeedXMin"))
+                tornadoConfig.moveSpeedXMin = tornadoJson["moveSpeedXMin"];
+            if (tornadoJson.contains("moveSpeedXMax"))
+                tornadoConfig.moveSpeedXMax = tornadoJson["moveSpeedXMax"];
         }
-        tornado.initialize(&world, tornadoConfig);
+        tornadoSystem.initialize(&world, tornadoConfig);
 
         coinSystem.initialize(&world, ringPositions);
 
@@ -162,6 +168,7 @@ class Playstate : public our::State
         movementSystem.update(&world, (float)deltaTime);
         cameraController.update(&world, (float)deltaTime);
         collisionSystem.update(&world, (float)deltaTime);
+        tornadoSystem.update(&world, (float)deltaTime);
 
         worldBoundarySystem.update(&world);
 

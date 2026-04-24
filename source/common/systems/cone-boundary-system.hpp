@@ -14,12 +14,11 @@ namespace our
     // always sit outside the playable corridor.
     struct ConeBoundaryConfig
     {
-        float trackStartZ = 0.0f;       // Z where the first cone pair is placed
-        float trackEndZ = -252.0f;      // Z of the last cone pair (should match ring track end)
+        glm::vec3 startPosition = glm::vec3(0.0f, 0.0f, 0.0f);
+        glm::vec3 endPosition = glm::vec3(0.0f, 0.0f, 300.0f);
         float coneSpacing = 6.0f;       // distance between consecutive pairs along Z
-        float coneLateralOffset = 5.0f; // fixed |X| for all cones
-        float coneY = 0.0f;
-        float scale = 1.0f;         // uniform scale applied to every cone mesh
+        float coneY = 0.0f;             // Y position of all cones
+        float scale = 1.0f;             // uniform scale applied to every cone mesh
     };
 
     class ConeBoundarySystem
@@ -37,17 +36,17 @@ namespace our
             }
 
             int pairCount = 0;
-            for (float z = config.trackStartZ; z >= config.trackEndZ; z -= config.coneSpacing)
+            for (float z = config.startPosition.z; z >= config.endPosition.z; z -= config.coneSpacing)
             {
                 spawnCone(world,
                           "cone_left_" + std::to_string(pairCount),
-                          glm::vec3(-config.coneLateralOffset, config.coneY, z),
+                          glm::vec3(config.startPosition.x, config.startPosition.y, z),
                           config.scale,
                           coneMesh, coneMaterial);
 
                 spawnCone(world,
                           "cone_right_" + std::to_string(pairCount),
-                          glm::vec3(config.coneLateralOffset, config.coneY, z),
+                          glm::vec3(config.endPosition.x, config.startPosition.y, z),
                           config.scale,
                           coneMesh, coneMaterial);
 

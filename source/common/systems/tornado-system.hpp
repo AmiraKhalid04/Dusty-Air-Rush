@@ -14,14 +14,15 @@ namespace our
 
     struct TornadoConfig
     {
-        int tornadoCount = 8;
-
-        float spacing = 50.0f;         // MUST match ring spacing
+        int tornadosCount = 10;
+        float spacing = 0.0f;  // will be calculated same as rings
+        
         float heightVariance = 15.0f;  // MUST match ring config
         float lateralVariance = 10.0f; // MUST match ring config
 
-        float sideOffset = 20.0f; // distance from ring center (left/right)
-        float depthOffset = 20.0f;
+        float margin = 10.0f;      // margin from X boundaries of track
+        float sideOffset = 20.0f;  // distance from ring center (left/right)
+        float depthOffset = 20.0f; // offset to start tornadoes before rings
         float scale = 10.0f;
 
         float spawnChance = 0.7f;
@@ -30,7 +31,7 @@ namespace our
     class TornadoSystem
     {
     public:
-        void initialize(World *world, const TornadoConfig &config)
+        void initialize(World *world, const TornadoConfig &config, const glm::vec3 &trackStart, const glm::vec3 &trackEnd)
         {
             Mesh *mesh = AssetLoader<Mesh>::get("tornado");
             Material *mat = AssetLoader<Material>::get("tornado");
@@ -42,9 +43,15 @@ namespace our
             std::mt19937 rng(rd());
             std::uniform_real_distribution<float> chanceDist(0.0f, 1.0f);
 
-            glm::vec3 cursor = glm::vec3(0, 2, 0);
+            // Calculate spacing based on track depth and rings count
+            float trackDepth = trackEnd.z - trackStart.z;
+            float spacing = trackDepth / config.tornadosCount;
+            
+            glm::vec3 cursor = trackStart;
+            // Start offset (before first ring position)
+            cursor.z -= config.depthOffset;
 
-            for (int i = 0; i < config.tornadoCount; i++)
+            for (int i = 0; i < config.tornadosCount; i++)
             {
                 cursor.z -= config.spacing;
 

@@ -11,22 +11,32 @@
 namespace our
 {
 
-    struct RingTrackConfig
+    struct RingConfig
     {
-        int ringCount = 20;
-        float spacing = 12.0f;        // distance between rings
+        // Track boundaries
+        glm::vec3 startPosition = glm::vec3(0.0f, 0.0f, 0.0f);
+        glm::vec3 endPosition = glm::vec3(0.0f, 0.0f, 300.0f);
+        int ringsCount = 10;
+
+        // Calculated at runtime
+        float spacing = 0.0f; // will be calculated as (endPosition.z - startPosition.z) / ringsCount
+
+        // Ring appearance
         float heightVariance = 3.0f;  // how much rings drift up/down
         float lateralVariance = 2.0f; // how much rings drift left/right
         float ringScale = 4.0f;
-        float trackStartZ = 0.0f;
         float finishLineScale = 2.0f;
     };
 
-    class RingTrackSystem
+    class RingSystem
     {
     public:
-        std::vector<glm::vec3> initialize(World *world, const RingTrackConfig &config)
+        std::vector<glm::vec3> initialize(World *world, RingConfig &config)
         {
+            // Calculate spacing from track depth and ring count
+            float trackDepth = config.startPosition.z - config.endPosition.z;
+            config.spacing = trackDepth / config.ringsCount;
+
             std::vector<glm::vec3> ringPositions;
             Mesh *ringMesh = AssetLoader<Mesh>::get("ring");
             Material *ringMaterial = AssetLoader<Material>::get("ring");
@@ -35,9 +45,9 @@ namespace our
                 return ringPositions;
             ;
 
-            glm::vec3 cursor = glm::vec3(0, config.trackStartZ, 0); // starting position
+            glm::vec3 cursor = config.startPosition; // starting position
 
-            for (int i = 0; i < config.ringCount; i++)
+            for (int i = 0; i < config.ringsCount; i++)
             {
                 Entity *entity = world->add();
                 entity->name = "ring_" + std::to_string(i);
@@ -75,31 +85,31 @@ namespace our
 
                 // ─── PERSISTENT HAZARD SEGMENTS (The outer frame) ───
                 float frameRadius = 0.16f; // Average radius of the ring geometry
-                for (int j = 0; j < 12; j++) {
-                    Entity* segment = world->add();
+                for (int j = 0; j < 12; j++)
+                {
+                    Entity *segment = world->add();
                     segment->parent = entity; // Follow the ring's transform
                     segment->name = "ring_frame_" + std::to_string(j);
-                    
+
                     float angle = j * (glm::pi<float>() / 6.0f);
                     segment->localTransform.position = {
                         0.0f,
                         glm::cos(angle) * frameRadius + 0.20f, // 0.16 + 0.04
-                        glm::sin(angle) * frameRadius
-                    };
-                    
-                    auto* col = segment->addComponent<ColliderComponent>();
+                        glm::sin(angle) * frameRadius};
+
+                    auto *col = segment->addComponent<ColliderComponent>();
                     col->shapeType = ColliderType::Sphere; // Spheres avoid the rotated-box 'fat AABB' issue
                     col->objectType = "ring_frame";
                     col->sphereRadius = 0.04f;
                 }
 
                 // // ─── 1 SCORE TRIGGER (The inner hole) ───
-                Entity* trigger = world->add();
+                Entity *trigger = world->add();
                 trigger->parent = entity;
                 trigger->name = "ring_score_gate";
                 trigger->localTransform.position = {0, 0.20f, 0};
-                
-                auto* col = trigger->addComponent<ColliderComponent>();
+
+                auto *col = trigger->addComponent<ColliderComponent>();
                 col->shapeType = ColliderType::Sphere;
                 col->objectType = "ring_score";
                 col->sphereRadius = 0.10f; // Leaves a safe gap between hole boundary and the frames
@@ -110,7 +120,7 @@ namespace our
             // Move one more step forward (after last ring)
             cursor.z -= config.spacing;
 
-            int i = config.ringCount;
+            int i = config.ringsCount;
 
             // Compute same track position
             cursor.y = 2.0f;

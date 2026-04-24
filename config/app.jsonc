@@ -305,18 +305,21 @@
                 }
             }
         },
-        "ringTrack": {
-            "ringCount": 10,
-            "spacing": 30.0,
+        "track": {
+            "startPosition": [0.0, 0.0, 0.0],
+            "endPosition": [50.0, 0.0, -300.0],
+            "stagesCount": 10,
+            "innerMargin": 5.0,
+            "outerMargin": 20.0
+        },
+        "rings": {
             "heightVariance": 15.0,
             "lateralVariance": 10.0,
             "ringScale": 20.0,
-            "trackStartZ": 0.0,
             "finishLineScale": 2.0
         },
         "tornado": {
-            "tornadoCount": 10,
-            "spacing": 30.0,
+            "margin": 10.0,
             "heightVariance": 15.0,
             "lateralVariance": 10.0,
             "sideOffset": 10.0,
@@ -327,13 +330,24 @@
         "coneBoundary": {
             "margin": 2.0,
             "coneSpacing": 10.0,
-            "coneY":-4.0,
+            "coneY": -4.0,
             "scale": 4.0
+        },
+        "worldBoundary": {
+            "margin": 20.0
         },
         "world": [
             {
-                "position": [0, 10, 0],
-                "rotation": [-45, -45, 0],
+                "position": [
+                    0,
+                    10,
+                    0
+                ],
+                "rotation": [
+                    -45,
+                    -45,
+                    0
+                ],
                 "components": [
                     {
                         "type": "Light",
@@ -390,9 +404,21 @@
                 ],
                 "children": [
                     {
-                        "position": [0, -3, -4],
-                        "rotation": [0, 180, 0],
-                        "scale": [0.2, 0.2, 0.2],
+                        "position": [
+                            0,
+                            -3,
+                            -4
+                        ],
+                        "rotation": [
+                            0,
+                            180,
+                            0
+                        ],
+                        "scale": [
+                            0.2,
+                            0.2,
+                            0.2
+                        ],
                         "components": [
                             {
                                 "type": "Mesh Renderer",

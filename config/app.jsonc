@@ -490,7 +490,7 @@
                             },
                             {
                                 "name": "Left Wing",
-                                "position": [2.4, 2.0, 0.2],
+                                "position": [-2.4, 2.0, 0.2],
                                 "components": [
                                     {
                                         "type": "Collider",
@@ -502,27 +502,13 @@
                             },
                             {
                                 "name": "Left Flashlight",
-                                "position": [ 2.4, 2.0, 1.25 ],
-                                "rotation": [ 0, 0, 0 ],
+                                "position": [ -2.4, 2.0, 0.2 ],
+                                "rotation": [ 90, 0, 0 ],
                                 "components": [
                                     {
                                         "type": "Light",
                                         "lightType": "spot",
-                                        "color": [ 1.0, 1.0, 1.0 ],
-                                "children": [
-                                    {
-                                        "position": [0, 0, -4.5],
-                                        "rotation": [90, 0, 0],
-                                        "scale": [3.0, 10.0, 3.0],
-                                        "components": [
-                                            {
-                                                "type": "Mesh Renderer",
-                                                "mesh": "cone",
-                                                "material": "light_beam"
-                                            }
-                                        ]
-                                    }
-                                ],
+                                        "color": [ 2.0, 2.0, 2.0 ],
                                         "attenuation": [ 1.0, 0.0, 0.01 ],
                                         "cone_angles": [ 20.0, 30.0 ]
                                     }
@@ -530,27 +516,13 @@
                             },
                             {
                                 "name": "Right Flashlight",
-                                "position": [ -2.4, 2.0, 1.25 ],
-                                "rotation": [ 0, 0, 0 ],
+                                "position": [ 2.4, 2.0, 0.2 ],
+                                "rotation": [ 90, 0, 0 ],
                                 "components": [
                                     {
                                         "type": "Light",
                                         "lightType": "spot",
-                                        "color": [ 1.0, 1.0, 1.0 ],
-                                "children": [
-                                    {
-                                        "position": [0, 0, -4.5],
-                                        "rotation": [90, 0, 0],
-                                        "scale": [3.0, 10.0, 3.0],
-                                        "components": [
-                                            {
-                                                "type": "Mesh Renderer",
-                                                "mesh": "cone",
-                                                "material": "light_beam"
-                                            }
-                                        ]
-                                    }
-                                ],
+                                        "color": [ 2.0, 2.0, 2.0 ],
                                         "attenuation": [ 1.0, 0.0, 0.01 ],
                                         "cone_angles": [ 20.0, 30.0 ]
                                     }
@@ -558,7 +530,7 @@
                             },
                             {
                                 "name": "Right Wing",
-                                "position": [-2.4, 2.0, 0.2],
+                                "position": [2.4, 2.0, 0.2],
                                 "components": [
                                     {
                                         "type": "Collider",

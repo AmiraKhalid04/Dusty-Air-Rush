@@ -39,6 +39,7 @@ class Playstate : public our::State
     our::ConeBoundarySystem coneBoundarySystem;
 
     float playTime = 0.0f;
+    bool planeFlapping = true;
 
     void onInitialize() override
     {
@@ -51,6 +52,10 @@ class Playstate : public our::State
 
         // First of all, we get the scene configuration from the app config
         auto &config = getApp()->getConfig()["scene"];
+
+        // Read plane flapping toggle
+        if (config.contains("plane_flapping"))
+            planeFlapping = config["plane_flapping"];
         // If we have assets in the scene config, we deserialize them
         if (config.contains("assets"))
         {
@@ -163,15 +168,16 @@ class Playstate : public our::State
         collisionSystem.update(&world, (float)deltaTime);
 
         // Animate wings (flapping)
-        float flapAngle = std::sin(playTime * 15.0f) * glm::radians(25.0f);
-        for (auto entity : world.getEntities()) {
-            if (entity->name.find("Left Wing") != std::string::npos) {
-                entity->localTransform.rotation.y = flapAngle;
-            } else if (entity->name.find("Right Wing") != std::string::npos) {
-                entity->localTransform.rotation.y = -flapAngle;
+        if (planeFlapping) {
+            float flapAngle = std::sin(playTime * 15.0f) * glm::radians(25.0f);
+            for (auto entity : world.getEntities()) {
+                if (entity->name.find("Left Wing") != std::string::npos) {
+                    entity->localTransform.rotation.y = flapAngle;
+                } else if (entity->name.find("Right Wing") != std::string::npos) {
+                    entity->localTransform.rotation.y = -flapAngle;
+                }
             }
         }
-
 
         // And finally we use the renderer system to draw the scene
         renderer.render(&world);

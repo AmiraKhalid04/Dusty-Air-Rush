@@ -9,6 +9,7 @@
         "fullscreen": false
     },
     "scene": {
+        "plane_flapping": false,
         "renderer": {
             "sky_lighting": {
                 "top": [

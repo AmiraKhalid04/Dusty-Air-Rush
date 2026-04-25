@@ -157,13 +157,23 @@ class Playstate : public our::State
         coinSystem.initialize(&world, ringPositions);
 
         our::HealthPackConfig healthConfig;
-        healthConfig.spawnChance = 0.4f;
-        healthConfig.minRingsBefore = 2;
-        healthConfig.maxSideOffset = 6.0f;
-        healthConfig.maxVertOffset = 4.0f;
-        healthConfig.scale = 0.5f;
+        healthConfig.trackStartPosition = trackConfig.startPosition;
+        healthConfig.trackEndPosition = trackConfig.endPosition;
+        healthConfig.healthPacksCount = trackConfig.stagesCount;
+        healthConfig.margin = trackConfig.innerMargin;
 
-        healthPackSystem.initialize(&world, ringPositions, healthConfig);
+        if (config.contains("healthPacks"))
+        {
+            const auto &healthPacksJson = config["healthPacks"];
+            if (healthPacksJson.contains("depthOffset"))
+                healthConfig.depthOffset = healthPacksJson["depthOffset"];
+            if (healthPacksJson.contains("spawnChance"))
+                healthConfig.spawnChance = healthPacksJson["spawnChance"];
+            if (healthPacksJson.contains("scale"))
+                healthConfig.scale = healthPacksJson["scale"];
+        }
+
+        healthPackSystem.initialize(&world, healthConfig);
 
         audioSystem.playLooping("assets/sounds/sky_wind_loop.wav", 0.3f);
 
@@ -219,7 +229,7 @@ class Playstate : public our::State
         // Finally, instantly delete any marked geometry from the ECS engine so they disappear natively
         world.deleteMarkedEntities();
 
-        // Render UI elements CHECK if a BUG appeared
+        // Render UI elements
         uiRenderer.render(&world, getApp());
         uiRenderer.renderDangerOverlay(getApp()->getFrameBufferSize(), collisionSystem.getDangerIntensity());
         uiRenderer.renderBoundaryFlash(getApp()->getFrameBufferSize(), worldBoundarySystem.getFlashIntensity());

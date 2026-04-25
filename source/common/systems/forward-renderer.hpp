@@ -57,6 +57,11 @@ namespace our
         GLuint postprocessFrameBuffer, postProcessVertexArray;
         Texture2D *colorTarget, *depthTarget;
         TexturedMaterial* postprocessMaterial;
+        
+        // Fog effect parameters
+        glm::vec3 fogColor = {0.5f, 0.5f, 0.5f};
+        float fogDensity = 0.01f;
+        float fogGradient = 1.0f;
     public:
         GLuint getShadowMapTexture() const { return shadowMapTexture ? shadowMapTexture->getOpenGLName() : 0; }
         // Initialize the renderer including the sky and the Postprocessing objects.

@@ -1,65 +1,46 @@
 #pragma once
 
 #include "../ecs/world.hpp"
-#include "../components/camera.hpp"
-#include "../components/free-camera-controller.hpp"
 #include "../components/mesh-renderer.hpp"
-#include "../components/movement.hpp"
 #include "../components/coin-component.hpp"
 #include "../components/collider.hpp"
 #include "../asset-loader.hpp"
-#include "../mesh/mesh.hpp"
-#include "../material/material.hpp"
-
 #include <glm/glm.hpp>
 #include <glm/gtc/constants.hpp>
-
-#include <cstdlib>
+#include <vector>
 #include <cmath>
-#include <string>
+#include <iostream>
+#include <random>
 
 namespace our
 {
-    // CoinSystem spawns coins along the ring track path with small random offsets,
-    // so they guide the player through the course rather than scatter randomly.
+    struct CoinConfig
+    {
+        // Track boundaries
+        glm::vec3 trackStartPosition = glm::vec3(0.0f, 0.0f, 0.0f);
+        glm::vec3 trackEndPosition = glm::vec3(0.0f, 0.0f, 300.0f);
+
+        int coinsCount = 30;       // Total number of coin spawn positions
+        float margin = 5.0f;       // Distance from track edges
+        float depthOffset = 15.0f; // Offset from start to avoid intersecting with rings
+        float spawnChance = 0.8f;  // Probability of spawning at each position
+
+        float scale = 0.5f;
+        float collectRadius = 0.4f;
+
+        // Calculated at runtime
+        float spacing = 0.0f;
+    };
+
+    // CoinSystem spawns coins along the track with proper offset to avoid intersecting with rings and other objects
     class CoinSystem
     {
-        std::mt19937 rng;
-        std::uniform_real_distribution<float> dist;
-
-        // ── Track path parameters — must match RingTrackConfig in play-state ──
-        static constexpr float trackSpacing = 30.0f;    // same as trackConfig.spacing
-        static constexpr float trackHeightVar = 15.0f;  // same as trackConfig.heightVariance
-        static constexpr float trackLateralVar = 10.0f; // same as trackConfig.lateralVariance
-
-        // ── Coin placement tunables ────────────────────────────────────────────
-        static constexpr int coinsPerSegment = 3; // coins between each pair of rings
-        static constexpr float xJitter = 2.5f;    // max random lateral offset
-        static constexpr float yJitter = 3.5f;    // max random vertical offset
-        static constexpr float collectRadius = 2.0f;
-        // ──────────────────────────────────────────────────────────────────────
-
-        // Total coins = ringCount * coinsPerSegment. We lazily spawn up to this.
-        static constexpr int ringCount = 10; // must match trackConfig.ringCount
-        static constexpr int maxCoins = ringCount * coinsPerSegment;
-
-        // Returns the track centre position at a given ring index t (can be fractional).
-        static glm::vec3 trackPosition(float t)
-        {
-            float z = -t * trackSpacing;
-            float y = trackHeightVar * glm::sin(t * 0.4f);
-            float x = trackLateralVar * glm::sin(t * 0.3f + 1.0f);
-            return {x, y, z};
-        }
-
-    public:
-        CoinSystem()
-            : rng(std::random_device{}()), dist(-1.0f, 1.0f) {}
+        std::mt19937 rng{std::random_device{}()};
 
     public:
         bool initialized = false;
 
-        void initialize(World *world, const std::vector<glm::vec3> &ringPositions)
+        void initialize(World *world, const CoinConfig &config)
         {
             if (initialized)
                 return;
@@ -70,37 +51,59 @@ namespace our
             if (!coinMesh || !coinMaterial)
                 return;
 
-            for (int ring = 0; ring < (int)ringPositions.size() - 1; ring++)
+            // Calculate spacing from track depth and coins count
+            float trackDepth = config.trackStartPosition.z - config.trackEndPosition.z;
+            float calculatedSpacing = trackDepth / (config.coinsCount + 1.0f);
+
+            // Calculate X and Y ranges based on track start/end positions with margin
+            float xMin = std::min(config.trackStartPosition.x, config.trackEndPosition.x) + config.margin;
+            float xMax = std::max(config.trackStartPosition.x, config.trackEndPosition.x) - config.margin;
+            float yMin = std::min(config.trackStartPosition.y, config.trackEndPosition.y) + config.margin;
+            float yMax = std::max(config.trackStartPosition.y, config.trackEndPosition.y) - config.margin;
+
+            std::uniform_real_distribution<float> chanceDist(0.0f, 1.0f);
+            std::uniform_real_distribution<float> xDist(xMin, xMax);
+            std::uniform_real_distribution<float> yDist(yMin, yMax);
+
+            glm::vec3 cursor = config.trackStartPosition;
+            cursor.z += config.depthOffset; // Start offset to avoid intersecting with rings
+
+            for (int i = 0; i < config.coinsCount; i++)
             {
-                std::cout << "ring position size: " << ringPositions.size() << std::endl;
-                glm::vec3 a = ringPositions[ring];
-                glm::vec3 b = ringPositions[ring + 1];
+                cursor.z -= calculatedSpacing;
 
-                for (int j = 0; j < coinsPerSegment; j++)
-                {
-                    float frac = (j + 1.0f) / (coinsPerSegment + 1.0f);
-                    glm::vec3 base = glm::mix(a, b, frac); // Even spacing along the segment
-                    float dx = dist(rng) * xJitter;
-                    float dy = dist(rng) * yJitter;
+                // Random chance to skip this position
+                if (chanceDist(rng) > config.spawnChance)
+                    continue;
 
-                    Entity *coin = world->add();
-                    coin->name = "coin_dynamic";
-                    coin->localTransform.position = {base.x + dx, base.y + dy, base.z};
-                    coin->localTransform.scale = {0.5f, 0.5f, 0.5f};
+                Entity *coin = world->add();
+                coin->name = "coin_" + std::to_string(i);
 
-                    auto *mr = coin->addComponent<MeshRendererComponent>();
-                    mr->mesh = coinMesh;
-                    mr->material = coinMaterial;
+                // Random X and Y within track margins
+                glm::vec3 spawnPos = {
+                    xDist(rng),
+                    yDist(rng),
+                    cursor.z};
 
-                    coin->addComponent<CoinComponent>();
-                    // Dynamic collider for collision detection
+                coin->localTransform.position = spawnPos;
+                coin->localTransform.scale = glm::vec3(config.scale);
+                coin->localTransform.rotation = glm::vec3(0, 0, 0);
 
-                    auto *col = coin->addComponent<ColliderComponent>();
-                    col->shapeType = ColliderType::Sphere;
-                    col->objectType = "coin";
-                    col->sphereRadius = 0.4f;
-                    col->center = glm::vec3(0.0f, 0.8f, 0.0f);
-                }
+                auto *mr = coin->addComponent<MeshRendererComponent>();
+                mr->mesh = coinMesh;
+                mr->material = coinMaterial;
+
+                coin->addComponent<CoinComponent>();
+                // Dynamic collider for collision detection
+
+                auto *col = coin->addComponent<ColliderComponent>();
+                col->shapeType = ColliderType::Sphere;
+                col->objectType = "coin";
+                col->sphereRadius = 0.4f;
+                col->center = glm::vec3(0.0f, 0.8f, 0.0f);
+
+                std::cout << "Coin " << i << " at: "
+                          << spawnPos.x << ", " << spawnPos.y << ", " << spawnPos.z << std::endl;
             }
         }
 

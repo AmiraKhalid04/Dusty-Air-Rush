@@ -288,6 +288,11 @@
       "spawnChance": 0.5,
       "scale": 0.5
     },
+    "coins": {
+      "depthOffset": 35.0,
+      "spawnChance": 0.75,
+      "scale": 1.5
+    },
     "world": [
       {
         "position": [0, 10, 0],

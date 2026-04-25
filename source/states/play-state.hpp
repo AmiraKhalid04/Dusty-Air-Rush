@@ -154,7 +154,23 @@ class Playstate : public our::State
         }
         tornadoSystem.initialize(&world, tornadoConfig);
 
-        coinSystem.initialize(&world, ringPositions);
+        our::CoinConfig coinConfig;
+        coinConfig.trackStartPosition = trackConfig.startPosition;
+        coinConfig.trackEndPosition = trackConfig.endPosition;
+        coinConfig.coinsCount = trackConfig.stagesCount * 3; // 3 coins per ring segment
+        coinConfig.margin = trackConfig.innerMargin;
+
+        if (config.contains("coins"))
+        {
+            const auto &coinsJson = config["coins"];
+            if (coinsJson.contains("depthOffset"))
+                coinConfig.depthOffset = coinsJson["depthOffset"];
+            if (coinsJson.contains("spawnChance"))
+                coinConfig.spawnChance = coinsJson["spawnChance"];
+            if (coinsJson.contains("scale"))
+                coinConfig.scale = coinsJson["scale"];
+        }
+        coinSystem.initialize(&world, coinConfig);
 
         our::HealthPackConfig healthConfig;
         healthConfig.trackStartPosition = trackConfig.startPosition;

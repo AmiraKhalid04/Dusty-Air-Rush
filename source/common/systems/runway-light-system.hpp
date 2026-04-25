@@ -2,6 +2,7 @@
 #include "../ecs/world.hpp"
 #include "../components/mesh-renderer.hpp"
 #include "../asset-loader.hpp"
+#include "../components/light.hpp"
 #include <glm/glm.hpp>
 #include <iostream>
 #include <string>
@@ -66,6 +67,12 @@ namespace our
             auto *mr = cone->addComponent<MeshRendererComponent>();
             mr->mesh = mesh;
             mr->material = material;
+
+            auto *light = cone->addComponent<LightComponent>();
+            light->lightType = LightType::POINT;
+            light->diffuse = glm::vec3(1.0f, 0.6f, 0.2f); // Matching the tint from app.jsonc
+            light->specular = glm::vec3(1.0f, 0.6f, 0.2f);
+            light->attenuation = glm::vec3(1.0f, 0.05f, 0.01f);
         }
     };
 

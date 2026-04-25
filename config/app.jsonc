@@ -1,549 +1,456 @@
 {
-    "start-scene": "menu",
-    "window": {
-        "title": "Default Game Window",
-        "size": {
-            "width": 1280,
-            "height": 720
-        },
-        "fullscreen": false
+  "start-scene": "menu",
+  "window": {
+    "title": "Default Game Window",
+    "size": {
+      "width": 1280,
+      "height": 720
     },
-    "scene": {
-        "plane_flapping": false,
-        "renderer": {
-            "sky_lighting": {
-                "top": [
-                    0.3,
-                    0.6,
-                    1.0
-                ],
-                "horizon": [
-                    0.5,
-                    0.5,
-                    0.5
-                ],
-                "bottom": [
-                    0.2,
-                    0.2,
-                    0.2
-                ]
-            },
-            "sky": "assets/textures/sky.jpg",
-            "postprocess": "assets/shaders/postprocess/vignette.frag"
+    "fullscreen": false
+  },
+  "scene": {
+    "plane_flapping": false,
+    "renderer": {
+      "sky_lighting": {
+        "top": [0.3, 0.6, 1.0],
+        "horizon": [0.5, 0.5, 0.5],
+        "bottom": [0.2, 0.2, 0.2]
+      },
+      "sky": "assets/textures/sky.jpg",
+      "postprocess": "assets/shaders/postprocess/vignette.frag"
+    },
+    "assets": {
+      "shaders": {
+        "lit": {
+          "vs": "assets/shaders/lit.vert",
+          "fs": "assets/shaders/lit.frag"
         },
-        "assets": {
-            "shaders": {
-                "lit": {
-                    "vs": "assets/shaders/lit.vert",
-                    "fs": "assets/shaders/lit.frag"
-                },
-                "shadow": {
-                    "vs": "assets/shaders/shadow.vert",
-                    "fs": "assets/shaders/shadow.frag"
-                },
-                "tinted": {
-                    "vs": "assets/shaders/tinted.vert",
-                    "fs": "assets/shaders/tinted.frag"
-                },
-                "textured": {
-                    "vs": "assets/shaders/textured.vert",
-                    "fs": "assets/shaders/textured.frag"
-                }
+        "shadow": {
+          "vs": "assets/shaders/shadow.vert",
+          "fs": "assets/shaders/shadow.frag"
+        },
+        "tinted": {
+          "vs": "assets/shaders/tinted.vert",
+          "fs": "assets/shaders/tinted.frag"
+        },
+        "textured": {
+          "vs": "assets/shaders/textured.vert",
+          "fs": "assets/shaders/textured.frag"
+        }
+      },
+      "textures": {
+        "metal_albedo": "assets/textures/metal/albedo.jpg",
+        "metal_specular": "assets/textures/metal/specular.jpg",
+        "metal_roughness": "assets/textures/metal/roughness.jpg",
+        "suzanne_ao": "assets/textures/suzanne/ambient_occlusion.jpg",
+        "white": "assets/textures/white.png",
+        "black": "assets/textures/black.png",
+        "gray": "assets/textures/gray.png",
+        "grass": "assets/textures/grass_ground_d.jpg",
+        "ring": "assets/textures/ring/ring.png",
+        "tornado": "assets/textures/tornado/material.jpeg",
+        "cone": "assets/textures/cone/baseColor.png",
+        "coin-texture": "assets/textures/coin.jpg",
+        "health_pack-texture": "assets/textures/health.png",
+        "dusty-texture": "assets/textures/dusty_baseColor.png",
+        "finish_line": "assets/textures/finish_line/baseColor.png"
+      },
+      "meshes": {
+        "cube": "assets/models/cube.obj",
+        "plane": "assets/models/plane.obj",
+        "sphere": "assets/models/sphere.obj",
+        "ring": "assets/models/ring.obj",
+        "tornado": "assets/models/tornado.obj",
+        "cone": "assets/models/cone.obj",
+        "coin": "assets/models/coin.obj",
+        "health_pack": "assets/models/health.obj",
+        "dusty_body": "assets/models/dusty_body.obj",
+        "dusty_fan": "assets/models/dusty_fan.obj",
+        "dusty_left_wing": "assets/models/dusty_left_wing.obj",
+        "dusty_right_wing": "assets/models/dusty_right_wing.obj",
+        "finish_line": "assets/models/finish_line.obj"
+      },
+      "samplers": {
+        "default": {},
+        "pixelated": {
+          "MAG_FILTER": "GL_NEAREST"
+        }
+      },
+      "materials": {
+        "coin": {
+          "type": "lit",
+          "shader": "lit",
+          "pipelineState": {
+            "faceCulling": {
+              "enabled": false
             },
-            "textures": {
-                "metal_albedo": "assets/textures/metal/albedo.jpg",
-                "metal_specular": "assets/textures/metal/specular.jpg",
-                "metal_roughness": "assets/textures/metal/roughness.jpg",
-                "suzanne_ao": "assets/textures/suzanne/ambient_occlusion.jpg",
-                "white": "assets/textures/white.png",
-                "black": "assets/textures/black.png",
-                "gray": "assets/textures/gray.png",
-                "grass": "assets/textures/grass_ground_d.jpg",
-                "ring": "assets/textures/ring/ring.png",
-                "tornado": "assets/textures/tornado/material.jpeg",
-                "cone": "assets/textures/cone/baseColor.png",
-                "coin-texture": "assets/textures/coin.jpg",
-                "health_pack-texture": "assets/textures/health.png",
-                "dusty-texture": "assets/textures/dusty_baseColor.png",
-                "finish_line": "assets/textures/finish_line/baseColor.png"
-            },
-            "meshes": {
-                "cube": "assets/models/cube.obj",
-                "plane": "assets/models/plane.obj",
-                "sphere": "assets/models/sphere.obj",
-                "ring": "assets/models/ring.obj",
-                "tornado": "assets/models/tornado.obj",
-                "cone": "assets/models/cone.obj",
-                "coin": "assets/models/coin.obj",
-                "health_pack": "assets/models/health.obj",
-                "dusty_body": "assets/models/dusty_body.obj",
-                "dusty_fan": "assets/models/dusty_fan.obj",
-                "dusty_left_wing": "assets/models/dusty_left_wing.obj",
-                "dusty_right_wing": "assets/models/dusty_right_wing.obj",
-                "finish_line": "assets/models/finish_line.obj"
-            },
-            "samplers": {
-                "default": {},
-                "pixelated": {
-                    "MAG_FILTER": "GL_NEAREST"
-                }
-            },
-            "materials": {
-                "coin": {
-                    "type": "lit",
-                    "shader": "lit",
-                    "pipelineState": {
-                        "faceCulling": {
-                            "enabled": false
-                        },
-                        "depthTesting": {
-                            "enabled": true
-                        }
-                    },
-                    "albedo": "coin-texture",
-                    "specular": "gray",
-                    "roughness": "gray",
-                    "ambient": "white",
-                    "emissive": "black",
-                    "sampler": "default",
-                    "tint": [
-                        1.0,
-                        1.0,
-                        1.0,
-                        1.0
-                    ]
-                },
-                "health_pack": {
-                    "type": "lit",
-                    "shader": "lit",
-                    "pipelineState": {
-                        "faceCulling": {
-                            "enabled": false
-                        },
-                        "depthTesting": {
-                            "enabled": true
-                        }
-                    },
-                    "albedo": "health_pack-texture",
-                    "specular": "gray",
-                    "roughness": "gray",
-                    "ambient": "white",
-                    "emissive": "black",
-                    "sampler": "default",
-                    "tint": [
-                        1.0,
-                        1.0,
-                        1.0,
-                        1.0
-                    ]
-                },
-                "ring": {
-                    "type": "lit",
-                    "shader": "lit",
-                    "pipelineState": {
-                        "faceCulling": {
-                            "enabled": false
-                        },
-                        "depthTesting": {
-                            "enabled": true
-                        }
-                    },
-                    "tint": [
-                        1,
-                        1,
-                        1,
-                        1
-                    ],
-                    "texture": "ring",
-                    "sampler": "default"
-                },
-                "tornado": {
-                    "type": "textured",
-                    "shader": "textured",
-                    "pipelineState": {
-                        "faceCulling": {
-                            "enabled": false
-                        },
-                        "depthTesting": {
-                            "enabled": true
-                        }
-                    },
-                    "tint": [
-                        1,
-                        1,
-                        1,
-                        1
-                    ],
-                    "texture": "tornado",
-                    "sampler": "default"
-                },
-                "cone": {
-                    "type": "lit",
-                    "shader": "lit",
-                    "pipelineState": {
-                        "faceCulling": {
-                            "enabled": false
-                        },
-                        "depthTesting": {
-                            "enabled": true
-                        }
-                    },
-                    "tint": [
-                        1,
-                        1,
-                        1,
-                        1
-                    ],
-                    "texture": "cone",
-                    "sampler": "default"
-                },
-                "metal": {
-                    "type": "tinted",
-                    "shader": "tinted",
-                    "pipelineState": {
-                        "faceCulling": {
-                            "enabled": false
-                        },
-                        "depthTesting": {
-                            "enabled": true
-                        }
-                    },
-                    "tint": [
-                        0.45,
-                        0.4,
-                        0.5,
-                        1
-                    ]
-                },
-                "grass": {
-                    "type": "textured",
-                    "shader": "textured",
-                    "pipelineState": {
-                        "faceCulling": {
-                            "enabled": false
-                        },
-                        "depthTesting": {
-                            "enabled": true
-                        }
-                    },
-                    "tint": [
-                        1,
-                        1,
-                        1,
-                        1
-                    ],
-                    "texture": "grass",
-                    "sampler": "default"
-                },
-                "dusty": {
-                    "type": "lit",
-                    "shader": "lit",
-                    "pipelineState": {
-                        "faceCulling": {
-                            "enabled": false
-                        },
-                        "depthTesting": {
-                            "enabled": true
-                        }
-                    },
-                    "albedo": "dusty-texture",
-                    "specular": "gray",
-                    "roughness": "gray",
-                    "ambient": "white",
-                    "emissive": "black",
-                    "sampler": "default",
-                    "tint": [
-                        1.0,
-                        1.0,
-                        1.0,
-                        1.0
-                    ]
-                },
-                "finish_line": {
-                    "type": "textured",
-                    "shader": "textured",
-                    "pipelineState": {
-                        "faceCulling": {
-                            "enabled": false
-                        },
-                        "depthTesting": {
-                            "enabled": true
-                        }
-                    },
-                    "texture": "finish_line",
-                    "sampler": "default",
-                    "tint": [
-                        1.0,
-                        1.0,
-                        1.0,
-                        1.0
-                    ]
-                },
-                "debug_wireframe": {
-                    "type": "tinted",
-                    "shader": "tinted",
-                    "pipelineState": {
-                        "faceCulling": {
-                            "enabled": false
-                        },
-                        "depthTesting": {
-                            "enabled": true
-                        },
-                        "polygonMode": {
-                            "enabled": true,
-                            "mode": "GL_FILL"
-                        },
-                        "blending": {
-                            "enabled": true,
-                            "sourceFactor": "GL_SRC_ALPHA",
-                            "destinationFactor": "GL_ONE_MINUS_SRC_ALPHA"
-                        }
-                    },
-                    "transparent": true,
-                    "tint": [
-                        0.0,
-                        1.0,
-                        0.0,
-                        0.3
-                    ]
-                },
-                "runway_light": {
-                    "type": "tinted",
-                    "shader": "tinted",
-                    "pipelineState": {
-                        "faceCulling": {
-                            "enabled": false
-                        },
-                        "depthTesting": {
-                            "enabled": true
-                        }
-                    },
-                    "tint": [
-                        1.0,
-                        0.6,
-                        0.2,
-                        1.0
-                    ]
-                }
+            "depthTesting": {
+              "enabled": true
             }
+          },
+          "albedo": "coin-texture",
+          "specular": "gray",
+          "roughness": "gray",
+          "ambient": "white",
+          "emissive": "black",
+          "sampler": "default",
+          "tint": [1.0, 1.0, 1.0, 1.0]
         },
-        "track": {
-            "startPosition": [
-                -25.0,
-                0.0,
-                0.0
-            ],
-            "endPosition": [
-                25.0,
-                10.0,
-                -500.0
-            ],
-            "stagesCount": 10,
-            "innerMargin": 5.0,
-            "outerMargin": 20.0
+        "health_pack": {
+          "type": "lit",
+          "shader": "lit",
+          "pipelineState": {
+            "faceCulling": {
+              "enabled": false
+            },
+            "depthTesting": {
+              "enabled": true
+            }
+          },
+          "albedo": "health_pack-texture",
+          "specular": "gray",
+          "roughness": "gray",
+          "ambient": "white",
+          "emissive": "black",
+          "sampler": "default",
+          "tint": [1.0, 1.0, 1.0, 1.0]
         },
-        "rings": {
-            "ringScale": 20.0,
-            "finishLineScale": 2.0
+        "ring": {
+          "type": "lit",
+          "shader": "lit",
+          "pipelineState": {
+            "faceCulling": {
+              "enabled": false
+            },
+            "depthTesting": {
+              "enabled": true
+            }
+          },
+          "tint": [1, 1, 1, 1],
+          "texture": "ring",
+          "sampler": "default"
         },
         "tornado": {
-            "depthOffset": 10.0,
-            "scale": 2.0,
-            "spawnChance": 0.2,
-            "angularVelocity": 3.0,
-            "moveSpeedXMin": 2.0,
-            "moveSpeedXMax": 20.0
-        },
-        "runwayLights": {
-            "spacing": 10.0,
-            "scale": 0.3
-        },
-        "world": [
-            {
-                "position": [
-                    0,
-                    10,
-                    0
-                ],
-                "rotation": [
-                    -45,
-                    -45,
-                    0
-                ],
-                "components": [
-                    {
-                        "type": "Light",
-                        "lightType": "directional",
-                        "color": [
-                            1.0,
-                            0.9,
-                            0.8
-                        ]
-                    }
-                ]
+          "type": "textured",
+          "shader": "textured",
+          "pipelineState": {
+            "faceCulling": {
+              "enabled": false
             },
-            {
-                "position": [
-                    2,
-                    1,
-                    0
-                ],
-                "components": [
-                    {
-                        "type": "Light",
-                        "lightType": "point",
-                        "color": [
-                            1.0,
-                            0.2,
-                            0.2
-                        ],
-                        "attenuation": [
-                            1.0,
-                            0.14,
-                            0.07
-                        ]
-                    }
-                ]
-            },
-            {
-                "position": [
-                    0,
-                    0,
-                    10
-                ],
-                "components": [
-                    {
-                        "type": "Camera"
-                    },
-                    {
-                        "type": "Free Camera Controller"
-                    },
-                    {
-                        "type": "dusty",
-                        "maxHealth": 100.0
-                    }
-                ],
-                "children": [
-                    {
-                        "name": "Plane Visuals",
-                        "position": [0, -3, -6],
-                        "rotation": [-90, 0, 0],
-                        "scale": [0.5, 0.5, 0.5],
-                        "children": [
-                            {
-                                "name": "Body",
-                                "components": [
-                                    {
-                                        "type": "Mesh Renderer",
-                                        "mesh": "dusty_body",
-                                        "material": "dusty"
-                                    }
-                                ]
-                            },
-                            {
-                                "name": "Propeller",
-                                "components": [
-                                    {
-                                        "type": "Mesh Renderer",
-                                        "mesh": "dusty_fan",
-                                        "material": "dusty"
-                                    },
-                                    {
-                                        "type": "Movement",
-                                        "angularVelocity": [0, 720, 0]
-                                    }
-                                ]
-                            },
-                            {
-                                "name": "Left Wing Mesh",
-                                "position": [-1.2, 2.0, -3],
-                                "components": [
-                                    {
-                                        "type": "Mesh Renderer",
-                                        "mesh": "dusty_left_wing",
-                                        "material": "dusty"
-                                    }
-                                ]
-                            },
-                            {
-                                "name": "Right Wing Mesh",
-                                "position": [1.2, 2.0, -3],
-                                "components": [
-                                    {
-                                        "type": "Mesh Renderer",
-                                        "mesh": "dusty_right_wing",
-                                        "material": "dusty"
-                                    }
-                                ]
-                            },
-                            {
-                                "name": "Body Collider",
-                                "position": [0, 2.0, -0.5],
-                                "components": [
-                                    {
-                                        "type": "Collider",
-                                        "shapeType": "aabb",
-                                        "objectType": "player",
-                                        "aabbExtents": [0.5, 0.7, 3.0]
-                                    }
-                                ]
-                            },
-                            {
-                                "name": "Left Wing",
-                                "position": [-2.4, 2.0, 0.2],
-                                "components": [
-                                    {
-                                        "type": "Collider",
-                                        "shapeType": "aabb",
-                                        "objectType": "player",
-                                        "aabbExtents": [1.8, 0.25, 0.8]
-                                    }
-                                ]
-                            },
-                            {
-                                "name": "Left Flashlight",
-                                "position": [ -2.4, 2.0, 0.2 ],
-                                "rotation": [ 90, 0, 0 ],
-                                "components": [
-                                    {
-                                        "type": "Light",
-                                        "lightType": "spot",
-                                        "color": [ 2.0, 2.0, 2.0 ],
-                                        "attenuation": [ 1.0, 0.0, 0.01 ],
-                                        "cone_angles": [ 20.0, 30.0 ]
-                                    }
-                                ]
-                            },
-                            {
-                                "name": "Right Flashlight",
-                                "position": [ 2.4, 2.0, 0.2 ],
-                                "rotation": [ 90, 0, 0 ],
-                                "components": [
-                                    {
-                                        "type": "Light",
-                                        "lightType": "spot",
-                                        "color": [ 2.0, 2.0, 2.0 ],
-                                        "attenuation": [ 1.0, 0.0, 0.01 ],
-                                        "cone_angles": [ 20.0, 30.0 ]
-                                    }
-                                ]
-                            },
-                            {
-                                "name": "Right Wing",
-                                "position": [2.4, 2.0, 0.2],
-                                "components": [
-                                    {
-                                        "type": "Collider",
-                                        "shapeType": "aabb",
-                                        "objectType": "player",
-                                        "aabbExtents": [1.8, 0.25, 0.8]
-                                    }
-                                ]
-                            }
-                        ]
-                    }
-                ]
+            "depthTesting": {
+              "enabled": true
             }
+          },
+          "tint": [1, 1, 1, 1],
+          "texture": "tornado",
+          "sampler": "default"
+        },
+        "cone": {
+          "type": "lit",
+          "shader": "lit",
+          "pipelineState": {
+            "faceCulling": {
+              "enabled": false
+            },
+            "depthTesting": {
+              "enabled": true
+            }
+          },
+          "tint": [1, 1, 1, 1],
+          "texture": "cone",
+          "sampler": "default"
+        },
+        "metal": {
+          "type": "tinted",
+          "shader": "tinted",
+          "pipelineState": {
+            "faceCulling": {
+              "enabled": false
+            },
+            "depthTesting": {
+              "enabled": true
+            }
+          },
+          "tint": [0.45, 0.4, 0.5, 1]
+        },
+        "grass": {
+          "type": "textured",
+          "shader": "textured",
+          "pipelineState": {
+            "faceCulling": {
+              "enabled": false
+            },
+            "depthTesting": {
+              "enabled": true
+            }
+          },
+          "tint": [1, 1, 1, 1],
+          "texture": "grass",
+          "sampler": "default"
+        },
+        "dusty": {
+          "type": "lit",
+          "shader": "lit",
+          "pipelineState": {
+            "faceCulling": {
+              "enabled": false
+            },
+            "depthTesting": {
+              "enabled": true
+            }
+          },
+          "albedo": "dusty-texture",
+          "specular": "gray",
+          "roughness": "gray",
+          "ambient": "white",
+          "emissive": "black",
+          "sampler": "default",
+          "tint": [1.0, 1.0, 1.0, 1.0]
+        },
+        "finish_line": {
+          "type": "textured",
+          "shader": "textured",
+          "pipelineState": {
+            "faceCulling": {
+              "enabled": false
+            },
+            "depthTesting": {
+              "enabled": true
+            }
+          },
+          "texture": "finish_line",
+          "sampler": "default",
+          "tint": [1.0, 1.0, 1.0, 1.0]
+        },
+        "debug_wireframe": {
+          "type": "tinted",
+          "shader": "tinted",
+          "pipelineState": {
+            "faceCulling": {
+              "enabled": false
+            },
+            "depthTesting": {
+              "enabled": true
+            },
+            "polygonMode": {
+              "enabled": true,
+              "mode": "GL_FILL"
+            },
+            "blending": {
+              "enabled": true,
+              "sourceFactor": "GL_SRC_ALPHA",
+              "destinationFactor": "GL_ONE_MINUS_SRC_ALPHA"
+            }
+          },
+          "transparent": true,
+          "tint": [0.0, 1.0, 0.0, 0.3]
+        },
+        "runway_light": {
+          "type": "tinted",
+          "shader": "tinted",
+          "pipelineState": {
+            "faceCulling": {
+              "enabled": false
+            },
+            "depthTesting": {
+              "enabled": true
+            }
+          },
+          "tint": [1.0, 0.6, 0.2, 1.0]
+        }
+      }
+    },
+    "track": {
+      "startPosition": [-25.0, 0.0, 0.0],
+      "endPosition": [25.0, 10.0, -500.0],
+      "stagesCount": 10,
+      "innerMargin": 5.0,
+      "outerMargin": 20.0
+    },
+    "rings": {
+      "ringScale": 20.0,
+      "finishLineScale": 2.0
+    },
+    "tornado": {
+      "depthOffset": 10.0,
+      "scale": 2.0,
+      "spawnChance": 0.2,
+      "angularVelocity": 3.0,
+      "moveSpeedXMin": 2.0,
+      "moveSpeedXMax": 20.0
+    },
+    "runwayLights": {
+      "spacing": 10.0,
+      "scale": 0.3
+    },
+    "healthPacks": {
+      "depthOffset": 30.0,
+      "spawnChance": 0.5,
+      "scale": 0.5
+    },
+    "coins": {
+      "depthOffset": 35.0,
+      "spawnChance": 0.75,
+      "scale": 1.5
+    },
+    "world": [
+      {
+        "position": [0, 10, 0],
+        "rotation": [-45, -45, 0],
+        "components": [
+          {
+            "type": "Light",
+            "lightType": "directional",
+            "color": [1.0, 0.9, 0.8]
+          }
         ]
-    }
+      },
+      {
+        "position": [2, 1, 0],
+        "components": [
+          {
+            "type": "Light",
+            "lightType": "point",
+            "color": [1.0, 0.2, 0.2],
+            "attenuation": [1.0, 0.14, 0.07]
+          }
+        ]
+      },
+      {
+        "position": [0, 0, 10],
+        "components": [
+          {
+            "type": "Camera"
+          },
+          {
+            "type": "Free Camera Controller"
+          },
+          {
+            "type": "dusty",
+            "maxHealth": 100.0
+          }
+        ],
+        "children": [
+          {
+            "name": "Plane Visuals",
+            "position": [0, -3, -6],
+            "rotation": [-90, 0, 0],
+            "scale": [0.5, 0.5, 0.5],
+            "children": [
+              {
+                "name": "Body",
+                "components": [
+                  {
+                    "type": "Mesh Renderer",
+                    "mesh": "dusty_body",
+                    "material": "dusty"
+                  }
+                ]
+              },
+              {
+                "name": "Propeller",
+                "components": [
+                  {
+                    "type": "Mesh Renderer",
+                    "mesh": "dusty_fan",
+                    "material": "dusty"
+                  },
+                  {
+                    "type": "Movement",
+                    "angularVelocity": [0, 720, 0]
+                  }
+                ]
+              },
+              {
+                "name": "Left Wing Mesh",
+                "position": [-1.2, 2.0, -3],
+                "components": [
+                  {
+                    "type": "Mesh Renderer",
+                    "mesh": "dusty_left_wing",
+                    "material": "dusty"
+                  }
+                ]
+              },
+              {
+                "name": "Right Wing Mesh",
+                "position": [1.2, 2.0, -3],
+                "components": [
+                  {
+                    "type": "Mesh Renderer",
+                    "mesh": "dusty_right_wing",
+                    "material": "dusty"
+                  }
+                ]
+              },
+              {
+                "name": "Body Collider",
+                "position": [0, 2.0, -0.5],
+                "components": [
+                  {
+                    "type": "Collider",
+                    "shapeType": "aabb",
+                    "objectType": "player",
+                    "aabbExtents": [0.5, 0.7, 3.0]
+                  }
+                ]
+              },
+              {
+                "name": "Left Wing",
+                "position": [-2.4, 2.0, 0.2],
+                "components": [
+                  {
+                    "type": "Collider",
+                    "shapeType": "aabb",
+                    "objectType": "player",
+                    "aabbExtents": [1.8, 0.25, 0.8]
+                  }
+                ]
+              },
+              {
+                "name": "Left Flashlight",
+                "position": [-2.4, 2.0, 0.2],
+                "rotation": [90, 0, 0],
+                "components": [
+                  {
+                    "type": "Light",
+                    "lightType": "spot",
+                    "color": [2.0, 2.0, 2.0],
+                    "attenuation": [1.0, 0.0, 0.01],
+                    "cone_angles": [20.0, 30.0]
+                  }
+                ]
+              },
+              {
+                "name": "Right Flashlight",
+                "position": [2.4, 2.0, 0.2],
+                "rotation": [90, 0, 0],
+                "components": [
+                  {
+                    "type": "Light",
+                    "lightType": "spot",
+                    "color": [2.0, 2.0, 2.0],
+                    "attenuation": [1.0, 0.0, 0.01],
+                    "cone_angles": [20.0, 30.0]
+                  }
+                ]
+              },
+              {
+                "name": "Right Wing",
+                "position": [2.4, 2.0, 0.2],
+                "components": [
+                  {
+                    "type": "Collider",
+                    "shapeType": "aabb",
+                    "objectType": "player",
+                    "aabbExtents": [1.8, 0.25, 0.8]
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  }
 }

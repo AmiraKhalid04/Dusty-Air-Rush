@@ -489,6 +489,10 @@ namespace our
                     if (activeLights[i].light->lightType == LightType::DIRECTIONAL) {
                         lightColor *= directionalStrength;
                         dir = -sunDir;
+                    } else if (activeLights[i].light->lightType == LightType::POINT) {
+                        // Fade out point lights during the day
+                        float lampStrength = 1.0f - glm::smoothstep(0.0f, 0.2f, sunStrength);
+                        lightColor *= lampStrength;
                     }
                     command.material->shader->set(prefix + "color", lightColor);
                     command.material->shader->set(prefix + "attenuation", activeLights[i].light->attenuation);

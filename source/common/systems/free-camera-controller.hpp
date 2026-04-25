@@ -99,16 +99,21 @@ namespace our
                       up = glm::vec3(matrix * glm::vec4(0, 1, 0, 0)),
                       right = glm::vec3(matrix * glm::vec4(1, 0, 0, 0));
 
-            glm::vec3 current_sensitivity = controller->positionSensitivity *  controller->speedupFactor;
+            glm::vec3 current_sensitivity = controller->positionSensitivity * controller->speedupFactor;
             // If the LEFT SHIFT key is pressed, we multiply the position sensitivity by the speed up factor
             bool shiftPressed = app->getKeyboard().isPressed(GLFW_KEY_LEFT_SHIFT);
-            if(app->getKeyboard().isPressed(GLFW_KEY_LEFT_SHIFT)) {
+            if (app->getKeyboard().isPressed(GLFW_KEY_LEFT_SHIFT))
+            {
                 controller->speedupFactor = 3.0f;
                 controller->tiltingSensitivity = 0.6f;
-            } else if(app->getKeyboard().isPressed(GLFW_KEY_LEFT_CONTROL)) {
+            }
+            else if (app->getKeyboard().isPressed(GLFW_KEY_LEFT_CONTROL))
+            {
                 controller->speedupFactor = 0.5f;
                 controller->tiltingSensitivity = 0.1f;
-            } else {
+            }
+            else
+            {
                 controller->speedupFactor = 1.0f;
                 controller->tiltingSensitivity = 0.2f;
             }
@@ -117,17 +122,17 @@ namespace our
             if (audioSystem)
             {
                 if (shiftPressed && !shiftWasPressed)
-                    audioSystem->startMotorSound("assets/sounds/motor-speed2.mp3", 0.9f);
+                    audioSystem->startMotorSound("assets/sounds/motor-loop.mp3", 0.5f);
                 else if (!shiftPressed && shiftWasPressed)
                     audioSystem->stopMotorSound();
             }
             shiftWasPressed = shiftPressed;
-            
+
             // Moves the player forward automatically
             position += front * (deltaTime * current_sensitivity.z);
-            
-            // A & D tilts & rotates the player left or right 
-            float max_roll = glm::pi<float>(); // Limit tilt to 45 degrees
+
+            // A & D tilts & rotates the player left or right
+            float max_roll = glm::pi<float>();                 // Limit tilt to 45 degrees
             float roll_speed = controller->tiltingSensitivity; // How fast it tilts
             bool turning = false;
 
@@ -177,7 +182,7 @@ namespace our
                         rotation.z = 0.0f;
                 }
             }
-                        
+
             // If SPACE is pressed, fix the pitch
             if (app->getKeyboard().isPressed(GLFW_KEY_SPACE))
             {
@@ -185,14 +190,15 @@ namespace our
             }
 
             // S & W moves the player pitch back and forth (swapped and with arrows)
-            float max_pitch = glm::pi<float>() / 3.0f; // Limit tilt to 60 degrees
+            float max_pitch = glm::pi<float>() / 3.0f;          // Limit tilt to 60 degrees
             float pitch_speed = controller->tiltingSensitivity; // How fast it tilts
-            
+
             bool pitchingUp = app->getKeyboard().isPressed(GLFW_KEY_S) || app->getKeyboard().isPressed(GLFW_KEY_DOWN);
             bool pitchingDown = app->getKeyboard().isPressed(GLFW_KEY_W) || app->getKeyboard().isPressed(GLFW_KEY_UP);
-            
-            if(pitchingUp) {
-                rotation.x += (deltaTime * pitch_speed) * glm::cos(rotation.z); 
+
+            if (pitchingUp)
+            {
+                rotation.x += (deltaTime * pitch_speed) * glm::cos(rotation.z);
                 rotation.y += (deltaTime * pitch_speed) * glm::sin(rotation.z);
             }
             else if (pitchingDown)

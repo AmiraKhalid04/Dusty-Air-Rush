@@ -278,6 +278,19 @@ namespace our
         glm::mat4 lightSpaceMatrix = glm::mat4(1.0f);
         glm::vec3 cameraPosition = glm::vec3(camera->getOwner()->getLocalToWorldMatrix() * glm::vec4(0, 0, 0, 1));
 
+        // Sort active lights to prioritize Directional, then Spot, then nearest Point lights
+        std::sort(activeLights.begin(), activeLights.end(), [&cameraPosition](const LightData &a, const LightData &b) {
+            if (a.light->lightType == LightType::DIRECTIONAL && b.light->lightType != LightType::DIRECTIONAL) return true;
+            if (b.light->lightType == LightType::DIRECTIONAL && a.light->lightType != LightType::DIRECTIONAL) return false;
+            
+            if (a.light->lightType == LightType::SPOT && b.light->lightType != LightType::SPOT) return true;
+            if (b.light->lightType == LightType::SPOT && a.light->lightType != LightType::SPOT) return false;
+            
+            glm::vec3 posA = glm::vec3(a.localToWorld * glm::vec4(0, 0, 0, 1));
+            glm::vec3 posB = glm::vec3(b.localToWorld * glm::vec4(0, 0, 0, 1));
+            return glm::distance(posA, cameraPosition) < glm::distance(posB, cameraPosition);
+        });
+
         if (shadowShader && shadowMapFBO != 0)
         {
             glm::vec3 lightDir(0.0f, -1.0f, 0.0f);
@@ -464,8 +477,9 @@ namespace our
                 command.material->shader->set("sky.horizon", skyHorizon);
                 command.material->shader->set("sky.bottom", skyBottom);
 
-                command.material->shader->set("light_count", (int)activeLights.size());
-                for (int i = 0; i < (int)activeLights.size(); i++)
+                int maxLights = std::min((int)activeLights.size(), 16);
+                command.material->shader->set("light_count", maxLights);
+                for (int i = 0; i < maxLights; i++)
                 {
                     std::string prefix = "lights[" + std::to_string(i) + "].";
                     command.material->shader->set(prefix + "type", (int)activeLights[i].light->lightType);
@@ -517,8 +531,9 @@ namespace our
                 command.material->shader->set("sky.horizon", skyHorizon);
                 command.material->shader->set("sky.bottom", skyBottom);
 
-                command.material->shader->set("light_count", (int)activeLights.size());
-                for (int i = 0; i < (int)activeLights.size(); i++)
+                int maxLights = std::min((int)activeLights.size(), 16);
+                command.material->shader->set("light_count", maxLights);
+                for (int i = 0; i < maxLights; i++)
                 {
                     std::string prefix = "lights[" + std::to_string(i) + "].";
                     command.material->shader->set(prefix + "type", (int)activeLights[i].light->lightType);

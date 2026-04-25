@@ -13,7 +13,7 @@ struct Light {
     vec2 cone_angles;
 };
 
-#define MAX_LIGHTS 8
+#define MAX_LIGHTS 16
 
 uniform Light lights[MAX_LIGHTS];
 uniform int light_count;
@@ -93,6 +93,9 @@ void main() {
         discard;
         
     vec3 normal = normalize(fs_in.normal);
+    if (!gl_FrontFacing) {
+        normal = -normal;
+    }
     vec3 view = normalize(fs_in.view);
     
     vec3 ambient_light = compute_sky_light(normal);
@@ -132,8 +135,11 @@ void main() {
 
         vec3 computed_diffuse = light.color * diffuse * lambert(normal, world_to_light_dir);
 
-        vec3 reflected = reflect(-world_to_light_dir, normal);
-        vec3 computed_specular = light.color * specular * phong(reflected, view, shininess);
+        vec3 computed_specular = vec3(0.0);
+        if (dot(normal, world_to_light_dir) > 0.0) {
+            vec3 reflected = reflect(-world_to_light_dir, normal);
+            computed_specular = light.color * specular * phong(reflected, view, shininess);
+        }
 
         color += (computed_diffuse + computed_specular) * attenuation * (1.0 - shadow);
     }

@@ -56,6 +56,7 @@ class Playstate : public our::State
 
         collisionSystem.setAudioSystem(&audioSystem);
         collisionSystem.setTextPopupSystem(&textPopupSystem);
+        worldBoundarySystem.setTextPopupSystem(&textPopupSystem);
 
         // First of all, we get the scene configuration from the app config
         auto &config = getApp()->getConfig()["scene"];

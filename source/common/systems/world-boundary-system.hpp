@@ -4,6 +4,7 @@
 #include "../components/collider.hpp"
 #include "../asset-loader.hpp"
 #include "track-system.hpp"
+#include "text-popup-system.hpp"
 #include <glm/gtc/matrix_transform.hpp>
 #include <vector>
 #include <cmath>
@@ -22,13 +23,18 @@ namespace our
     {
         WorldBounds bounds;
         bool initialized = false;
+        bool wasClamped = false;
 
         float flashIntensity = 0.0f;
         static constexpr float FLASH_SPIKE = 1.0f;
         static constexpr float FLASH_DECAY = 3.0f;
         float lastDeltaTime = 0.016f;
 
+        TextPopupSystem *textPopupSystem = nullptr;
+
     public:
+        void setTextPopupSystem(TextPopupSystem *tps) { textPopupSystem = tps; }
+
         void initialize(TrackConfig &config)
         {
             float minX = config.startPosition.x - config.outerMargin;
@@ -99,8 +105,14 @@ namespace our
                     clamped = true;
                 }
 
-                if (clamped)
+                if (clamped && !wasClamped)
+                {
                     flashIntensity = FLASH_SPIKE;
+                    if (textPopupSystem)
+                        textPopupSystem->spawn("Turn back! Boundary reached.", {1.0f, 0.2f, 0.2f, 1.0f});
+                }
+
+                wasClamped = clamped;
             }
         }
 

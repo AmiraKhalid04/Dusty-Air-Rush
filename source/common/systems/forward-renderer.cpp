@@ -4,7 +4,6 @@
 #include "../components/light.hpp"
 #include "../deserialize-utils.hpp"
 #include <GLFW/glfw3.h>
-#include <iostream>
 
 namespace our
 {
@@ -148,16 +147,8 @@ namespace our
             if (config.contains("fog"))
             {
                 auto fog = config["fog"];
-                if (fog.contains("color"))
-                {
-                    auto color = fog["color"];
-                    fogColor = glm::vec3(
-                        color.size() > 0 ? color[0].get<float>() : 0.5f,
-                        color.size() > 1 ? color[1].get<float>() : 0.5f,
-                        color.size() > 2 ? color[2].get<float>() : 0.5f);
-                }
+                fogColor = fog.value("color", glm::vec3(0.5f));
                 fogDensity = fog.value("density", 0.01f);
-                fogGradient = fog.value("gradient", 1.0f);
             }
         }
     }
@@ -612,17 +603,6 @@ namespace our
                 // Pass fog parameters
                 postprocessMaterial->shader->set("fog_color", fogColor);
                 postprocessMaterial->shader->set("fog_density", fogDensity);
-                postprocessMaterial->shader->set("fog_gradient", fogGradient);
-
-                // Pass camera parameters for depth reconstruction
-                CameraComponent *camera = nullptr;
-                for (auto entity : world->getEntities())
-                {
-                    if (!camera)
-                        camera = entity->getComponent<CameraComponent>();
-                    if (camera)
-                        break;
-                }
 
                 if (camera)
                 {
@@ -633,14 +613,11 @@ namespace our
                     postprocessMaterial->shader->set("near_plane", nearPlane);
                     postprocessMaterial->shader->set("far_plane", farPlane);
                 }
-                std::cout << "Applied post-processing with fog parameters: color=" << fogColor.x << "," << fogColor.y << "," << fogColor.z
-                          << ", density=" << fogDensity << ", gradient=" << fogGradient << std::endl;
-            }
 
-            glBindVertexArray(postProcessVertexArray);
-            glDrawArrays(GL_TRIANGLES, 0, 3);
-            glBindVertexArray(0);
+                glBindVertexArray(postProcessVertexArray);
+                glDrawArrays(GL_TRIANGLES, 0, 3);
+                glBindVertexArray(0);
+            }
         }
     }
-
 }

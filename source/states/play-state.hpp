@@ -295,6 +295,7 @@ class Playstate : public our::State
 
     void onImmediateGui() override
     {
+        uiRenderer.renderScore(&world, getApp());
         textPopupSystem.render();
     }
 

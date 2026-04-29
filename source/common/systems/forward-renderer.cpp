@@ -5,6 +5,8 @@
 #include "../deserialize-utils.hpp"
 #include <GLFW/glfw3.h>
 
+#include "../material/material.hpp"
+
 namespace our
 {
 
@@ -40,6 +42,14 @@ namespace our
             skyTop = skyLight.value("top", glm::vec3(1.0f));
             skyHorizon = skyLight.value("horizon", glm::vec3(1.0f));
             skyBottom = skyLight.value("bottom", glm::vec3(1.0f));
+        }
+
+        if (auto runwayMat = AssetLoader<Material>::get("runway_light"))
+        {
+            if (auto tinted = dynamic_cast<TintedMaterial *>(runwayMat))
+            {
+                runwayLightBaseTint = tinted->tint;
+            }
         }
 
         if (config.contains("sky"))
@@ -195,6 +205,21 @@ namespace our
         float sunUp = glm::max(glm::dot(sunDir, glm::vec3(0.0f, 1.0f, 0.0f)), 0.0f);
         float sunStrength = glm::clamp(sunUp * sunUp * sunUp * 6.0f, 0.0f, 1.0f);
         float directionalStrength = glm::max(sunStrength, 0.05f); // Keep a bit of light at night
+        float lampStrength = 1.0f - glm::smoothstep(0.0f, 0.2f, sunStrength);
+        
+        // --- Runway Light Visual Glow ---
+        // We modulate the material tint of the lamps so they look like they "turn on"
+        // and pulsate slightly at night.
+        if (auto runwayMat = AssetLoader<Material>::get("runway_light")) {
+            if (auto tinted = dynamic_cast<TintedMaterial*>(runwayMat)) {
+                float pulse = 1.0f;
+                if (lampStrength > 0.0f) {
+                    pulse = 1.0f + 0.15f * std::sin((float)glfwGetTime() * 4.0f);
+                }
+                float brightness = 1.0f + 1.2f * lampStrength * pulse;
+                tinted->tint = glm::vec4(glm::vec3(runwayLightBaseTint) * brightness, runwayLightBaseTint.a);
+            }
+        }
 
         for (auto entity : world->getEntities())
         {
@@ -490,8 +515,6 @@ namespace our
                         lightColor *= directionalStrength;
                         dir = -sunDir;
                     } else if (activeLights[i].light->lightType == LightType::POINT) {
-                        // Fade out point lights during the day
-                        float lampStrength = 1.0f - glm::smoothstep(0.0f, 0.2f, sunStrength);
                         lightColor *= lampStrength;
                     }
                     command.material->shader->set(prefix + "color", lightColor);
@@ -547,6 +570,8 @@ namespace our
                     if (activeLights[i].light->lightType == LightType::DIRECTIONAL) {
                         lightColor *= directionalStrength;
                         dir = -sunDir;
+                    } else if (activeLights[i].light->lightType == LightType::POINT) {
+                        lightColor *= lampStrength;
                     }
                     command.material->shader->set(prefix + "color", lightColor);
                     command.material->shader->set(prefix + "attenuation", activeLights[i].light->attenuation);

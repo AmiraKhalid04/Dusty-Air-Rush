@@ -83,8 +83,12 @@ namespace our {
 
         // Locks the mouse position and hides it (Usually used for FPS games)
         static void lockMouse(GLFWwindow *window) { glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED); }
+        // Hides the mouse cursor while allowing it to move freely
+        static void hideMouse(GLFWwindow *window) { glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_HIDDEN); }
         // If the mouse was locked, unlock it (make it visible and allow it to move)
         static void unlockMouse(GLFWwindow *window) { glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL); }
+        // Shows the mouse cursor while keeping it unlocked
+        static void showMouse(GLFWwindow *window) { glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL); }
 
 
         [[nodiscard]] bool isEnabled() const { return enabled; }

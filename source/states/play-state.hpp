@@ -30,6 +30,7 @@
 #include <asset-loader.hpp>
 #include "systems/health-system.hpp"
 #include <systems/ring-arrow-system.hpp>
+#include <utils/track-utils.hpp>
 
 // This state shows how to use the ECS framework and deserialization.
 class Playstate : public our::State
@@ -151,6 +152,18 @@ private:
                 trackConfig.outerMargin = trackJson["outerMargin"];
         }
         worldBoundarySystem.initialize(trackConfig);
+
+        // Initialize track curve configuration
+        our::TrackCurveConfig curveConfig;
+        if (config.contains("trackCurve"))
+        {
+            const auto &curveJson = config["trackCurve"];
+            if (curveJson.contains("amplitude"))
+                curveConfig.amplitude = curveJson["amplitude"];
+            if (curveJson.contains("frequency"))
+                curveConfig.frequency = curveJson["frequency"];
+        }
+        our::setTrackCurveConfig(curveConfig);
 
         our::RingConfig ringConfig;
         ringConfig.trackStartPosition = trackConfig.startPosition;

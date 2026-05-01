@@ -3,6 +3,7 @@
 #include "../components/mesh-renderer.hpp"
 #include "../asset-loader.hpp"
 #include "../components/light.hpp"
+#include "../utils/track-utils.hpp"
 #include <glm/glm.hpp>
 #include <iostream>
 #include <string>
@@ -34,15 +35,17 @@ namespace our
             int pairCount = 0;
             for (float z = config.startPosition.z; z >= config.endPosition.z; z -= config.spacing)
             {
+                float curveOffset = trackCurveX(z);
+                
                 spawnCone(world,
                           "cone_left_" + std::to_string(pairCount),
-                          glm::vec3(config.startPosition.x, config.startPosition.y, z),
+                          glm::vec3(config.startPosition.x + curveOffset, config.startPosition.y, z),
                           config.scale,
                           runwayLightMesh, runwayLightMaterial);
 
                 spawnCone(world,
                           "cone_right_" + std::to_string(pairCount),
-                          glm::vec3(config.endPosition.x, config.startPosition.y, z),
+                          glm::vec3(config.endPosition.x + curveOffset, config.startPosition.y, z),
                           config.scale,
                           runwayLightMesh, runwayLightMaterial);
 

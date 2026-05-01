@@ -5,6 +5,7 @@
 #include "../components/coin-component.hpp"
 #include "../components/collider.hpp"
 #include "../asset-loader.hpp"
+#include "../utils/track-utils.hpp"
 #include <glm/glm.hpp>
 #include <glm/gtc/constants.hpp>
 #include <vector>
@@ -81,7 +82,7 @@ namespace our
 
                 // Random X and Y within track margins
                 glm::vec3 spawnPos = {
-                    xDist(rng),
+                    xDist(rng) + trackCurveX(cursor.z),
                     yDist(rng),
                     cursor.z};
 

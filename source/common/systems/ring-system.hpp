@@ -3,6 +3,7 @@
 #include "../components/mesh-renderer.hpp"
 #include "../components/collider.hpp"
 #include "../asset-loader.hpp"
+#include "../utils/track-utils.hpp"
 #include <glm/gtc/matrix_transform.hpp>
 #include <vector>
 #include <cmath>
@@ -65,7 +66,7 @@ namespace our
 
                 // Advance along Z, with random x and y within defined ranges
                 cursor.z -= config.spacing;
-                cursor.x = disX(gen);
+                cursor.x = disX(gen) + trackCurveX(cursor.z);
                 cursor.y = disY(gen);
                 std::cout << "Ring " << i << " position: " << cursor.x << ", " << cursor.y << ", " << cursor.z << std::endl;
 
@@ -73,7 +74,7 @@ namespace our
                 entity->localTransform.scale = glm::vec3(config.ringScale);
                 ringPositions.push_back(cursor); // Store position for coin placement
 
-                entity->localTransform.rotation = glm::vec3(0, glm::pi<float>() / 2, 0.0f);
+                entity->localTransform.rotation = glm::vec3(0, glm::pi<float>() / 2 + trackCurveRotationY(cursor.z), 0.0f);
 
                 auto *mr = entity->addComponent<MeshRendererComponent>();
                 mr->mesh = ringMesh;
@@ -120,7 +121,7 @@ namespace our
 
             // Compute same track position
             cursor.y = config.trackStartPosition.y;
-            cursor.x = (config.trackStartPosition.x + config.trackEndPosition.x) / 2.0f;
+            cursor.x = (config.trackStartPosition.x + config.trackEndPosition.x) / 2.0f + trackCurveX(cursor.z);
 
             // Create entity
             Entity *finish = world->add();
@@ -131,8 +132,8 @@ namespace our
             // Scale (adjust depending on your mesh)
             finish->localTransform.scale = glm::vec3(config.finishLineScale);
 
-            // Optional: rotate to face player
-            finish->localTransform.rotation = glm::vec3(0, 0, 0);
+            // Rotate to align with the track curve
+            finish->localTransform.rotation = glm::vec3(0, trackCurveRotationY(cursor.z), 0);
 
             // Load assets
             Mesh *finishMesh = AssetLoader<Mesh>::get("finish_line");

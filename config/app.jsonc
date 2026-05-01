@@ -339,6 +339,10 @@
       "bobFrequency": 0.3,
       "phaseStep": 0.55
     },
+    "trackCurve": {
+      "amplitude": 8.0,
+      "frequency": 0.04
+    },
     "world": [
       {
         "position": [0, 10, 0],

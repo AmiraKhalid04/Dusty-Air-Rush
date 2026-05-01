@@ -3,6 +3,7 @@
 #include "../components/mesh-renderer.hpp"
 #include "../components/collider.hpp"
 #include "../asset-loader.hpp"
+#include "../utils/track-utils.hpp"
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/constants.hpp>
 #include <vector>
@@ -72,7 +73,7 @@ namespace our
 
                 // Random X and Y within track margins
                 glm::vec3 spawnPos = {
-                    xDist(rng),
+                    xDist(rng) + trackCurveX(cursor.z),
                     yDist(rng),
                     cursor.z};
 

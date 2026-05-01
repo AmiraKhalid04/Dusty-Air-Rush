@@ -40,8 +40,11 @@ class Menustate : public our::State
     static constexpr std::array<const char *, 2> ButtonLabels = {
         "PRESS SPACE TO PLAY",
         "PRESS ESC TO EXIT"};
+    static constexpr const char *LeaderboardLabel = "LEADERBOARD";
+    static constexpr const char *LeaderboardHint = "PRESS L";
 
     our::TexturedMaterial *menuMaterial;
+    our::TexturedMaterial *cupMaterial;
     our::TintedMaterial *highlightMaterial;
     // Dark overlay drawn on top of the background to improve text legibility
     our::TintedMaterial *darkOverlay;
@@ -49,13 +52,17 @@ class Menustate : public our::State
     float time = 0.0f;
 
     std::array<Button, 2> buttons;
+    Button leaderboardButton{};
     std::array<glm::vec2, 2> buttonTextPositions{};
     std::array<glm::vec2, 2> buttonTextSizes{};
     glm::vec2 titlePosition{};
     glm::vec2 titleSize{};
+    glm::vec2 leaderboardLabelPosition{};
+    glm::vec2 leaderboardHintPosition{};
 
     float titleFontSize = 96.0f;
     float buttonFontSize = 44.0f;
+    float leaderboardFontSize = 26.0f;
     ImFont *titleFont = nullptr;
     ImFont *buttonFont = nullptr;
 
@@ -85,6 +92,7 @@ class Menustate : public our::State
         float titleGap = std::clamp(H * 0.07f, 40.0f, 72.0f);
         float btnGap = std::clamp(H * 0.008f, 6.0f, 12.0f);
         float currentY = titlePosition.y + titleSize.y + titleGap;
+        leaderboardFontSize = std::clamp(H * 0.030f, 22.0f, 34.0f);
 
         for (size_t i = 0; i < buttons.size(); ++i)
         {
@@ -100,6 +108,20 @@ class Menustate : public our::State
 
             currentY += buttons[i].size.y + btnGap;
         }
+
+        float iconSize = std::clamp(H * 0.12f, 74.0f, 120.0f);
+        float margin = std::clamp(W * 0.025f, 22.0f, 42.0f);
+        leaderboardButton.size = {iconSize, iconSize};
+        leaderboardButton.position = {W - margin - iconSize, margin};
+
+        ImVec2 labelSize = layoutButtonFont->CalcTextSizeA(leaderboardFontSize, FLT_MAX, 0.0f, LeaderboardLabel);
+        ImVec2 hintSize = layoutButtonFont->CalcTextSizeA(leaderboardFontSize * 0.82f, FLT_MAX, 0.0f, LeaderboardHint);
+        leaderboardLabelPosition = {
+            leaderboardButton.position.x + (leaderboardButton.size.x - labelSize.x) * 0.5f,
+            leaderboardButton.position.y + leaderboardButton.size.y + H * 0.012f};
+        leaderboardHintPosition = {
+            leaderboardButton.position.x + (leaderboardButton.size.x - hintSize.x) * 0.5f,
+            leaderboardLabelPosition.y + labelSize.y + H * 0.004f};
     }
 
     // ─── Shadowed text helper ─────────────────────────────────────────────────
@@ -150,6 +172,18 @@ class Menustate : public our::State
         menuMaterial->texture = our::texture_utils::loadImage("assets/textures/dusty-menu.jpeg");
         menuMaterial->tint = glm::vec4(0.0f, 0.0f, 0.0f, 0.0f);
 
+        cupMaterial = new our::TexturedMaterial();
+        cupMaterial->shader = new our::ShaderProgram();
+        cupMaterial->shader->attach("assets/shaders/textured.vert", GL_VERTEX_SHADER);
+        cupMaterial->shader->attach("assets/shaders/textured.frag", GL_FRAGMENT_SHADER);
+        cupMaterial->shader->link();
+        cupMaterial->texture = our::texture_utils::loadImage("assets/textures/cup.png");
+        cupMaterial->tint = glm::vec4(1.0f);
+        cupMaterial->pipelineState.blending.enabled = true;
+        cupMaterial->pipelineState.blending.equation = GL_FUNC_ADD;
+        cupMaterial->pipelineState.blending.sourceFactor = GL_SRC_ALPHA;
+        cupMaterial->pipelineState.blending.destinationFactor = GL_ONE_MINUS_SRC_ALPHA;
+
         // Dark overlay — standard alpha blending, tint driven per-frame
         darkOverlay = new our::TintedMaterial();
         darkOverlay->shader = new our::ShaderProgram();
@@ -191,6 +225,8 @@ class Menustate : public our::State
         { getApp()->changeState("play"); };
         buttons[1].action = [this]()
         { getApp()->close(); };
+        leaderboardButton.action = [this]()
+        { getApp()->changeState("leaderboard"); };
     }
 
     // ─── onImmediateGui ───────────────────────────────────────────────────────
@@ -205,6 +241,7 @@ class Menustate : public our::State
 
         ImDrawList *dl = ImGui::GetForegroundDrawList();
         glm::vec2 mp = getApp()->getMouse().getMousePosition();
+        bool leaderboardHovered = leaderboardButton.isInside(mp);
 
         // ── Title ────────────────────────────────────────────────────────────
         float sOff = titleFontSize * 0.045f;
@@ -265,6 +302,19 @@ class Menustate : public our::State
                              ButtonLabels[i],
                              0.75f, buttonFontSize * 0.06f);
         }
+
+        dl->AddText(buttonFont, leaderboardFontSize,
+                    ImVec2(leaderboardLabelPosition.x, leaderboardLabelPosition.y),
+                    ImGui::ColorConvertFloat4ToU32(
+                        leaderboardHovered ? ImVec4(1.0f, 0.95f, 0.76f, btnFade)
+                                           : ImVec4(0.93f, 0.88f, 0.74f, btnFade * 0.9f)),
+                    LeaderboardLabel);
+        dl->AddText(buttonFont, leaderboardFontSize * 0.82f,
+                    ImVec2(leaderboardHintPosition.x, leaderboardHintPosition.y),
+                    ImGui::ColorConvertFloat4ToU32(
+                        leaderboardHovered ? ImVec4(1.0f, 0.88f, 0.42f, btnFade)
+                                           : ImVec4(0.90f, 0.78f, 0.42f, btnFade * 0.85f)),
+                    LeaderboardHint);
     }
 
     // ─── onDraw ───────────────────────────────────────────────────────────────
@@ -284,14 +334,23 @@ class Menustate : public our::State
             getApp()->close();
             return;
         }
+        if (keyboard.justPressed(GLFW_KEY_L))
+        {
+            getApp()->changeState("leaderboard");
+            return;
+        }
 
         auto &mouse = getApp()->getMouse();
         glm::vec2 mousePosition = mouse.getMousePosition();
 
         if (mouse.justPressed(0))
+        {
             for (auto &b : buttons)
                 if (b.isInside(mousePosition))
                     b.action();
+            if (leaderboardButton.isInside(mousePosition))
+                leaderboardButton.action();
+        }
 
         glViewport(0, 0, size.x, size.y);
         glm::mat4 VP = glm::ortho(0.0f, (float)size.x, (float)size.y, 0.0f, 1.0f, -1.0f);
@@ -311,6 +370,16 @@ class Menustate : public our::State
         darkOverlay->tint = glm::vec4(0.0f, 0.0f, 0.0f, overlayAlpha);
         darkOverlay->setup();
         darkOverlay->shader->set("transform", VP * M);
+        rectangle->draw();
+
+        float cupPulse = 0.94f + 0.06f * (0.5f + 0.5f * std::sin(time * 3.0f));
+        Button cupDrawButton = leaderboardButton;
+        glm::vec2 extra = leaderboardButton.size * (cupPulse - 1.0f) * 0.5f;
+        cupDrawButton.position -= extra;
+        cupDrawButton.size *= cupPulse;
+        cupMaterial->tint = glm::vec4(1.0f, 1.0f, 1.0f, glm::smoothstep(0.45f, 1.30f, time));
+        cupMaterial->setup();
+        cupMaterial->shader->set("transform", VP * cupDrawButton.getLocalToWorld());
         rectangle->draw();
 
         // 3. Hover highlight (subtract blend) on top of everything
@@ -333,6 +402,9 @@ class Menustate : public our::State
         delete menuMaterial->texture;
         delete menuMaterial->shader;
         delete menuMaterial;
+        delete cupMaterial->texture;
+        delete cupMaterial->shader;
+        delete cupMaterial;
         delete darkOverlay->shader;
         delete darkOverlay;
         delete highlightMaterial->shader;

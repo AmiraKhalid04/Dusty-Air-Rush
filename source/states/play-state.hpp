@@ -364,7 +364,7 @@ private:
                 {
                     lastScore = our::ScoreManager::computeFinalScore(
                         dusty->score, dusty->coins, dusty->currentHealth, dusty->maxHealth);
-                    our::ScoreManager::submitScore(lastScore);
+                    our::ScoreManager::submitWinScore(lastScore);
                     std::cout << "\n=============================================" << std::endl;
                     std::cout << "            MISSION COMPLETE!                 " << std::endl;
                     std::cout << " Rings Passed: " << dusty->ringsPassed << " / " << dusty->totalRings << std::endl;

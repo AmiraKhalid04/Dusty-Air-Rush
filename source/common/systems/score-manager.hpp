@@ -31,27 +31,7 @@ namespace our
         // Returns an empty vector if the file is missing or malformed.
         static std::vector<int> getTopScores()
         {
-            std::vector<int> scores;
-            std::ifstream file(SavePath);
-            if (!file.is_open())
-                return scores;
-
-            try
-            {
-                nlohmann::json data = nlohmann::json::parse(file, nullptr, true, true);
-                if (data.contains("topScores") && data["topScores"].is_array())
-                {
-                    for (const auto &entry : data["topScores"])
-                    {
-                        if (entry.is_number_integer())
-                            scores.push_back(entry.get<int>());
-                    }
-                }
-            }
-            catch (const nlohmann::json::exception &e)
-            {
-                std::cerr << "[ScoreManager] Failed to parse " << SavePath << ": " << e.what() << std::endl;
-            }
+            std::vector<int> scores = loadScoreArray("topScores");
 
             // Ensure loaded data is sorted descending and capped
             std::sort(scores.begin(), scores.end(), std::greater<int>());
@@ -61,23 +41,80 @@ namespace our
             return scores;
         }
 
-        // Submit a new score: insert it into the leaderboard, keep top 5, and save.
-        static void submitScore(int score)
+        // Load the most recent winning scores from disk.
+        // The newest win is returned first.
+        static std::vector<int> getRecentWins()
         {
-            std::vector<int> scores = getTopScores();
-            scores.push_back(score);
-            std::sort(scores.begin(), scores.end(), std::greater<int>());
+            std::vector<int> scores = loadScoreArray("recentWins");
+            if (scores.empty())
+                scores = loadScoreArray("topScores");
             if (scores.size() > MaxScores)
                 scores.resize(MaxScores);
-            save(scores);
+            return scores;
+        }
+
+        // Submit a new winning score: keep both the top 5 and the last 5 wins.
+        static void submitWinScore(int score)
+        {
+            std::vector<int> topScores = getTopScores();
+            topScores.push_back(score);
+            std::sort(topScores.begin(), topScores.end(), std::greater<int>());
+            if (topScores.size() > MaxScores)
+                topScores.resize(MaxScores);
+
+            std::vector<int> recentWins = getRecentWins();
+            recentWins.insert(recentWins.begin(), score);
+            if (recentWins.size() > MaxScores)
+                recentWins.resize(MaxScores);
+
+            save(topScores, recentWins);
+        }
+
+        // Backward-compatible alias for existing callers.
+        static void submitScore(int score)
+        {
+            submitWinScore(score);
         }
 
     private:
-        // Persist the score list to disk.
-        static void save(const std::vector<int> &scores)
+        static nlohmann::json loadData()
+        {
+            std::ifstream file(SavePath);
+            if (!file.is_open())
+                return nlohmann::json::object();
+
+            try
+            {
+                return nlohmann::json::parse(file, nullptr, true, true);
+            }
+            catch (const nlohmann::json::exception &e)
+            {
+                std::cerr << "[ScoreManager] Failed to parse " << SavePath << ": " << e.what() << std::endl;
+                return nlohmann::json::object();
+            }
+        }
+
+        static std::vector<int> loadScoreArray(const char *field)
+        {
+            std::vector<int> scores;
+            nlohmann::json data = loadData();
+            if (data.contains(field) && data[field].is_array())
+            {
+                for (const auto &entry : data[field])
+                {
+                    if (entry.is_number_integer())
+                        scores.push_back(entry.get<int>());
+                }
+            }
+            return scores;
+        }
+
+        // Persist both score views to disk.
+        static void save(const std::vector<int> &topScores, const std::vector<int> &recentWins)
         {
             nlohmann::json data;
-            data["topScores"] = scores;
+            data["topScores"] = topScores;
+            data["recentWins"] = recentWins;
 
             std::ofstream file(SavePath);
             if (!file.is_open())

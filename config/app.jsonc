@@ -6,7 +6,7 @@
       "width": 1280,
       "height": 720
     },
-    "fullscreen": false
+    "fullscreen": true
   },
   "scene": {
     "plane_flapping": false,
@@ -324,6 +324,12 @@
       "depthOffset": 35.0,
       "spawnChance": 0.75,
       "scale": 1.25
+    },
+    "ringArrows": {
+      "baseOffsetY": 0.8,
+      "bobAmplitude": 0.1,
+      "bobFrequency": 0.3,
+      "phaseStep": 0.55
     },
     "world": [
       {

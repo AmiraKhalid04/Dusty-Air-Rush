@@ -190,7 +190,21 @@ private:
                 ringConfig.finishLineScale = ringsJson["finishLineScale"];
         }
         std::vector<glm::vec3> ringPositions = ringSystem.initialize(&world, ringConfig);
-        ringArrowSystem.initialize(&world);  
+
+        our::RingArrowConfig arrowConfig;
+        if (config.contains("ringArrows"))
+        {
+            const auto &arrowsJson = config["ringArrows"];
+            if (arrowsJson.contains("baseOffsetY"))
+                arrowConfig.baseOffsetY = arrowsJson["baseOffsetY"];
+            if (arrowsJson.contains("bobAmplitude"))
+                arrowConfig.bobAmplitude = arrowsJson["bobAmplitude"];
+            if (arrowsJson.contains("bobFrequency"))
+                arrowConfig.bobFrequency = arrowsJson["bobFrequency"];
+            if (arrowsJson.contains("phaseStep"))
+                arrowConfig.phaseStep = arrowsJson["phaseStep"];
+        }
+        ringArrowSystem.initialize(&world, arrowConfig);
 
         // Assign the generated logic variables (total track rings) to the player's dusty tracker
         for (auto entity : world.getEntities())
@@ -291,7 +305,7 @@ private:
         cameraController.update(&world, (float)deltaTime);
         collisionSystem.update(&world, (float)deltaTime);
         tornadoSystem.update(&world, (float)deltaTime);
-        ringArrowSystem.update(&world, (float)deltaTime);
+        ringArrowSystem.update(&world);
 
         textPopupSystem.update((float)deltaTime);
         worldBoundarySystem.update(&world);

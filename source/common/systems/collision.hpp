@@ -344,6 +344,8 @@ namespace our
                                     std::cout << "=============================================\n" << std::endl;
                                 } else {
                                     std::cout << "You still need to collect " << (dusty->totalRings - dusty->ringsPassed) << " rings! Finish line rejected\n" << std::endl;
+                                    if (textPopupSystem)
+                                        textPopupSystem->spawn("You still need to collect " + std::to_string(dusty->totalRings - dusty->ringsPassed) + " rings!", {1.0f, 0.2f, 0.2f, 1.0f});
                                 }
                             }
                         }

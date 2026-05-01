@@ -254,7 +254,7 @@ namespace our
                 }
             }
 
-            // // Debug rendering for Colliders
+            // Debug rendering for Colliders
             if (auto collider = entity->getComponent<ColliderComponent>(); collider)
             {
                 Material *debugMat = our::AssetLoader<Material>::get("debug_wireframe");

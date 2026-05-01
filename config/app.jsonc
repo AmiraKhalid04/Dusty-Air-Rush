@@ -341,7 +341,8 @@
           },
           {
             "type": "dusty",
-            "maxHealth": 100.0
+            "maxHealth": 100.0,
+            "isHeadlightsOn": true
           }
         ],
         "children": [

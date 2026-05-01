@@ -35,6 +35,8 @@ namespace our {
 
             bool gamepadSpace = false;
             bool gamepadEsc = false;
+            bool gamepadL = false;
+            bool gamepadH = false;
             for (int i = 0; i <= 15; ++i) { // GLFW_JOYSTICK_1 to GLFW_JOYSTICK_16
                 if (glfwJoystickPresent(i)) {
                     if (glfwJoystickIsGamepad(i)) {
@@ -43,13 +45,16 @@ namespace our {
                             // X (bottom) -> A in GLFW, O (right) -> B in GLFW
                             if (state.buttons[GLFW_GAMEPAD_BUTTON_A] == GLFW_PRESS) gamepadSpace = true;
                             if (state.buttons[GLFW_GAMEPAD_BUTTON_B] == GLFW_PRESS) gamepadEsc = true;
+                            if (state.buttons[GLFW_GAMEPAD_BUTTON_Y] == GLFW_PRESS) gamepadH = true;
                         }
                     } else {
                         int bcount;
                         const unsigned char* buttons = glfwGetJoystickButtons(i, &bcount);
-                        if (buttons && bcount >= 2) {
+                        if (buttons && bcount >= 4) {
                             if (buttons[0] == GLFW_PRESS) gamepadSpace = true;
                             if (buttons[1] == GLFW_PRESS) gamepadEsc = true;
+                            if (buttons[3] == GLFW_PRESS) gamepadL = true;
+                            if (buttons[4] == GLFW_PRESS) gamepadH = true;
                         }
                     }
                     break; // Just use the first available joystick
@@ -60,6 +65,8 @@ namespace our {
             if (win) {
                 currentKeyStates[GLFW_KEY_SPACE] = (glfwGetKey(win, GLFW_KEY_SPACE) == GLFW_PRESS) || gamepadSpace;
                 currentKeyStates[GLFW_KEY_ESCAPE] = (glfwGetKey(win, GLFW_KEY_ESCAPE) == GLFW_PRESS) || gamepadEsc;
+                currentKeyStates[GLFW_KEY_L] = (glfwGetKey(win, GLFW_KEY_L) == GLFW_PRESS) || gamepadL;
+                currentKeyStates[GLFW_KEY_H] = (glfwGetKey(win, GLFW_KEY_H) == GLFW_PRESS) || gamepadH;
             }
         }
 

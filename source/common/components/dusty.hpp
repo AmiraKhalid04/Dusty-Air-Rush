@@ -17,6 +17,7 @@ namespace our
         int totalRings = 0;
         bool isDead = false;
         bool isWon = false;
+        bool isHeadlightsOn = true;
 
         static std::string getID() { return "dusty"; }
 
@@ -28,6 +29,7 @@ namespace our
             score = data.value("score", score);
             ringsPassed = data.value("ringsPassed", ringsPassed);
             totalRings = data.value("totalRings", totalRings);
+            isHeadlightsOn = data.value("isHeadlightsOn", isHeadlightsOn);
         }
     };
 }

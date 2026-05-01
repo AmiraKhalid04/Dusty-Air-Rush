@@ -298,7 +298,7 @@ namespace our
 
                 float angle = t * 2.0f * glm::pi<float>();
 
-                glm::vec3 basePos = glm::vec3(0.0f, 0.0f, -4.0f);
+                glm::vec3 basePos = glm::vec3(0.0f, -1.5f, -4.0f);
                 float radius = 0.2f;
 
                 // Peaks at midpoint (t=0.5), returns to 0 at end

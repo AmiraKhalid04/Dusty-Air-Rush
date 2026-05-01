@@ -325,6 +325,7 @@ private:
     void onImmediateGui() override
     {
         uiRenderer.renderScore(&world, getApp(), playTime);
+        uiRenderer.renderMiniMap(&world, getApp());
         textPopupSystem.render();
     }
 

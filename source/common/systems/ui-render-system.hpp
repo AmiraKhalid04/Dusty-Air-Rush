@@ -4,6 +4,7 @@
 #include "../components/camera.hpp"
 #include "../components/free-camera-controller.hpp"
 #include "../components/dusty.hpp"
+#include "../components/collider.hpp"
 #include "../mesh/mesh.hpp"
 #include "../material/material.hpp"
 #include "../asset-loader.hpp"
@@ -208,6 +209,116 @@ namespace our
             drawList->AddRect(panelMin, panelMax, borderColor, 10.0f, 0, 2.0f);
             drawList->AddText(font, fontSize, ImVec2(pos.x + 2.0f, pos.y + 2.0f), shadowColor, scoreText.c_str());
             drawList->AddText(font, fontSize, pos, textColor, scoreText.c_str());
+        }
+
+        void renderMiniMap(World *world, Application *app)
+        {
+            auto *dusty = findPlayerDusty(world);
+            if (!dusty) return;
+
+            Entity* playerEntity = nullptr;
+            for (auto entity : world->getEntities())
+            {
+                if (entity->getComponent<CameraComponent>() &&
+                    entity->getComponent<FreeCameraControllerComponent>())
+                {
+                    playerEntity = entity;
+                    break;
+                }
+            }
+            if (!playerEntity) return;
+
+            glm::ivec2 screenSize = app->getFrameBufferSize();
+            ImDrawList *drawList = ImGui::GetForegroundDrawList();
+            if (!drawList) return;
+
+            glm::mat4 playerMatrix = playerEntity->getLocalToWorldMatrix();
+            glm::vec3 playerPos = glm::vec3(playerMatrix * glm::vec4(0.0f, 0.0f, 0.0f, 1.0f));
+
+            float mapRadius = 80.0f;
+            ImVec2 center((float)screenSize.x - mapRadius - 30.0f, (float)screenSize.y - mapRadius - 30.0f);
+
+            ImU32 bgColor = ImGui::ColorConvertFloat4ToU32(ImVec4(0.05f, 0.07f, 0.10f, 0.72f));
+            ImU32 borderColor = ImGui::ColorConvertFloat4ToU32(ImVec4(1.0f, 0.84f, 0.22f, 0.85f));
+            drawList->AddCircleFilled(center, mapRadius, bgColor, 64);
+            drawList->AddCircle(center, mapRadius, borderColor, 64, 2.0f);
+
+            std::vector<glm::vec3> unpassedRings;
+            for (auto entity : world->getEntities())
+            {
+                auto col = entity->getComponent<ColliderComponent>();
+                if (col && col->objectType == "ring_score")
+                {
+                    glm::mat4 ringMatrix = entity->getLocalToWorldMatrix();
+                    glm::vec3 ringPos = glm::vec3(ringMatrix * glm::vec4(col->center, 1.0f));
+                    unpassedRings.push_back(ringPos);
+                }
+            }
+
+            float worldRadius = 82.0f;
+            float scale = mapRadius / worldRadius;
+
+            glm::vec3 pForward = glm::vec3(playerMatrix * glm::vec4(0.0f, 0.0f, -1.0f, 0.0f));
+            glm::vec3 pRight = glm::vec3(playerMatrix * glm::vec4(1.0f, 0.0f, 0.0f, 0.0f));
+            pForward.y = 0.0f; pRight.y = 0.0f;
+            if(glm::length(pForward) > 0.001f) pForward = glm::normalize(pForward);
+            else pForward = glm::vec3(0.0f, 0.0f, -1.0f);
+            if(glm::length(pRight) > 0.001f) pRight = glm::normalize(pRight);
+            else pRight = glm::vec3(1.0f, 0.0f, 0.0f);
+
+            float minDistance = FLT_MAX;
+            glm::vec3 closestRingPos(0.0f);
+            bool hasClosest = false;
+
+            ImU32 ringColor = ImGui::ColorConvertFloat4ToU32(ImVec4(0.0f, 0.8f, 1.0f, 1.0f)); 
+            
+            for (const auto& ringPos : unpassedRings)
+            {
+                float dx = ringPos.x - playerPos.x;
+                float dz = ringPos.z - playerPos.z;
+                float dist = std::sqrt(dx*dx + dz*dz);
+                
+                if (dist < minDistance)
+                {
+                    minDistance = dist;
+                    closestRingPos = ringPos;
+                    hasClosest = true;
+                }
+
+                if (dist <= worldRadius)
+                {
+                    float localX = dx * pRight.x + dz * pRight.z;
+                    float localY = -(dx * pForward.x + dz * pForward.z);
+                    
+                    float sx = localX * scale;
+                    float sy = localY * scale; 
+                    drawList->AddCircle(ImVec2(center.x + sx, center.y + sy), 4.0f, ringColor, 12, 2.0f);
+                }
+            }
+
+            if (hasClosest && minDistance > worldRadius)
+            {
+                float dx = closestRingPos.x - playerPos.x;
+                float dz = closestRingPos.z - playerPos.z;
+                
+                float localX = dx * pRight.x + dz * pRight.z;
+                float localY = -(dx * pForward.x + dz * pForward.z);
+                
+                float dirX = localX / minDistance;
+                float dirY = localY / minDistance;
+                
+                ImU32 yellowColor = ImGui::ColorConvertFloat4ToU32(ImVec4(1.0f, 0.84f, 0.22f, 1.0f));
+                ImVec2 edgePos(center.x + dirX * (mapRadius - 5.0f), center.y + dirY * (mapRadius - 5.0f));
+                drawList->AddCircleFilled(edgePos, 6.0f, yellowColor, 16);
+            }
+
+            ImU32 planeColor = ImGui::ColorConvertFloat4ToU32(ImVec4(0.2f, 1.0f, 0.2f, 1.0f)); 
+            drawList->AddTriangleFilled(
+                ImVec2(center.x, center.y - 7.0f),
+                ImVec2(center.x - 5.0f, center.y + 5.0f),
+                ImVec2(center.x + 5.0f, center.y + 5.0f),
+                planeColor
+            );
         }
 
         void renderDangerOverlay(glm::ivec2 screenSize, float intensity)

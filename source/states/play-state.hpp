@@ -358,6 +358,21 @@ private:
             audioSystem.playCassetteTrack("assets/sounds/cassette/song2.mp3", 0.5f);
             currentSong = 2;
         }
+        if (keyboard.justPressed(GLFW_KEY_3) || keyboard.justPressed(GLFW_KEY_KP_3))
+        {
+            audioSystem.playCassetteTrack("assets/sounds/cassette/song3.mp3", 0.5f);
+            currentSong = 3;
+        }
+        if (keyboard.justPressed(GLFW_KEY_4) || keyboard.justPressed(GLFW_KEY_KP_4))
+        {
+            audioSystem.playCassetteTrack("assets/sounds/cassette/song4.mp3", 0.5f);
+            currentSong = 4;
+        }
+
+        if (currentSong == 3 || currentSong == 4)
+        {
+            uiRenderer.renderColoredOverlay(getApp()->getFrameBufferSize(), 1.0f, glm::vec4(1.0f, 0.412f, 0.706f, 0.3f));
+        }
 
         if (keyboard.justPressed(GLFW_KEY_ESCAPE))
         {

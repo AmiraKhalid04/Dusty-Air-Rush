@@ -168,7 +168,7 @@ namespace our
 
         // Render persistent HUD text using ImGui draw lists.
         // Call this from the state's onImmediateGui().
-        void renderScore(World *world, Application *app, float playTime)
+        void renderScore(World *world, Application *app, float playTime, int currentSong = 0)
         {
             auto *dusty = findPlayerDusty(world);
             if (!dusty)
@@ -179,22 +179,29 @@ namespace our
                 return;
 
             glm::ivec2 screenSize = app->getFrameBufferSize();
-            
+
             char timeBuf[64];
             int mins = (int)playTime / 60;
             float secs = playTime - (mins * 60);
             snprintf(timeBuf, sizeof(timeBuf), "%02d:%05.2f", mins, secs);
 
-            std::string scoreText = "Rings: " + std::to_string(dusty->ringsPassed) + 
-                                    " Coins: " + std::to_string(dusty->coins) + 
-                                    " Time: " + std::string(timeBuf) + 
-                                    " Score: " + std::to_string(dusty->score);
+            std::string line1 = "Score: " + std::to_string(dusty->score);
+            std::string line2 = "   " + std::string(timeBuf);
+            std::string line3 = "   " + std::to_string(dusty->ringsPassed) + "      " + std::to_string(dusty->coins);
 
             ImFont *font = ImGui::GetFont();
             const float fontSize = 34.0f;
+            const float emojiFontSize = fontSize * 0.4f; // 0.4 of size
             constexpr float margin = 60.0f;
-            ImVec2 textSize = font->CalcTextSizeA(fontSize, FLT_MAX, 0.0f, scoreText.c_str());
-            ImVec2 pos(screenSize.x - textSize.x - margin, margin);
+
+            ImVec2 size1 = font->CalcTextSizeA(fontSize, FLT_MAX, 0.0f, line1.c_str());
+            ImVec2 size2 = font->CalcTextSizeA(fontSize, FLT_MAX, 0.0f, line2.c_str());
+            ImVec2 size3 = font->CalcTextSizeA(fontSize, FLT_MAX, 0.0f, line3.c_str());
+
+            float maxTextWidth = std::max({size1.x, size2.x, size3.x});
+            float totalHeight = size1.y + size2.y + size3.y + 10.0f; // 5.0f spacing between lines
+
+            ImVec2 basePos(screenSize.x - maxTextWidth - margin, margin);
 
             ImU32 panelColor = ImGui::ColorConvertFloat4ToU32(ImVec4(0.05f, 0.07f, 0.10f, 0.72f));
             ImU32 borderColor = ImGui::ColorConvertFloat4ToU32(ImVec4(1.0f, 0.84f, 0.22f, 0.85f));
@@ -202,21 +209,80 @@ namespace our
             ImU32 textColor = ImGui::ColorConvertFloat4ToU32(ImVec4(1.0f, 0.95f, 0.78f, 1.0f));
 
             ImVec2 padding(18.0f, 12.0f);
-            ImVec2 panelMin(pos.x - padding.x, pos.y - padding.y);
-            ImVec2 panelMax(pos.x + textSize.x + padding.x, pos.y + textSize.y + padding.y);
+            ImVec2 panelMin(basePos.x - padding.x, basePos.y - padding.y);
+            ImVec2 panelMax(basePos.x + maxTextWidth + padding.x, basePos.y + totalHeight + padding.y);
 
-            // drawList->AddRectFilled(panelMin, panelMax, panelColor, 10.0f);
             drawList->AddRect(panelMin, panelMax, borderColor, 10.0f, 0, 2.0f);
-            drawList->AddText(font, fontSize, ImVec2(pos.x + 2.0f, pos.y + 2.0f), shadowColor, scoreText.c_str());
-            drawList->AddText(font, fontSize, pos, textColor, scoreText.c_str());
+
+            ImVec2 pos1 = basePos;
+            ImVec2 pos2 = ImVec2(basePos.x, basePos.y + size1.y + 5.0f);
+            ImVec2 pos3 = ImVec2(basePos.x, basePos.y + size1.y + size2.y + 10.0f);
+
+            drawList->AddText(font, fontSize, ImVec2(pos1.x + 2.0f, pos1.y + 2.0f), shadowColor, line1.c_str());
+            drawList->AddText(font, fontSize, pos1, textColor, line1.c_str());
+
+            drawList->AddText(font, fontSize, ImVec2(pos2.x + 2.0f, pos2.y + 2.0f), shadowColor, line2.c_str());
+            drawList->AddText(font, fontSize, pos2, textColor, line2.c_str());
+
+            // Draw timer emoji explicitly with smaller size at the start of line2
+            const char *timerEmoji = u8"⏱";
+            ImVec2 emojiSize = font->CalcTextSizeA(emojiFontSize, FLT_MAX, 0.0f, timerEmoji);
+            ImVec2 emojiPos = ImVec2(pos2.x, pos2.y + (fontSize - emojiFontSize) * 0.5f); // vertically center
+            drawList->AddText(font, emojiFontSize, ImVec2(emojiPos.x + 2.0f, emojiPos.y + 2.0f), shadowColor, timerEmoji);
+            drawList->AddText(font, emojiFontSize, emojiPos, textColor, timerEmoji);
+
+            drawList->AddText(font, fontSize, ImVec2(pos3.x + 2.0f, pos3.y + 2.0f), shadowColor, line3.c_str());
+            drawList->AddText(font, fontSize, pos3, textColor, line3.c_str());
+
+            // Draw ring emoji
+            const char *ringEmoji = u8"🛟";
+            ImVec2 ringEmojiPos = ImVec2(pos3.x, pos3.y + (fontSize - emojiFontSize) * 0.5f);
+            drawList->AddText(font, emojiFontSize, ImVec2(ringEmojiPos.x + 2.0f, ringEmojiPos.y + 2.0f), shadowColor, ringEmoji);
+            drawList->AddText(font, emojiFontSize, ringEmojiPos, textColor, ringEmoji);
+
+            // Draw coin emoji
+            ImVec2 ringsPartSize = font->CalcTextSizeA(fontSize, FLT_MAX, 0.0f, ("   " + std::to_string(dusty->ringsPassed) + "   ").c_str());
+            const char *coinEmoji = u8"🪙";
+            ImVec2 coinEmojiPos = ImVec2(pos3.x + ringsPartSize.x, pos3.y + (fontSize - emojiFontSize) * 0.5f);
+            drawList->AddText(font, emojiFontSize, ImVec2(coinEmojiPos.x + 2.0f, coinEmojiPos.y + 2.0f), shadowColor, coinEmoji);
+            drawList->AddText(font, emojiFontSize, coinEmojiPos, textColor, coinEmoji);
+
+            if (currentSong == 1 || currentSong == 2)
+            {
+                // Reversed presentation forms to bypass LTR rendering
+                const char *songText = (currentSong == 1)
+                                           ? u8"\uFEF2\uFEE8\uFEA3\uFEAE\uFEA0\uFE97 \uFEF1\uFE8D\uFEAF\uFE8D \uFE96\uFEE7\uFE8D"
+                                           : u8"\uFEA1\uFE8D\uFEAE\uFE9F \uFE90\uFEF4\uFE92\uFEC3";
+
+                // Add speaker emoji beside it. Visual direction is RTL, so adding at the end of LTR string (visual left)
+                std::string songString = std::string(songText) + u8" 🔊";
+
+                ImVec2 songSize = font->CalcTextSizeA(36.0f, FLT_MAX, 0.0f, songString.c_str());
+                // Top middle position, with a bit of top margin
+                ImVec2 songPos(screenSize.x * 0.5f - songSize.x * 0.5f, 40.0f);
+
+                ImU32 songColor = ImGui::ColorConvertFloat4ToU32(ImVec4(1.0f, 0.84f, 0.22f, 1.0f)); // Gold fancy
+                if (currentSong == 2)
+                    songColor = ImGui::ColorConvertFloat4ToU32(ImVec4(0.4f, 0.9f, 1.0f, 1.0f)); // Cyan fancy
+
+                // Add fancy background box for the song text
+                ImVec2 boxMin(songPos.x - 20.0f, songPos.y - 10.0f);
+                ImVec2 boxMax(songPos.x + songSize.x + 20.0f, songPos.y + songSize.y + 10.0f);
+                drawList->AddRectFilled(boxMin, boxMax, ImGui::ColorConvertFloat4ToU32(ImVec4(0.0f, 0.0f, 0.0f, 0.6f)), 15.0f);
+                drawList->AddRect(boxMin, boxMax, songColor, 15.0f, 0, 3.0f);
+
+                drawList->AddText(font, 36.0f, ImVec2(songPos.x + 3.0f, songPos.y + 3.0f), shadowColor, songString.c_str());
+                drawList->AddText(font, 36.0f, songPos, songColor, songString.c_str());
+            }
         }
 
         void renderMiniMap(World *world, Application *app)
         {
             auto *dusty = findPlayerDusty(world);
-            if (!dusty) return;
+            if (!dusty)
+                return;
 
-            Entity* playerEntity = nullptr;
+            Entity *playerEntity = nullptr;
             for (auto entity : world->getEntities())
             {
                 if (entity->getComponent<CameraComponent>() &&
@@ -226,11 +292,13 @@ namespace our
                     break;
                 }
             }
-            if (!playerEntity) return;
+            if (!playerEntity)
+                return;
 
             glm::ivec2 screenSize = app->getFrameBufferSize();
             ImDrawList *drawList = ImGui::GetForegroundDrawList();
-            if (!drawList) return;
+            if (!drawList)
+                return;
 
             glm::mat4 playerMatrix = playerEntity->getLocalToWorldMatrix();
             glm::vec3 playerPos = glm::vec3(playerMatrix * glm::vec4(0.0f, 0.0f, 0.0f, 1.0f));
@@ -253,7 +321,7 @@ namespace our
             drawList->AddCircle(center, mapRadius, borderColor, 64, 3.0f);
 
             std::vector<glm::vec3> unpassedRings;
-            Entity* finishLineEntity = nullptr;
+            Entity *finishLineEntity = nullptr;
             for (auto entity : world->getEntities())
             {
                 auto col = entity->getComponent<ColliderComponent>();
@@ -274,26 +342,31 @@ namespace our
 
             glm::vec3 pForward = glm::vec3(playerMatrix * glm::vec4(0.0f, 0.0f, -1.0f, 0.0f));
             glm::vec3 pRight = glm::vec3(playerMatrix * glm::vec4(1.0f, 0.0f, 0.0f, 0.0f));
-            pForward.y = 0.0f; pRight.y = 0.0f;
-            if(glm::length(pForward) > 0.001f) pForward = glm::normalize(pForward);
-            else pForward = glm::vec3(0.0f, 0.0f, -1.0f);
-            if(glm::length(pRight) > 0.001f) pRight = glm::normalize(pRight);
-            else pRight = glm::vec3(1.0f, 0.0f, 0.0f);
+            pForward.y = 0.0f;
+            pRight.y = 0.0f;
+            if (glm::length(pForward) > 0.001f)
+                pForward = glm::normalize(pForward);
+            else
+                pForward = glm::vec3(0.0f, 0.0f, -1.0f);
+            if (glm::length(pRight) > 0.001f)
+                pRight = glm::normalize(pRight);
+            else
+                pRight = glm::vec3(1.0f, 0.0f, 0.0f);
 
             float minDistance = FLT_MAX;
             glm::vec3 closestTargetPos(0.0f);
             bool hasClosest = false;
 
-            ImU32 ringColor = ImGui::ColorConvertFloat4ToU32(ImVec4(0.0f, 0.8f, 1.0f, 1.0f)); 
-            
+            ImU32 ringColor = ImGui::ColorConvertFloat4ToU32(ImVec4(0.0f, 0.8f, 1.0f, 1.0f));
+
             if (!unpassedRings.empty())
             {
-                for (const auto& ringPos : unpassedRings)
+                for (const auto &ringPos : unpassedRings)
                 {
                     float dx = ringPos.x - playerPos.x;
                     float dz = ringPos.z - playerPos.z;
-                    float dist = std::sqrt(dx*dx + dz*dz);
-                    
+                    float dist = std::sqrt(dx * dx + dz * dz);
+
                     if (dist < minDistance)
                     {
                         minDistance = dist;
@@ -305,9 +378,9 @@ namespace our
                     {
                         float localX = dx * pRight.x + dz * pRight.z;
                         float localY = -(dx * pForward.x + dz * pForward.z);
-                        
+
                         float sx = localX * scale;
-                        float sy = localY * scale; 
+                        float sy = localY * scale;
                         drawList->AddCircleFilled(ImVec2(center.x + sx, center.y + sy), 5.0f, ringColor, 12);
                     }
                 }
@@ -317,23 +390,23 @@ namespace our
                 auto col = finishLineEntity->getComponent<ColliderComponent>();
                 glm::mat4 finishMatrix = finishLineEntity->getLocalToWorldMatrix();
                 glm::vec3 finishPos = glm::vec3(finishMatrix * glm::vec4(col->center, 1.0f));
-                
+
                 float dx = finishPos.x - playerPos.x;
                 float dz = finishPos.z - playerPos.z;
-                float dist = std::sqrt(dx*dx + dz*dz);
-                
+                float dist = std::sqrt(dx * dx + dz * dz);
+
                 minDistance = dist;
                 closestTargetPos = finishPos;
                 hasClosest = true;
-                
+
                 if (dist <= worldRadius)
                 {
                     float localX = dx * pRight.x + dz * pRight.z;
                     float localY = -(dx * pForward.x + dz * pForward.z);
-                    
+
                     float sx = localX * scale;
-                    float sy = localY * scale; 
-                    ImU32 finishColor = ImGui::ColorConvertFloat4ToU32(ImVec4(0.2f, 1.0f, 0.2f, 1.0f)); 
+                    float sy = localY * scale;
+                    ImU32 finishColor = ImGui::ColorConvertFloat4ToU32(ImVec4(0.2f, 1.0f, 0.2f, 1.0f));
                     drawList->AddCircleFilled(ImVec2(center.x + sx, center.y + sy), 6.0f, finishColor, 16);
                 }
             }
@@ -342,28 +415,28 @@ namespace our
             {
                 float dx = closestTargetPos.x - playerPos.x;
                 float dz = closestTargetPos.z - playerPos.z;
-                
+
                 float localX = dx * pRight.x + dz * pRight.z;
                 float localY = -(dx * pForward.x + dz * pForward.z);
-                
+
                 float dirX = localX / minDistance;
                 float dirY = localY / minDistance;
-                
+
                 ImU32 yellowColor = ImGui::ColorConvertFloat4ToU32(ImVec4(1.0f, 0.84f, 0.22f, 1.0f));
-                if (unpassedRings.empty() && finishLineEntity) {
+                if (unpassedRings.empty() && finishLineEntity)
+                {
                     yellowColor = ImGui::ColorConvertFloat4ToU32(ImVec4(0.2f, 1.0f, 0.2f, 1.0f)); // Point to finish line with green
                 }
                 ImVec2 edgePos(center.x + dirX * (mapRadius - 5.0f), center.y + dirY * (mapRadius - 5.0f));
                 drawList->AddCircleFilled(edgePos, 6.0f, yellowColor, 16);
             }
 
-            ImU32 planeColor = ImGui::ColorConvertFloat4ToU32(ImVec4(0.2f, 1.0f, 0.2f, 1.0f)); 
+            ImU32 planeColor = ImGui::ColorConvertFloat4ToU32(ImVec4(0.2f, 1.0f, 0.2f, 1.0f));
             drawList->AddTriangleFilled(
                 ImVec2(center.x, center.y - 7.0f),
                 ImVec2(center.x - 5.0f, center.y + 5.0f),
                 ImVec2(center.x + 5.0f, center.y + 5.0f),
-                planeColor
-            );
+                planeColor);
         }
 
         void renderDangerOverlay(glm::ivec2 screenSize, float intensity)

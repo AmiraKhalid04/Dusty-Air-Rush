@@ -70,7 +70,6 @@ namespace our
             save(topScores, recentWins);
         }
 
-        // Backward-compatible alias for existing callers.
         static void submitScore(int score)
         {
             submitWinScore(score);

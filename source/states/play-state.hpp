@@ -1,6 +1,10 @@
 #pragma once
 
 #include <application.hpp>
+#include <fstream>
+#include <iomanip>
+#include <vector>
+#include <algorithm>
 
 #include <ecs/world.hpp>
 #include <systems/forward-renderer.hpp>
@@ -17,6 +21,7 @@
 #include <systems/coin-system.hpp>
 #include <systems/ui-render-system.hpp>
 #include <systems/text-popup-system.hpp>
+#include <systems/score-manager.hpp>
 #include <components/camera.hpp>
 #include <components/free-camera-controller.hpp>
 #include <components/dusty.hpp>
@@ -24,10 +29,15 @@
 #include <mesh/mesh.hpp>
 #include <asset-loader.hpp>
 #include "systems/health-system.hpp"
+
 // This state shows how to use the ECS framework and deserialization.
 class Playstate : public our::State
 {
+public:
+    // Last computed score, readable by WinState / LossState after a state transition.
+    static inline int lastScore = 0;
 
+private:
     our::World world;
     our::ForwardRenderer renderer;
     our::FreeCameraControllerSystem cameraController;
@@ -254,6 +264,19 @@ class Playstate : public our::State
         // Get a reference to the keyboard object
         auto &keyboard = getApp()->getKeyboard();
 
+        if (keyboard.justPressed(GLFW_KEY_H))
+        {
+            for (auto entity : world.getEntities())
+            {
+                if (auto dusty = entity->getComponent<our::DustyComponent>())
+                {
+                    dusty->isHeadlightsOn = !dusty->isHeadlightsOn;
+                    audioSystem.playSound("assets/sounds/toggle-light.mp3");
+                    break;
+                }
+            }
+        }
+
         if (keyboard.justPressed(GLFW_KEY_ESCAPE))
         {
             // If the escape  key is pressed in this frame, go to the play state
@@ -267,23 +290,29 @@ class Playstate : public our::State
             {
                 if (dusty->isDead)
                 {
+                    lastScore = our::ScoreManager::computeFinalScore(
+                        dusty->score, dusty->coins, dusty->currentHealth, dusty->maxHealth);
                     std::cout << "\n=============================================" << std::endl;
                     std::cout << "          MISSION FAILED - HEALTH DEPLETED    " << std::endl;
-                    std::cout << " Rings Passed: " << dusty->score << " / " << dusty->totalRings << std::endl;
+                    std::cout << " Rings Passed: " << dusty->ringsPassed << " / " << dusty->totalRings << std::endl;
                     std::cout << " Coins Collected: " << dusty->coins << std::endl;
-                    std::cout << " Time Survived: " << playTime << "s" << std::endl;
+                    std::cout << " Final Score: " << lastScore << std::endl;
                     std::cout << "=============================================\n"
                               << std::endl;
                     getApp()->changeState("loss");
                 }
                 else if (dusty->isWon)
                 {
+                    lastScore = our::ScoreManager::computeFinalScore(
+                        dusty->score, dusty->coins, dusty->currentHealth, dusty->maxHealth);
+                    our::ScoreManager::submitWinScore(lastScore);
                     std::cout << "\n=============================================" << std::endl;
                     std::cout << "            MISSION COMPLETE!                 " << std::endl;
-                    std::cout << " Rings Passed: " << dusty->score << " / " << dusty->totalRings << std::endl;
+                    std::cout << " Rings Passed: " << dusty->ringsPassed << " / " << dusty->totalRings << std::endl;
                     std::cout << " Coins Collected: " << dusty->coins << std::endl;
                     std::cout << " Final Health: " << dusty->currentHealth << " / " << dusty->maxHealth << std::endl;
                     std::cout << " Time: " << playTime << "s" << std::endl;
+                    std::cout << " Final Score: " << lastScore << std::endl;
                     std::cout << "=============================================\n"
                               << std::endl;
                     getApp()->changeState("win");
@@ -295,6 +324,7 @@ class Playstate : public our::State
 
     void onImmediateGui() override
     {
+        uiRenderer.renderScore(&world, getApp(), playTime);
         textPopupSystem.render();
     }
 

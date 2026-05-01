@@ -1,0 +1,2 @@
+Result: LOSS | Score: 4000 | Coins: 0 | Time: 54.20s
+Result: WIN  | Score: 8800 | Coins: 1 | Time: 256.67s

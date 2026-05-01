@@ -40,6 +40,9 @@ namespace our
         glm::vec3 skyHorizon = {1.0f, 1.0f, 1.0f};
         glm::vec3 skyBottom = {1.0f, 1.0f, 1.0f};
 
+        // Base tint for animated runway lights, loaded from config
+        glm::vec4 runwayLightBaseTint = {1.0f, 0.7490196f, 0.0f, 1.0f};
+
         // Objects used for Shadow Mapping
         GLuint shadowMapFBO = 0;
         Texture2D* shadowMapTexture = nullptr;

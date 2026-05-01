@@ -1,0 +1,106 @@
+# MTL file - created by a modified js OBJExporter
+
+newmtl M_InnerChrome
+Tr 0.0000
+Tf 1.0000 1.0000 1.0000
+illum 1
+Pm 1
+Pr 0.07342720826843567
+Pds 1
+Pl 1
+Pccns 1-1
+Prfl 0.5
+Pior 1.5
+Pshc 0 0 0
+Pshr 1
+Psc 1 1 1
+Ka 1 1 1
+Kd 1 1 1
+Ke 0 0 0
+
+newmtl M_BulbHousing
+Tr 0.0000
+Tf 1.0000 1.0000 1.0000
+illum 1
+Pm 1
+Pr 0.19352439931245502
+Pds 1
+Pl 1
+Pccns 1-1
+Prfl 0.5
+Pior 1.5
+Pshc 0 0 0
+Pshr 1
+Psi 0.36511058596194934
+Psc 1 1 1
+Ka 1 1 1
+Kd 0.15850152676237717 0.15850152676237717 0.15850152676237717
+Ke 0 0 0
+
+newmtl M_Chrome
+Tr 0.0000
+Tf 1.0000 1.0000 1.0000
+illum 1
+Pm 1
+Pr 0.018736574950901863
+Pds 1
+Pl 1
+Pccns 1-1
+Prfl 0.5
+Pior 1.5
+Pshc 0 0 0
+Pshr 1
+Psi 0.40157100817363856
+Psc 1 1 1
+Ka 1 1 1
+Kd 0.2557293193268817 0.2557293193268817 0.2557293193268817
+Ke 0 0 0
+
+newmtl M_headlight_reverse
+Tr 0.75
+Tf 1.0000 1.0000 1.0000
+illum 1
+Pr 0.6
+Pds 1
+Pl 1
+Pccns 1-1
+Prfl 0.5
+Pior 1.5
+Pshc 0 0 0
+Pshr 1
+Psi 1
+Psc 1 1 1
+Ptr 0.9283807341127135
+Ka 1 1 1
+Kd 1 1 1
+Ke 0 0 0
+
+newmtl M_HeadlightFront
+Tr 0.08798308086271256
+Tf 1.0000 1.0000 1.0000
+illum 1
+Pds 1
+Pl 1
+Pccns 11
+Prfl 0.5
+Pior 1.5
+Pshc 0 0 0
+Pshr 1
+Psi 1
+Psc 1 1 1
+Ptr 0.08798308086271256
+Ka 1 1 1
+Kd 0.043043523092028003 0.043043523092028003 0.043043523092028003
+Ke 0 0 0
+norm normalMap5.png
+
+newmtl M_Bulb
+Tr 0.0000
+Tf 1.0000 1.0000 1.0000
+illum 1
+Pr 0.6
+Pds 1
+Pl 1
+Ka 1 1 1
+Kd 0 0 0
+Ke 1 1 1

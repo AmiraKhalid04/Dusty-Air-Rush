@@ -5,6 +5,9 @@
 #include "../deserialize-utils.hpp"
 #include <GLFW/glfw3.h>
 
+#include "../material/material.hpp"
+#include "../components/dusty.hpp"
+
 namespace our
 {
 
@@ -40,6 +43,14 @@ namespace our
             skyTop = skyLight.value("top", glm::vec3(1.0f));
             skyHorizon = skyLight.value("horizon", glm::vec3(1.0f));
             skyBottom = skyLight.value("bottom", glm::vec3(1.0f));
+        }
+
+        if (auto runwayMat = AssetLoader<Material>::get("runway_light"))
+        {
+            if (auto tinted = dynamic_cast<TintedMaterial *>(runwayMat))
+            {
+                runwayLightBaseTint = tinted->tint;
+            }
         }
 
         if (config.contains("sky"))
@@ -205,6 +216,21 @@ namespace our
         float sunUp = glm::max(glm::dot(sunDir, glm::vec3(0.0f, 1.0f, 0.0f)), 0.0f);
         float sunStrength = glm::clamp(sunUp * sunUp * sunUp * 6.0f, 0.0f, 1.0f);
         float directionalStrength = glm::max(sunStrength, 0.05f); // Keep a bit of light at night
+        float lampStrength = 1.0f - glm::smoothstep(0.0f, 0.2f, sunStrength);
+        
+        // --- Runway Light Visual Glow ---
+        // We modulate the material tint of the lamps so they look like they "turn on"
+        // and pulsate slightly at night.
+        if (auto runwayMat = AssetLoader<Material>::get("runway_light")) {
+            if (auto tinted = dynamic_cast<TintedMaterial*>(runwayMat)) {
+                float pulse = 1.0f;
+                if (lampStrength > 0.0f) {
+                    pulse = 1.0f + 0.15f * std::sin((float)glfwGetTime() * 4.0f);
+                }
+                float brightness = 1.0f + 1.2f * lampStrength * pulse;
+                tinted->tint = glm::vec4(glm::vec3(runwayLightBaseTint) * brightness, runwayLightBaseTint.a);
+            }
+        }
 
         for (auto entity : world->getEntities())
         {
@@ -215,7 +241,27 @@ namespace our
             // If this entity has a light component
             if (auto light = entity->getComponent<LightComponent>(); light)
             {
-                activeLights.push_back({light, entity->getLocalToWorldMatrix()});
+                if (light->lightType != LightType::SPOT)
+                {
+                    activeLights.push_back({light, entity->getLocalToWorldMatrix()});
+                }
+                else 
+                {
+                    // For spotlights, check if they are attached to Dusty and if headlights are on
+                    our::Entity* current = entity;
+                    bool isHeadlightsOn = true; // default to true
+                    // loop up the parent hierarchy to find a DustyComponent, if it exists
+                    while (current) {
+                        if (auto dusty = current->getComponent<DustyComponent>()) {
+                            isHeadlightsOn = dusty->isHeadlightsOn;
+                            break;
+                        }
+                        current = current->parent;
+                    }
+                    if (isHeadlightsOn) {
+                        activeLights.push_back({light, entity->getLocalToWorldMatrix()});
+                    }
+                }
             }
 
             // If this entity has a mesh renderer component
@@ -239,32 +285,32 @@ namespace our
                 }
             }
 
-            // // Debug rendering for Colliders
+            // Debug rendering for Colliders
             if (auto collider = entity->getComponent<ColliderComponent>(); collider)
             {
                 Material *debugMat = our::AssetLoader<Material>::get("debug_wireframe");
-                if (debugMat)
-                {
-                    RenderCommand command;
-                    glm::mat4 baseTransform = glm::translate(entity->getLocalToWorldMatrix(), collider->center);
+                // if (debugMat)
+                // {
+                //     RenderCommand command;
+                //     glm::mat4 baseTransform = glm::translate(entity->getLocalToWorldMatrix(), collider->center);
 
-                    if (collider->shapeType == ColliderType::Sphere)
-                    {
-                        command.localToWorld = glm::scale(baseTransform, glm::vec3(collider->sphereRadius));
-                        command.mesh = our::AssetLoader<Mesh>::get("sphere");
-                    }
-                    else
-                    {
-                        command.localToWorld = glm::scale(baseTransform, collider->aabbExtents);
-                        command.mesh = our::AssetLoader<Mesh>::get("cube");
-                    }
+                //     if (collider->shapeType == ColliderType::Sphere)
+                //     {
+                //         command.localToWorld = glm::scale(baseTransform, glm::vec3(collider->sphereRadius));
+                //         command.mesh = our::AssetLoader<Mesh>::get("sphere");
+                //     }
+                //     else
+                //     {
+                //         command.localToWorld = glm::scale(baseTransform, collider->aabbExtents);
+                //         command.mesh = our::AssetLoader<Mesh>::get("cube");
+                //     }
 
-                    command.center = glm::vec3(command.localToWorld * glm::vec4(0, 0, 0, 1));
-                    command.material = debugMat;
+                //     command.center = glm::vec3(command.localToWorld * glm::vec4(0, 0, 0, 1));
+                //     command.material = debugMat;
 
-                    // Wireframes look better in transparent pass to overlay gracefully
-                    transparentCommands.push_back(command);
-                }
+                //     // Wireframes look better in transparent pass to overlay gracefully
+                //     transparentCommands.push_back(command);
+                // }
             }
         }
 
@@ -500,11 +546,7 @@ namespace our
                     {
                         lightColor *= directionalStrength;
                         dir = -sunDir;
-                    }
-                    else if (activeLights[i].light->lightType == LightType::POINT)
-                    {
-                        // Fade out point lights during the day
-                        float lampStrength = 1.0f - glm::smoothstep(0.0f, 0.2f, sunStrength);
+                    } else if (activeLights[i].light->lightType == LightType::POINT) {
                         lightColor *= lampStrength;
                     }
                     command.material->shader->set(prefix + "color", lightColor);
@@ -561,6 +603,8 @@ namespace our
                     {
                         lightColor *= directionalStrength;
                         dir = -sunDir;
+                    } else if (activeLights[i].light->lightType == LightType::POINT) {
+                        lightColor *= lampStrength;
                     }
                     command.material->shader->set(prefix + "color", lightColor);
                     command.material->shader->set(prefix + "attenuation", activeLights[i].light->attenuation);

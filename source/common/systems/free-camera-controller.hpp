@@ -290,7 +290,7 @@ namespace our
             }
 
             if (inEmote && planeVisuals) {
-                float emoteDuration = 0.8f;
+                float emoteDuration = 0.7f;
                 emoteProgress += deltaTime;
 
                 float t = emoteProgress / emoteDuration;
@@ -298,12 +298,12 @@ namespace our
 
                 float angle = t * 2.0f * glm::pi<float>();
 
-                glm::vec3 basePos = glm::vec3(0.0f, -1.5f, -4.0f);
-                float radius = 0.9f;
+                glm::vec3 basePos = glm::vec3(0.0f, 0.0f, -4.0f);
+                float radius = 0.2f;
 
                 // Peaks at midpoint (t=0.5), returns to 0 at end
                 float forwardShift = 1.0f * glm::sin(t * glm::pi<float>());
-                float topShift     = 1.5f * glm::sin(t * glm::pi<float>()); // tune the 1.0f multiplier
+                float topShift     = 1.0f * glm::sin(t * glm::pi<float>()); // tune the 1.0f multiplier
 
                 glm::vec3 loopOffset = glm::vec3(
                     0.0f,

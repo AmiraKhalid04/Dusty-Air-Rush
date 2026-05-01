@@ -62,23 +62,45 @@ class LeaderboardState : public our::State
     {
         float W = (float)fbSize.x;
         float H = (float)fbSize.y;
+        float sideMargin = std::clamp(W * 0.06f, 16.0f, 40.0f);
+        float topGap = H * 0.030f;
+        float tableGap = H * 0.050f;
+        float buttonGap = H * 0.028f;
+        float bottomMargin = H * 0.035f;
 
-        titleFontSize = std::clamp(H * 0.11f, 68.0f, 120.0f);
-        subtitleFontSize = std::clamp(H * 0.045f, 28.0f, 46.0f);
-        rowFontSize = std::clamp(H * 0.054f, 32.0f, 50.0f);
-        hintFontSize = std::clamp(H * 0.036f, 22.0f, 34.0f);
-        cupSize = std::clamp(H * 0.11f, 82.0f, 128.0f);
+        titleFontSize = std::clamp(H * 0.11f, 52.0f, 120.0f);
+        subtitleFontSize = std::clamp(H * 0.045f, 20.0f, 46.0f);
+        rowFontSize = std::clamp(H * 0.054f, 26.0f, 50.0f);
+        hintFontSize = std::clamp(H * 0.036f, 18.0f, 34.0f);
+        cupSize = std::clamp(H * 0.11f, 64.0f, 128.0f);
 
         cupY = H * 0.045f;
-        titleY = cupY + cupSize + H * 0.030f;
-        tableW = std::clamp(W * 0.62f, 560.0f, 860.0f);
-        tableH = std::clamp(H * 0.58f, 360.0f, 540.0f);
+        titleY = cupY + cupSize + topGap;
+
+        float preferredTableW = std::clamp(W * 0.62f, 380.0f, 860.0f);
+        float maxTableW = std::max(240.0f, W - sideMargin * 2.0f);
+        tableW = std::min(preferredTableW, maxTableW);
         tableX = (W - tableW) * 0.5f;
-        tableY = titleY + titleFontSize + subtitleFontSize + H * 0.050f;
+        tableY = titleY + titleFontSize + subtitleFontSize + tableGap;
 
         backButton.size = {tableW, hintFontSize * 2.3f};
-        float buttonY = tableY + tableH + H * 0.028f;
-        float bottomMargin = H * 0.035f;
+
+        float availableTableH = H - tableY - buttonGap - backButton.size.y - bottomMargin;
+        float maxTableH = std::max(180.0f, std::min(H * 0.58f, 540.0f));
+        tableH = std::clamp(availableTableH, 180.0f, maxTableH);
+
+        float rowH = tableH / (float)(our::ScoreManager::MaxScores + 1);
+        rowFontSize = std::min(rowFontSize, rowH * 0.52f);
+        float headerFontSize = rowFontSize * 0.98f;
+        float rowTextNeed = std::max(rowFontSize, headerFontSize);
+        if (rowTextNeed > rowH * 0.58f)
+        {
+            float scale = (rowH * 0.58f) / rowTextNeed;
+            rowFontSize *= scale;
+        }
+
+        backButton.size = {tableW, hintFontSize * 2.3f};
+        float buttonY = tableY + tableH + buttonGap;
         backButton.position = {tableX, std::min(buttonY, H - backButton.size.y - bottomMargin)};
     }
 
@@ -179,8 +201,8 @@ class LeaderboardState : public our::State
             Subtitle);
 
         float rowH = tableH / (float)(our::ScoreManager::MaxScores + 1);
-        float rankCenterX = tableX + tableW * 0.22f;
-        float scoreCenterX = tableX + tableW * 0.68f;
+        float rankCenterX = tableX + tableW * 0.30f;
+        float scoreCenterX = tableX + tableW * 0.70f;
 
         float headerFontSize = rowFontSize * 0.98f;
         ImU32 headerColor = ImGui::ColorConvertFloat4ToU32(ImVec4(0.14f, 0.08f, 0.03f, bodyFade));

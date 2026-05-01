@@ -11,6 +11,7 @@
 #include <glm/gtc/constants.hpp>
 #include <glm/trigonometric.hpp>
 #include <glm/gtx/fast_trigonometry.hpp>
+#include <glm/gtx/euler_angles.hpp>
 
 namespace our
 {
@@ -24,6 +25,9 @@ namespace our
         bool mouse_locked = false; // Is the mouse locked
         AudioSystem *audioSystem = nullptr;
         bool shiftWasPressed = false; // Tracks previous frame's shift state for edge detection
+        bool inEmote = false;
+        float emoteProgress = 0.0f;
+        float initialEmotePitch = 0.0f;
 
     public:
         // When a state enters, it should call this function and give it the pointer to the application
@@ -271,12 +275,60 @@ namespace our
                 return;
             }
 
+            // Handle the emote (back flip and speed boost)
+            if (app->getKeyboard().justPressed(GLFW_KEY_UP) && !inEmote) {
+                inEmote = true;
+                emoteProgress = 0.0f;
+            }
+
+            Entity* planeVisuals = nullptr;
+            for (auto child : world->getEntities()) {
+                if (child->parent == entity && child->name == "Plane Visuals") {
+                    planeVisuals = child;
+                    break;
+                }
+            }
+
+            if (inEmote && planeVisuals) {
+                float emoteDuration = 0.7f;
+                emoteProgress += deltaTime;
+
+                float t = emoteProgress / emoteDuration;
+                if (t > 1.0f) t = 1.0f;
+
+                float angle = t * 2.0f * glm::pi<float>();
+
+                glm::vec3 basePos = glm::vec3(0.0f, -1.5f, -4.0f);
+                float radius = 0.2f;
+
+                // Peaks at midpoint (t=0.5), returns to 0 at end
+                float forwardShift = 1.0f * glm::sin(t * glm::pi<float>());
+                float topShift     = 1.0f * glm::sin(t * glm::pi<float>()); // tune the 1.0f multiplier
+
+                glm::vec3 loopOffset = glm::vec3(
+                    0.0f,
+                    radius * glm::sin(angle),
+                -radius * (1.0f - glm::cos(angle))
+                );
+
+                planeVisuals->localTransform.rotation.x = -glm::pi<float>() / 2.0f + angle;
+                planeVisuals->localTransform.position    =  basePos
+                                                        + loopOffset
+                                                        + glm::vec3(0.0f, forwardShift + topShift, 0.0f);
+
+                if (emoteProgress >= emoteDuration) {
+                    inEmote = false;
+                    planeVisuals->localTransform.rotation.x = -glm::pi<float>() / 2.0f;
+                    planeVisuals->localTransform.position    =  basePos;
+                }
+            }
+
             // S & W moves the player pitch back and forth (swapped and with arrows)
             float max_pitch = glm::pi<float>() / 3.0f;          // Limit tilt to 60 degrees
             float pitch_speed = controller->tiltingSensitivity; // How fast it tilts
 
             bool pitchingUp = app->getKeyboard().isPressed(GLFW_KEY_S) || app->getKeyboard().isPressed(GLFW_KEY_DOWN);
-            bool pitchingDown = app->getKeyboard().isPressed(GLFW_KEY_W) || app->getKeyboard().isPressed(GLFW_KEY_UP);
+            bool pitchingDown = app->getKeyboard().isPressed(GLFW_KEY_W); // UP key is now for emote!
 
             if (activeJoystick != -1) {
                 if (rawLeftY > 0.2f) pitchingUp = true;
@@ -322,5 +374,4 @@ namespace our
             shiftWasPressed = false;
         }
     };
-
 }

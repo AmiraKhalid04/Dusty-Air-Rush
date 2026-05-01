@@ -158,7 +158,7 @@ class WinState : public our::State
         zoneHint = zoneTable + tableH + margin;
         zoneHint = std::min(zoneHint, H - bottomInset - hintH);
 
-        // Invisible buttons for keyboard/mouse hit-testing (no GL rendering needed)
+        // Invisible buttons for keyboard/mouse hit-testing
         buttons[0].size = {panelW * 0.47f, hintH};
         buttons[1].size = {panelW * 0.47f, hintH};
         buttons[0].position = {panelX, zoneHint};
@@ -320,7 +320,7 @@ class WinState : public our::State
         }
 
         // ═══════════════════════════════════════════════════════════════════════
-        //  ZONE 1 – TITLE STRIP
+        //  TITLE STRIP
         // ═══════════════════════════════════════════════════════════════════════
         if (titleFade > 0.01f)
         {
@@ -346,14 +346,14 @@ class WinState : public our::State
         }
 
         // ═══════════════════════════════════════════════════════════════════════
-        //  ZONE 2 – HERO SCORE  (no dark panel background)
+        //   HERO SCORE
         // ═══════════════════════════════════════════════════════════════════════
         if (scoreFade > 0.01f)
         {
             float centerX = W * 0.5f;
             float panelH = heroFontSize * 1.82f;
 
-            // Subtle gold border only — no filled background
+            // Subtle gold border
             ImU32 panelBorder = ImGui::ColorConvertFloat4ToU32(
                 ImVec4(1.0f, 0.80f, 0.22f, scoreFade * 0.40f));
             dl->AddRect(
@@ -361,7 +361,7 @@ class WinState : public our::State
                 ImVec2(panelX + panelW, zoneScore + panelH),
                 panelBorder, 10.0f, 0, 1.0f);
 
-            // "YOUR SCORE" label (bigger)
+            // "YOUR SCORE" label
             float lfs = labelFontSize;
             ImU32 lblCol = ImGui::ColorConvertFloat4ToU32(
                 ImVec4(1.0f, 0.80f, 0.30f, scoreFade * 0.90f));
@@ -373,7 +373,7 @@ class WinState : public our::State
             ImU32 ulCol = ImGui::ColorConvertFloat4ToU32(ImVec4(1.0f, 0.78f, 0.22f, scoreFade * 0.65f));
             dl->AddLine(ImVec2(lx - 4.0f, ulY), ImVec2(lx + lts.x + 4.0f, ulY), ulCol, 1.2f);
 
-            // Big score number
+            //  score number
             char scoreBuf[32];
             snprintf(scoreBuf, sizeof(scoreBuf), "%d", currentScore);
             ImU32 valCol = ImGui::ColorConvertFloat4ToU32(
@@ -418,7 +418,7 @@ class WinState : public our::State
         }
 
         // ═══════════════════════════════════════════════════════════════════════
-        //  ZONE 3 – LEADERBOARD TABLE  (no dark panel background, DATE removed)
+        // LEADERBOARD TABLE
         // ═══════════════════════════════════════════════════════════════════════
         if (tableFade > 0.01f)
         {
@@ -429,18 +429,17 @@ class WinState : public our::State
             float tblRight = tableX + tableW;
             float centerX = tableX + tableW * 0.5f;
 
-            // Two centered columns: RANK left-of-center, SCORE right-of-center
             float colRankX = centerX - tableW * 0.16f;
             float colScoreX = centerX + tableW * 0.16f;
 
-            // Gold border only — no filled background
+            // Gold border
             ImU32 tblBdr = ImGui::ColorConvertFloat4ToU32(
                 ImVec4(1.0f, 0.80f, 0.22f, tableFade * 0.35f));
             dl->AddRect(ImVec2(tableX, zoneTable),
                         ImVec2(tblRight, zoneTable + tableH),
                         tblBdr, 10.0f, 0, 1.0f);
 
-            // "TOP SCORES" label (bigger)
+            // "TOP SCORES" label
             float lfs = labelFontSize;
             ImU32 lblCol = ImGui::ColorConvertFloat4ToU32(
                 ImVec4(1.0f, 0.80f, 0.30f, tableFade * 0.90f));
@@ -465,12 +464,12 @@ class WinState : public our::State
                 ImVec4(1.0f, 0.80f, 0.30f, tableFade * 0.80f));
             float hdrTextY = hdrY + (headerH - hfs) * 0.5f;
 
-            // RANK header — right-aligned at colRankX
+            // RANK header
             {
                 ImVec2 ts = sf->CalcTextSizeA(hfs, FLT_MAX, 0.0f, "RANK");
                 dl->AddText(sf, hfs, ImVec2(colRankX - ts.x * 0.5f, hdrTextY), hdrCol, "RANK");
             }
-            // SCORE header — centered at colScoreX
+            // SCORE header
             {
                 ImVec2 ts = sf->CalcTextSizeA(hfs, FLT_MAX, 0.0f, "SCORE");
                 dl->AddText(sf, hfs, ImVec2(colScoreX - ts.x * 0.5f, hdrTextY), hdrCol, "SCORE");
@@ -567,7 +566,7 @@ class WinState : public our::State
         }
 
         // ═══════════════════════════════════════════════════════════════════════
-        //  ZONE 4 – HINT TEXT (replaces old button zone)
+        //  HINT TEXT
         // ═══════════════════════════════════════════════════════════════════════
         if (btnFade > 0.01f)
         {
@@ -664,8 +663,8 @@ class WinState : public our::State
         backgroundMaterial->shader->set("transform", VP * fullScreen);
         rectangle->draw();
 
-        // Dark overlay (kept very subtle — mainly for legibility)
-        float darkAlpha = glm::smoothstep(0.15f, 1.10f, time) * 0.40f; // reduced from 0.70
+        // Dark overlay
+        float darkAlpha = glm::smoothstep(0.15f, 1.10f, time) * 0.40f;
         darkOverlay->tint = glm::vec4(0.00f, 0.01f, 0.04f, darkAlpha);
         darkOverlay->setup();
         darkOverlay->shader->set("transform", VP * fullScreen);
@@ -679,7 +678,7 @@ class WinState : public our::State
         goldOverlay->shader->set("transform", VP * fullScreen);
         rectangle->draw();
 
-        // Button hover highlight (GL-side, additive glow)
+        // Button hover highlight
         for (auto &btn : buttons)
         {
             if (btn.isInside(mousePos))

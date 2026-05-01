@@ -277,7 +277,7 @@
     },
     "track": {
       "startPosition": [-25.0, 0.0, 0.0],
-      "endPosition": [25.0, 10.0, -600.0],
+      "endPosition": [25.0, 20.0, -600.0],
       "stagesCount": 10,
       "innerMargin": 5.0,
       "outerMargin": 30.0

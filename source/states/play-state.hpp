@@ -30,6 +30,7 @@
 #include <asset-loader.hpp>
 #include "systems/health-system.hpp"
 #include <systems/ring-arrow-system.hpp>
+#include <utils/track-utils.hpp>
 
 // This state shows how to use the ECS framework and deserialization.
 class Playstate : public our::State
@@ -58,13 +59,48 @@ private:
 
     float playTime = 0.0f;
     bool planeFlapping = true;
+    int currentSong = 0; // 0: motor, 1: song1, 2: song2
 
     void onInitialize() override
     {
         playTime = 0.0f;
+        currentSong = 0;
         // Initialize the audio system
         audioSystem.initialize();
         // Start ambient wind as background loop (plays underneath all other sounds)
+        audioSystem.playCassetteTrack("assets/sounds/motor-loop.mp3", 0.5f);
+
+        ImGuiIO &io = ImGui::GetIO();
+        io.Fonts->Clear();
+        io.Fonts->AddFontDefault();
+
+        ImFontConfig fontConfig;
+        fontConfig.MergeMode = true;
+        fontConfig.FontDataOwnedByAtlas = false;
+
+        static const ImWchar arabic_ranges[] = {
+            0x0600,
+            0x06FF, // Arabic
+            0x0750,
+            0x077F, // Arabic Supplement
+            0x08A0,
+            0x08FF, // Arabic Extended-A
+            0xFB50,
+            0xFDFF, // Arabic Presentation Forms-A
+            0xFE70,
+            0xFEFF, // Arabic Presentation Forms-B
+            0,
+        };
+        io.Fonts->AddFontFromFileTTF("assets/fonts/NotoSansArabic.ttf", 36.0f, &fontConfig, arabic_ranges);
+
+        static const ImWchar emoji_ranges[] = {
+            0x2000, 0x23FF,
+            0x2600, 0x26FF,
+            0x2700, 0x27BF,
+            0x1F300, 0x1FAFF,
+            0};
+        io.Fonts->AddFontFromFileTTF("assets/fonts/NotoEmoji.ttf", 26.0f, &fontConfig, emoji_ranges);
+        getApp()->rebuildImGuiFonts();
 
         collisionSystem.setAudioSystem(&audioSystem);
         collisionSystem.setTextPopupSystem(&textPopupSystem);
@@ -116,6 +152,18 @@ private:
                 trackConfig.outerMargin = trackJson["outerMargin"];
         }
         worldBoundarySystem.initialize(trackConfig);
+
+        // Initialize track curve configuration
+        our::TrackCurveConfig curveConfig;
+        if (config.contains("trackCurve"))
+        {
+            const auto &curveJson = config["trackCurve"];
+            if (curveJson.contains("amplitude"))
+                curveConfig.amplitude = curveJson["amplitude"];
+            if (curveJson.contains("frequency"))
+                curveConfig.frequency = curveJson["frequency"];
+        }
+        our::setTrackCurveConfig(curveConfig);
 
         our::RingConfig ringConfig;
         ringConfig.trackStartPosition = trackConfig.startPosition;
@@ -295,6 +343,22 @@ private:
             }
         }
 
+        if (keyboard.justPressed(GLFW_KEY_0) || keyboard.justPressed(GLFW_KEY_KP_0))
+        {
+            audioSystem.playCassetteTrack("assets/sounds/motor-loop.mp3", 0.5f);
+            currentSong = 0;
+        }
+        if (keyboard.justPressed(GLFW_KEY_1) || keyboard.justPressed(GLFW_KEY_KP_1))
+        {
+            audioSystem.playCassetteTrack("assets/sounds/cassette/song1.mp3", 0.5f);
+            currentSong = 1;
+        }
+        if (keyboard.justPressed(GLFW_KEY_2) || keyboard.justPressed(GLFW_KEY_KP_2))
+        {
+            audioSystem.playCassetteTrack("assets/sounds/cassette/song2.mp3", 0.5f);
+            currentSong = 2;
+        }
+
         if (keyboard.justPressed(GLFW_KEY_ESCAPE))
         {
             // If the escape  key is pressed in this frame, go to the play state
@@ -342,7 +406,7 @@ private:
 
     void onImmediateGui() override
     {
-        uiRenderer.renderScore(&world, getApp(), playTime);
+        uiRenderer.renderScore(&world, getApp(), playTime, currentSong);
         uiRenderer.renderMiniMap(&world, getApp());
         textPopupSystem.render();
     }

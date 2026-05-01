@@ -76,15 +76,14 @@ class Menustate : public our::State
         float W = (float)fbSize.x;
         float H = (float)fbSize.y;
 
-        // Bigger: 14% of height for title, 6.5% for buttons
-        titleFontSize = std::clamp(H * 0.14f, 90.0f, 150.0f);
+                titleFontSize = std::clamp(H * 0.14f, 90.0f, 150.0f);
         buttonFontSize = std::clamp(H * 0.065f, 44.0f, 72.0f);
 
         ImVec2 ts = layoutTitleFont->CalcTextSizeA(titleFontSize, FLT_MAX, 0.0f, GameTitle);
         titleSize = {ts.x, ts.y};
         titlePosition = {
             (W - titleSize.x) * 0.5f,
-            H * 0.52f // roughly middle of screen
+            H * 0.52f //  middle of screen
         };
 
         float padX = std::clamp(W * 0.030f, 32.0f, 56.0f);

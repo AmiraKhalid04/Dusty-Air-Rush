@@ -26,10 +26,12 @@ namespace our
         ma_sound ambientWind;
         ma_sound proximitySfx;
         ma_sound motorSound;
+        ma_sound cassetteSound;
         bool initialized = false;
         bool ambientPlaying = false;
         bool proximityPlaying = false;
         bool motorPlaying = false;
+        bool cassettePlaying = false;
 
     public:
         /// Initialize the audio engine. Call once during game startup.
@@ -152,6 +154,47 @@ namespace our
                 ma_sound_set_volume(&proximitySfx, volume);
         }
 
+        // ── Cassette player (plays long MP3 files or default sound) ──
+
+        /// Stop any currently playing cassette sound and play a new one.
+        void playCassetteTrack(const std::string &filePath, float volume = 0.5f)
+        {
+            if (!initialized)
+                return;
+
+            if (cassettePlaying)
+            {
+                ma_sound_stop(&cassetteSound);
+                ma_sound_uninit(&cassetteSound);
+                cassettePlaying = false;
+            }
+
+            ma_result result = ma_sound_init_from_file(
+                &engine, filePath.c_str(),
+                MA_SOUND_FLAG_STREAM,
+                NULL, NULL, &cassetteSound);
+            if (result != MA_SUCCESS)
+            {
+                std::cerr << "[AudioSystem] Failed to load cassette sound: " << filePath
+                          << " (error: " << result << ")" << std::endl;
+                return;
+            }
+
+            ma_sound_set_looping(&cassetteSound, MA_TRUE);
+            ma_sound_set_volume(&cassetteSound, volume);
+            ma_sound_start(&cassetteSound);
+            cassettePlaying = true;
+        }
+
+        void stopCassette()
+        {
+            if (!cassettePlaying)
+                return;
+            ma_sound_stop(&cassetteSound);
+            ma_sound_uninit(&cassetteSound);
+            cassettePlaying = false;
+        }
+
         // ── Motor / boost sound (plays while Shift is held) ──────────
 
         /// Start the motor sound loop if not already playing.
@@ -191,6 +234,12 @@ namespace our
         /// Shut down the audio engine. Call during game cleanup.
         void destroy()
         {
+            if (cassettePlaying)
+            {
+                ma_sound_stop(&cassetteSound);
+                ma_sound_uninit(&cassetteSound);
+                cassettePlaying = false;
+            }
             if (motorPlaying)
             {
                 ma_sound_stop(&motorSound);

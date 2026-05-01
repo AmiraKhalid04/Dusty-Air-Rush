@@ -6,6 +6,7 @@
 #include <GLFW/glfw3.h>
 
 #include "../material/material.hpp"
+#include "../components/dusty.hpp"
 
 namespace our
 {
@@ -230,7 +231,27 @@ namespace our
             // If this entity has a light component
             if (auto light = entity->getComponent<LightComponent>(); light)
             {
-                activeLights.push_back({light, entity->getLocalToWorldMatrix()});
+                if (light->lightType != LightType::SPOT)
+                {
+                    activeLights.push_back({light, entity->getLocalToWorldMatrix()});
+                }
+                else 
+                {
+                    // For spotlights, check if they are attached to Dusty and if headlights are on
+                    our::Entity* current = entity;
+                    bool isHeadlightsOn = true; // default to true
+                    // loop up the parent hierarchy to find a DustyComponent, if it exists
+                    while (current) {
+                        if (auto dusty = current->getComponent<DustyComponent>()) {
+                            isHeadlightsOn = dusty->isHeadlightsOn;
+                            break;
+                        }
+                        current = current->parent;
+                    }
+                    if (isHeadlightsOn) {
+                        activeLights.push_back({light, entity->getLocalToWorldMatrix()});
+                    }
+                }
             }
 
             // If this entity has a mesh renderer component

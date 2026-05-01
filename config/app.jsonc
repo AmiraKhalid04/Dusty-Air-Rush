@@ -342,7 +342,8 @@
           },
           {
             "type": "dusty",
-            "maxHealth": 100.0
+            "maxHealth": 100.0,
+            "isHeadlightsOn": true
           }
         ],
         "children": [
@@ -436,7 +437,7 @@
               },
               {
                 "name": "Left Flashlight",
-                "position": [-2.0, 2.55, -3.3],
+                "position": [-2.0, 2.85, -2.3],
                 "rotation": [90, 0, 0],
                 "scale": [2.0, 2.0, 2.0],
                 "components": [
@@ -456,7 +457,7 @@
               },
               {
                 "name": "Right Flashlight",
-                "position": [2.0, 2.55, -3.3],
+                "position": [2.0, 2.85, -2.35],
                 "rotation": [90, 0, 0],
                 "scale": [2.0, 2.0, 2.0],
                 "components": [

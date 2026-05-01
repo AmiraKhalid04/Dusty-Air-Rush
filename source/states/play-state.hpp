@@ -322,6 +322,19 @@ private:
         // Get a reference to the keyboard object
         auto &keyboard = getApp()->getKeyboard();
 
+        if (keyboard.justPressed(GLFW_KEY_H))
+        {
+            for (auto entity : world.getEntities())
+            {
+                if (auto dusty = entity->getComponent<our::DustyComponent>())
+                {
+                    dusty->isHeadlightsOn = !dusty->isHeadlightsOn;
+                    audioSystem.playSound("assets/sounds/toggle-light.mp3");
+                    break;
+                }
+            }
+        }
+
         if (keyboard.justPressed(GLFW_KEY_ESCAPE))
         {
             // If the escape  key is pressed in this frame, go to the play state

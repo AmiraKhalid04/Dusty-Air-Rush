@@ -57,64 +57,6 @@ private:
     float playTime = 0.0f;
     bool planeFlapping = true;
 
-    void saveAndShowLeaderboard(int currentScore, int coins, float time, bool won)
-    {
-        // 1. Save current run
-        {
-            std::ofstream outfile("scoreboard.txt", std::ios::app);
-            if (outfile.is_open())
-            {
-                outfile << "Result: " << (won ? "WIN " : "LOSS") << " | Score: " << currentScore
-                        << " | Coins: " << coins
-                        << " | Time: " << std::fixed << std::setprecision(2) << time << "s\n";
-            }
-        }
-
-        // 2. Load and sort all scores
-        struct Entry
-        {
-            std::string line;
-            int score;
-        };
-        std::vector<Entry> entries;
-        std::ifstream infile("scoreboard.txt");
-        std::string line;
-        while (std::getline(infile, line))
-        {
-            if (line.empty())
-                continue;
-            size_t pos = line.find("Score: ");
-            if (pos != std::string::npos)
-            {
-                try
-                {
-                    int score = std::stoi(line.substr(pos + 7));
-                    entries.push_back({line, score});
-                }
-                catch (...)
-                {
-                }
-            }
-        }
-        infile.close();
-
-        std::sort(entries.begin(), entries.end(), [](const Entry &a, const Entry &b)
-                  { return a.score > b.score; });
-
-        // 3. Display in console
-        std::cout << "\n--- GLOBAL LEADERBOARD (TOP 5) ---" << std::endl;
-        if (!entries.empty() && currentScore >= entries[0].score)
-        {
-            std::cout << "   *** NEW HIGH SCORE! ***" << std::endl;
-        }
-        for (size_t i = 0; i < std::min(entries.size(), (size_t)5); ++i)
-        {
-            std::cout << (i + 1) << ". " << entries[i].line << std::endl;
-        }
-        std::cout << "----------------------------------\n"
-                  << std::endl;
-    }
-
     void onInitialize() override
     {
         playTime = 0.0f;
@@ -357,7 +299,6 @@ private:
                     std::cout << " Final Score: " << lastScore << std::endl;
                     std::cout << "=============================================\n"
                               << std::endl;
-                    saveAndShowLeaderboard(dusty->score, dusty->coins, playTime, false);
                     getApp()->changeState("loss");
                 }
                 else if (dusty->isWon)
@@ -374,7 +315,6 @@ private:
                     std::cout << " Final Score: " << lastScore << std::endl;
                     std::cout << "=============================================\n"
                               << std::endl;
-                    saveAndShowLeaderboard(dusty->score, dusty->coins, playTime, true);
                     getApp()->changeState("win");
                 }
                 break; // Dusty component handled

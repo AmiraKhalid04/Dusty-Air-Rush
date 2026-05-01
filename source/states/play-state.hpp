@@ -65,6 +65,7 @@ private:
         // Initialize the audio system
         audioSystem.initialize();
         // Start ambient wind as background loop (plays underneath all other sounds)
+        audioSystem.playCassetteTrack("assets/sounds/motor-loop.mp3", 0.5f);
 
         collisionSystem.setAudioSystem(&audioSystem);
         collisionSystem.setTextPopupSystem(&textPopupSystem);
@@ -294,6 +295,13 @@ private:
                 }
             }
         }
+
+        if (keyboard.justPressed(GLFW_KEY_0) || keyboard.justPressed(GLFW_KEY_KP_0))
+            audioSystem.playCassetteTrack("assets/sounds/motor-loop.mp3", 0.5f);
+        if (keyboard.justPressed(GLFW_KEY_1) || keyboard.justPressed(GLFW_KEY_KP_1))
+            audioSystem.playCassetteTrack("assets/sounds/cassette/song1.mp3", 0.5f);
+        if (keyboard.justPressed(GLFW_KEY_2) || keyboard.justPressed(GLFW_KEY_KP_2))
+            audioSystem.playCassetteTrack("assets/sounds/cassette/song2.mp3", 0.5f);
 
         if (keyboard.justPressed(GLFW_KEY_ESCAPE))
         {

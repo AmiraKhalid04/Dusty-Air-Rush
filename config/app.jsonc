@@ -17,7 +17,15 @@
         "bottom": [0.2, 0.2, 0.2]
       },
       "sky": "assets/textures/sky.jpg",
-      "postprocess": "assets/shaders/postprocess/vignette.frag"
+      "postprocess": "assets/shaders/postprocess/fog.frag",
+      "fog": {
+                "color": [
+                    0.7,
+                    0.7,
+                    0.8
+                ],
+                "density": 0.0015
+            }
     },
     "assets": {
       "shaders": {

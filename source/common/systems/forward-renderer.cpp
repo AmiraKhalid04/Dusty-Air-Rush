@@ -122,6 +122,8 @@ namespace our
             depthTarget = new Texture2D();
             depthTarget->bind();
             glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT24, windowSize.x, windowSize.y, 0, GL_DEPTH_COMPONENT, GL_FLOAT, nullptr);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
             glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, depthTarget->getOpenGLName(), 0);
 
             // TODO: (Req 11) Unbind the framebuffer just to be safe
@@ -151,6 +153,14 @@ namespace our
             // The default options are fine but we don't need to interact with the depth buffer
             // so it is more performant to disable the depth mask
             postprocessMaterial->pipelineState.depthMask = false;
+
+            // Load fog parameters if they exist in config
+            if (config.contains("fog"))
+            {
+                auto fog = config["fog"];
+                fogColor = fog.value("color", glm::vec3(0.5f));
+                fogDensity = fog.value("density", 0.01f);
+            }
         }
     }
 
@@ -202,7 +212,7 @@ namespace our
         float xk = std::pow(time, 1.5f);
         float toD = xk / (xk + std::pow(1.0f - time, 1.5f));
         toD = -toD * 6.283853f - 1.5708f + 0.1f;
-        glm::vec3 sunDir = glm::normalize(glm::vec3(std::sin(toD)*0.4f+0.4f, std::sin(toD) + 0.69f, std::cos(toD)));
+        glm::vec3 sunDir = glm::normalize(glm::vec3(std::sin(toD) * 0.4f + 0.4f, std::sin(toD) + 0.69f, std::cos(toD)));
         float sunUp = glm::max(glm::dot(sunDir, glm::vec3(0.0f, 1.0f, 0.0f)), 0.0f);
         float sunStrength = glm::clamp(sunUp * sunUp * sunUp * 6.0f, 0.0f, 1.0f);
         float directionalStrength = glm::max(sunStrength, 0.05f); // Keep a bit of light at night
@@ -325,7 +335,8 @@ namespace our
         glm::vec3 cameraPosition = glm::vec3(camera->getOwner()->getLocalToWorldMatrix() * glm::vec4(0, 0, 0, 1));
 
         // Sort active lights to prioritize Directional, then Spot, then nearest Point lights
-        std::sort(activeLights.begin(), activeLights.end(), [&cameraPosition](const LightData &a, const LightData &b) {
+        std::sort(activeLights.begin(), activeLights.end(), [&cameraPosition](const LightData &a, const LightData &b)
+                  {
             if (a.light->lightType == LightType::DIRECTIONAL && b.light->lightType != LightType::DIRECTIONAL) return true;
             if (b.light->lightType == LightType::DIRECTIONAL && a.light->lightType != LightType::DIRECTIONAL) return false;
             
@@ -334,8 +345,7 @@ namespace our
             
             glm::vec3 posA = glm::vec3(a.localToWorld * glm::vec4(0, 0, 0, 1));
             glm::vec3 posB = glm::vec3(b.localToWorld * glm::vec4(0, 0, 0, 1));
-            return glm::distance(posA, cameraPosition) < glm::distance(posB, cameraPosition);
-        });
+            return glm::distance(posA, cameraPosition) < glm::distance(posB, cameraPosition); });
 
         if (shadowShader && shadowMapFBO != 0)
         {
@@ -461,7 +471,7 @@ namespace our
         {
             auto skyM = camera->getOwner()->getLocalToWorldMatrix();
             glm::vec3 skyFwd = glm::normalize(glm::vec3(skyM * glm::vec4(0, 0, -1, 0)));
-            glm::vec3 skyUp  = glm::normalize(glm::vec3(skyM * glm::vec4(0, 1,  0, 0)));
+            glm::vec3 skyUp = glm::normalize(glm::vec3(skyM * glm::vec4(0, 1, 0, 0)));
             glm::vec3 skyEye = glm::vec3(0.0f, 200.0f, 0.0f);
             glm::ivec2 skyRes = windowSize / 2;
 
@@ -529,10 +539,11 @@ namespace our
                 {
                     std::string prefix = "lights[" + std::to_string(i) + "].";
                     command.material->shader->set(prefix + "type", (int)activeLights[i].light->lightType);
-                    
+
                     glm::vec3 lightColor = activeLights[i].light->diffuse;
                     glm::vec3 dir = activeLights[i].localToWorld * glm::vec4(0, 0, -1, 0);
-                    if (activeLights[i].light->lightType == LightType::DIRECTIONAL) {
+                    if (activeLights[i].light->lightType == LightType::DIRECTIONAL)
+                    {
                         lightColor *= directionalStrength;
                         dir = -sunDir;
                     } else if (activeLights[i].light->lightType == LightType::POINT) {
@@ -542,7 +553,7 @@ namespace our
                     command.material->shader->set(prefix + "attenuation", activeLights[i].light->attenuation);
                     glm::vec3 pos = activeLights[i].localToWorld * glm::vec4(0, 0, 0, 1);
                     command.material->shader->set(prefix + "position", pos);
-                    command.material->shader->set(prefix + "direction", glm::normalize(dir)); 
+                    command.material->shader->set(prefix + "direction", glm::normalize(dir));
                     command.material->shader->set(prefix + "cone_angles", activeLights[i].light->cone_angles);
                 }
 
@@ -585,10 +596,11 @@ namespace our
                 {
                     std::string prefix = "lights[" + std::to_string(i) + "].";
                     command.material->shader->set(prefix + "type", (int)activeLights[i].light->lightType);
-                    
+
                     glm::vec3 lightColor = activeLights[i].light->diffuse;
                     glm::vec3 dir = activeLights[i].localToWorld * glm::vec4(0, 0, -1, 0);
-                    if (activeLights[i].light->lightType == LightType::DIRECTIONAL) {
+                    if (activeLights[i].light->lightType == LightType::DIRECTIONAL)
+                    {
                         lightColor *= directionalStrength;
                         dir = -sunDir;
                     } else if (activeLights[i].light->lightType == LightType::POINT) {
@@ -598,7 +610,7 @@ namespace our
                     command.material->shader->set(prefix + "attenuation", activeLights[i].light->attenuation);
                     glm::vec3 pos = activeLights[i].localToWorld * glm::vec4(0, 0, 0, 1);
                     command.material->shader->set(prefix + "position", pos);
-                    command.material->shader->set(prefix + "direction", glm::normalize(dir)); 
+                    command.material->shader->set(prefix + "direction", glm::normalize(dir));
                     command.material->shader->set(prefix + "cone_angles", activeLights[i].light->cone_angles);
                 }
 
@@ -623,10 +635,33 @@ namespace our
 
             // TODO: (Req 11) Setup the postprocess material and draw the fullscreen triangle
             postprocessMaterial->setup();
-            glBindVertexArray(postProcessVertexArray);
-            glDrawArrays(GL_TRIANGLES, 0, 3);
-            glBindVertexArray(0);
+
+            // Bind the depth texture to texture unit 1 and pass it to the shader
+            if (depthTarget && postprocessMaterial->shader)
+            {
+                glActiveTexture(GL_TEXTURE1);
+                depthTarget->bind();
+                our::Sampler::unbind(1); // Ensure no sampler is bound to unit 1 to prevent mipmap completeness issues
+                postprocessMaterial->shader->set("depth_tex", 1);
+
+                // Pass fog parameters
+                postprocessMaterial->shader->set("fog_color", fogColor);
+                postprocessMaterial->shader->set("fog_density", fogDensity);
+
+                if (camera)
+                {
+                    // Get near and far planes from camera
+                    float nearPlane = camera->near;
+                    float farPlane = camera->far;
+
+                    postprocessMaterial->shader->set("near_plane", nearPlane);
+                    postprocessMaterial->shader->set("far_plane", farPlane);
+                }
+
+                glBindVertexArray(postProcessVertexArray);
+                glDrawArrays(GL_TRIANGLES, 0, 3);
+                glBindVertexArray(0);
+            }
         }
     }
-
 }

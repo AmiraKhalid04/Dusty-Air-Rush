@@ -6,6 +6,7 @@
 #include <application.hpp>
 
 #include "states/menu-state.hpp"
+#include "states/leaderboard-state.hpp"
 #include "states/loss-state.hpp"
 #include "states/win-state.hpp"
 
@@ -48,6 +49,7 @@ int main(int argc, char **argv)
 
     // Register all the states of the project in the application
     app.registerState<Menustate>("menu");
+    app.registerState<LeaderboardState>("leaderboard");
     app.registerState<LossState>("loss");
     app.registerState<WinState>("win");
     app.registerState<Playstate>("play");

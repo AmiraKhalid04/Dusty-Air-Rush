@@ -69,16 +69,16 @@ class LossState : public our::State
         float W = (float)fbSize.x;
         float H = (float)fbSize.y;
 
-        // Bigger title: 19% of height
+        //  title height
         titleFontSize = std::clamp(H * 0.19f, 120.0f, 200.0f);
         buttonFontSize = std::clamp(H * 0.060f, 42.0f, 70.0f);
 
         ImVec2 ts = lTitleFont->CalcTextSizeA(titleFontSize, FLT_MAX, 0.0f, ScreenTitle);
         titleSize = {ts.x, ts.y};
-        // Moved down: 28% from top instead of 14%
+
         titlePosition = {(W - titleSize.x) * 0.5f, H * 0.28f};
 
-        // Divider sits just below the title
+        // Divider sits below the title
         dividerY = titlePosition.y + titleSize.y + std::clamp(titleSize.y * 0.18f, 8.0f, 20.0f);
 
         float padX = std::clamp(W * 0.030f, 34.0f, 60.0f);

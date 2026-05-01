@@ -330,7 +330,10 @@ namespace our
                                     std::cout << " Final Health: " << dusty->currentHealth << "%" << std::endl;
                                     std::cout << "=============================================\n" << std::endl;
                                 } else {
-                                    std::cout << "You still need to collect " << (dusty->totalRings - dusty->score) << " rings! Finish line rejected\n" << std::endl;
+                                    if (textPopupSystem)
+                                        textPopupSystem->spawn("You still need to collect " + std::to_string(dusty->totalRings - dusty->score) + " rings!", {1.0f, 0.2f, 0.2f, 1.0f});
+                                    std::cout << "You still need to collect " << (dusty->totalRings - dusty->score) << " rings! Finish line rejected\n"
+                                              << std::endl;
                                 }
                             }
                         }

@@ -6,7 +6,7 @@
       "width": 1280,
       "height": 720
     },
-    "fullscreen": true
+    "fullscreen": false
   },
   "scene": {
     "plane_flapping": false,
@@ -410,7 +410,7 @@
               },
               {
                 "name": "Left Wing Mesh",
-                "position": [-1.0, 2.2, -2],
+                "position": [-0.85, -2, 0],
                 "components": [
                   {
                     "type": "Mesh Renderer",
@@ -421,7 +421,7 @@
               },
               {
                 "name": "Right Wing Mesh",
-                "position": [1.0, 2.0, -2],
+                "position": [0.85, -2, 0],
                 "components": [
                   {
                     "type": "Mesh Renderer",
@@ -432,7 +432,7 @@
               },
               {
                 "name": "Body Collider",
-                "position": [0, -3.0, 0],
+                "position": [0, -2.8, 0],
                 "components": [
                   {
                     "type": "Collider",
@@ -444,31 +444,31 @@
               },
               {
                 "name": "Left Wing",
-                "position": [-2.7, 2.0, -2.5],
+                "position": [-2.5, -2.0, -0.35],
                 "components": [
                   {
                     "type": "Collider",
                     "shapeType": "aabb",
                     "objectType": "player",
-                    "aabbExtents": [2.0, 0.25, 0.8]
+                    "aabbExtents": [2.0, 0.8, 0.3]
                   }
                 ]
               },
               {
                 "name": "Right Wing",
-                "position": [2.7, 2.0, -2.5],
+                "position": [2.5, -2.0, -0.35],
                 "components": [
                   {
                     "type": "Collider",
                     "shapeType": "aabb",
                     "objectType": "player",
-                    "aabbExtents": [2.0, 0.25, 0.8]
+                    "aabbExtents": [2.0, 0.8, 0.3]
                   }
                 ]
               },
               {
                 "name": "Left Flashlight",
-                "position": [-2.0, 2.85, -2.3],
+                "position": [-2.0, -1.15, -0.35],
                 "rotation": [90, 0, 0],
                 "scale": [2.0, 2.0, 2.0],
                 "components": [
@@ -488,7 +488,7 @@
               },
               {
                 "name": "Right Flashlight",
-                "position": [2.0, 2.85, -2.35],
+                "position": [2.0, -1.15, -0.35],
                 "rotation": [90, 0, 0],
                 "scale": [2.0, 2.0, 2.0],
                 "components": [

@@ -185,12 +185,13 @@ class LeaderboardState : public our::State
         ImDrawList *dl = ImGui::GetForegroundDrawList();
         ImFont *tf = titleFont ? titleFont : ImGui::GetFont();
         ImFont *bf = bodyFont ? bodyFont : ImGui::GetFont();
+        const ImVec4 accentColor = ImVec4(0.99f, 0.85f, 0.34f, 1.0f);
 
         ImVec2 titleSize = tf->CalcTextSizeA(titleFontSize, FLT_MAX, 0.0f, ScreenTitle);
         glm::vec2 titlePos = {(W - titleSize.x) * 0.5f, titleY};
         drawShadowedText(
             dl, tf, titleFontSize, titlePos,
-            ImGui::ColorConvertFloat4ToU32(ImVec4(0.99f, 0.85f, 0.34f, titleFade)),
+            ImGui::ColorConvertFloat4ToU32(ImVec4(accentColor.x, accentColor.y, accentColor.z, titleFade)),
             ScreenTitle, 0.9f, titleFontSize * 0.045f);
 
         ImVec2 subtitleSize = bf->CalcTextSizeA(subtitleFontSize, FLT_MAX, 0.0f, Subtitle);
@@ -205,7 +206,7 @@ class LeaderboardState : public our::State
         float scoreCenterX = tableX + tableW * 0.70f;
 
         float headerFontSize = rowFontSize * 0.98f;
-        ImU32 headerColor = ImGui::ColorConvertFloat4ToU32(ImVec4(0.14f, 0.08f, 0.03f, bodyFade));
+        ImU32 headerColor = ImGui::ColorConvertFloat4ToU32(ImVec4(accentColor.x, accentColor.y, accentColor.z, bodyFade));
         dl->AddText(bf, headerFontSize,
                     ImVec2(rankCenterX - bf->CalcTextSizeA(headerFontSize, FLT_MAX, 0.0f, "RANK").x * 0.5f,
                            tableY + rowH * 0.20f),
@@ -214,7 +215,7 @@ class LeaderboardState : public our::State
                     ImVec2(scoreCenterX - bf->CalcTextSizeA(headerFontSize, FLT_MAX, 0.0f, "SCORE").x * 0.5f,
                            tableY + rowH * 0.20f),
                     headerColor, "SCORE");
-        ImU32 headerSeparator = ImGui::ColorConvertFloat4ToU32(ImVec4(0.30f, 0.17f, 0.07f, bodyFade * 0.55f));
+        ImU32 headerSeparator = ImGui::ColorConvertFloat4ToU32(ImVec4(accentColor.x, accentColor.y, accentColor.z, bodyFade * 0.55f));
         dl->AddLine(ImVec2(tableX + 8.0f, tableY + rowH),
                     ImVec2(tableX + tableW - 8.0f, tableY + rowH),
                     headerSeparator, 1.6f);
@@ -229,7 +230,7 @@ class LeaderboardState : public our::State
             if (latestEntry)
             {
                 ImU32 latestBorder = ImGui::ColorConvertFloat4ToU32(
-                    ImVec4(0.40f, 0.23f, 0.09f, (0.45f + pulse * 0.08f) * bodyFade));
+                    ImVec4(accentColor.x, accentColor.y, accentColor.z, (0.45f + pulse * 0.08f) * bodyFade));
                 dl->AddRect(ImVec2(tableX + 8.0f, rowTop + 6.0f),
                             ImVec2(tableX + tableW - 8.0f, rowTop + rowH - 6.0f),
                             latestBorder, 8.0f, 0, 1.4f);
@@ -238,7 +239,7 @@ class LeaderboardState : public our::State
             if (i < our::ScoreManager::MaxScores - 1)
             {
                 ImU32 separator = ImGui::ColorConvertFloat4ToU32(
-                    ImVec4(0.30f, 0.17f, 0.07f, bodyFade * 0.42f));
+                    ImVec4(accentColor.x, accentColor.y, accentColor.z, bodyFade * 0.42f));
                 dl->AddLine(ImVec2(tableX + 8.0f, rowTop + rowH),
                             ImVec2(tableX + tableW - 8.0f, rowTop + rowH),
                             separator, 1.4f);
@@ -255,9 +256,9 @@ class LeaderboardState : public our::State
             }
 
             ImU32 rankColor = ImGui::ColorConvertFloat4ToU32(
-                hasEntry ? ImVec4(0.12f, 0.07f, 0.03f, bodyFade) : ImVec4(0.24f, 0.18f, 0.12f, bodyFade * 0.7f));
+                ImVec4(accentColor.x, accentColor.y, accentColor.z, hasEntry ? bodyFade : bodyFade * 0.7f));
             ImU32 scoreColor = ImGui::ColorConvertFloat4ToU32(
-                hasEntry ? ImVec4(0.10f, 0.06f, 0.02f, bodyFade) : ImVec4(0.24f, 0.18f, 0.12f, bodyFade * 0.7f));
+                ImVec4(accentColor.x, accentColor.y, accentColor.z, hasEntry ? bodyFade : bodyFade * 0.7f));
 
             ImVec2 rankSize = bf->CalcTextSizeA(rowFontSize, FLT_MAX, 0.0f, rankBuf);
             ImVec2 scoreSize = bf->CalcTextSizeA(rowFontSize, FLT_MAX, 0.0f, scoreText);
@@ -273,7 +274,7 @@ class LeaderboardState : public our::State
             dl->AddText(
                 bf, rowFontSize * 0.92f,
                 ImVec2((W - emptySize.x) * 0.5f, tableY + tableH * 0.42f),
-                ImGui::ColorConvertFloat4ToU32(ImVec4(0.30f, 0.18f, 0.09f, bodyFade * 0.85f)),
+                ImGui::ColorConvertFloat4ToU32(ImVec4(accentColor.x, accentColor.y, accentColor.z, bodyFade * 0.85f)),
                 emptyText);
         }
 
@@ -314,7 +315,7 @@ class LeaderboardState : public our::State
 
         time += (float)deltaTime;
 
-        backgroundMaterial->tint = glm::vec4(0.36f, 0.24f, 0.10f, 1.0f);
+        backgroundMaterial->tint = glm::vec4(0.0f, 0.0f, 0.0f, 1.0f);
         backgroundMaterial->setup();
         backgroundMaterial->shader->set("transform", VP * fullScreen);
         rectangle->draw();

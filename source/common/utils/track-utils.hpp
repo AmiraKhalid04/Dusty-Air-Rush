@@ -3,18 +3,34 @@
 
 namespace our
 {
+    struct TrackCurveConfig
+    {
+        float amplitude = 8.0f;   // Maximum horizontal deviation from center
+        float frequency = 0.04f;  // Tightness of the curve
+    };
+
+    // Global track curve configuration
+    static TrackCurveConfig g_trackCurveConfig;
+
+    /**
+     * Sets the global track curve configuration.
+     * Call this during initialization to load values from config.
+     */
+    inline void setTrackCurveConfig(const TrackCurveConfig& config)
+    {
+        g_trackCurveConfig = config;
+    }
+
     /**
      * Generates a smooth sinusoidal curve along the Z axis to offset X positions.
      * This creates a winding track path that all systems follow uniformly.
      * 
      * @param z The Z position along the track
-     * @param amplitude The maximum horizontal deviation from center (default: 8.0)
-     * @param frequency The tightness of the curve (default: 0.04)
      * @return The X offset to apply at this Z position
      */
-    inline float trackCurveX(float z, float amplitude = 8.0f, float frequency = 0.04f)
+    inline float trackCurveX(float z)
     {
-        return amplitude * std::sin(frequency * z);
+        return g_trackCurveConfig.amplitude * std::sin(g_trackCurveConfig.frequency * z);
     }
 
     /**
@@ -22,14 +38,12 @@ namespace our
      * Uses the derivative of the curve to determine the tangent direction.
      * 
      * @param z The Z position along the track
-     * @param amplitude The maximum horizontal deviation from center (default: 8.0)
-     * @param frequency The tightness of the curve (default: 0.04)
      * @return The rotation angle around the Y axis (in radians)
      */
-    inline float trackCurveRotationY(float z, float amplitude = 8.0f, float frequency = 0.04f)
+    inline float trackCurveRotationY(float z)
     {
         // Derivative: d/dz(amplitude * sin(frequency * z)) = amplitude * frequency * cos(frequency * z)
-        float dxdz = amplitude * frequency * std::cos(frequency * z);
+        float dxdz = g_trackCurveConfig.amplitude * g_trackCurveConfig.frequency * std::cos(g_trackCurveConfig.frequency * z);
         // Calculate rotation angle from the slope
         return std::atan(dxdz);
     }

@@ -32,6 +32,35 @@ namespace our {
         void update(){
             if(!enabled) return;
             std::memcpy(previousKeyStates, currentKeyStates, sizeof(previousKeyStates));
+
+            bool gamepadSpace = false;
+            bool gamepadEsc = false;
+            for (int i = 0; i <= 15; ++i) { // GLFW_JOYSTICK_1 to GLFW_JOYSTICK_16
+                if (glfwJoystickPresent(i)) {
+                    if (glfwJoystickIsGamepad(i)) {
+                        GLFWgamepadstate state;
+                        if (glfwGetGamepadState(i, &state)) {
+                            // X (bottom) -> A in GLFW, O (right) -> B in GLFW
+                            if (state.buttons[GLFW_GAMEPAD_BUTTON_A] == GLFW_PRESS) gamepadSpace = true;
+                            if (state.buttons[GLFW_GAMEPAD_BUTTON_B] == GLFW_PRESS) gamepadEsc = true;
+                        }
+                    } else {
+                        int bcount;
+                        const unsigned char* buttons = glfwGetJoystickButtons(i, &bcount);
+                        if (buttons && bcount >= 2) {
+                            if (buttons[0] == GLFW_PRESS) gamepadSpace = true;
+                            if (buttons[1] == GLFW_PRESS) gamepadEsc = true;
+                        }
+                    }
+                    break; // Just use the first available joystick
+                }
+            }
+
+            GLFWwindow* win = glfwGetCurrentContext();
+            if (win) {
+                currentKeyStates[GLFW_KEY_SPACE] = (glfwGetKey(win, GLFW_KEY_SPACE) == GLFW_PRESS) || gamepadSpace;
+                currentKeyStates[GLFW_KEY_ESCAPE] = (glfwGetKey(win, GLFW_KEY_ESCAPE) == GLFW_PRESS) || gamepadEsc;
+            }
         }
 
         // Event functions called from GLFW callbacks in "application.cpp"

@@ -83,6 +83,79 @@ namespace our
                 rotation.y -= delta.x * controller->rotationSensitivity; // The x-axis controls the yaw
             }
 
+            GLFWgamepadstate gamepadState;
+            bool gamepadActive = false;
+            int activeJoystick = -1;
+            
+            /* Check for connected joysticks/gamepads. We prioritize gamepads recognized by GLFW's 
+            Gamepad API, but will also attempt to read axes/buttons from generic joysticks if no gamepad is found.*/
+            for (int i = GLFW_JOYSTICK_1; i <= GLFW_JOYSTICK_16; ++i) {
+                if (glfwJoystickPresent(i)) {
+                    activeJoystick = i;
+                    if (glfwJoystickIsGamepad(i) && glfwGetGamepadState(i, &gamepadState)) {
+                        gamepadActive = true;
+                    }
+                    break;
+                }
+            }
+
+            float rawLeftX = 0, rawLeftY = 0, rawRightX = 0, rawRightY = 0;
+            float rawL2 = -1.0f, rawR2 = -1.0f;
+            bool rawL1 = false, rawR1 = false;
+
+            if (activeJoystick != -1) {
+                if (gamepadActive) {
+                    rawLeftX = gamepadState.axes[GLFW_GAMEPAD_AXIS_LEFT_X];
+                    rawLeftY = gamepadState.axes[GLFW_GAMEPAD_AXIS_LEFT_Y];
+                    rawRightX = gamepadState.axes[GLFW_GAMEPAD_AXIS_RIGHT_X];
+                    rawRightY = gamepadState.axes[GLFW_GAMEPAD_AXIS_RIGHT_Y];
+                    rawL2 = gamepadState.axes[GLFW_GAMEPAD_AXIS_LEFT_TRIGGER];
+                    rawR2 = gamepadState.axes[GLFW_GAMEPAD_AXIS_RIGHT_TRIGGER];
+                    rawL1 = gamepadState.buttons[GLFW_GAMEPAD_BUTTON_LEFT_BUMPER];
+                    rawR1 = gamepadState.buttons[GLFW_GAMEPAD_BUTTON_RIGHT_BUMPER];
+                } else {
+                    // For generic joysticks that aren't recognized as gamepads, we can still attempt to read axes and buttons.
+                    int acount;
+                    const float* axes = glfwGetJoystickAxes(activeJoystick, &acount);
+                    if (axes && acount >= 4) {
+                        rawLeftX = axes[0];
+                        rawLeftY = axes[1];
+                        
+                        // Heuristic for Generic Linux Joysticks (often Xbox/PS controller without Gamepad DB)
+                        if (acount >= 6) {
+                            rawRightX = axes[2]; 
+                            rawRightY = axes[3];
+                            rawR2 = axes[4];
+                            rawL2 = axes[5];
+                        } else {
+                            rawRightX = axes[2];
+                            rawRightY = axes[3];
+                        }
+                    }
+                    int bcount;
+                    const unsigned char* buttons = glfwGetJoystickButtons(activeJoystick, &bcount);
+                    if (buttons && bcount >= 6) {
+                        rawL1 = buttons[6] == GLFW_PRESS;
+                        rawR1 = buttons[7] == GLFW_PRESS;
+                    }
+                }
+            }
+
+            if (activeJoystick != -1) {
+                // deadzone to ignore imprecise sticks, increase if you find the camera drifting when the stick is released
+                float deadzone = 0.05f;
+                
+                // Scale factor to roughly match mouse speed (pixels vs normalized axes)
+                float joySens = controller->rotationSensitivity * 500.0f * deltaTime;
+                
+                if (std::abs(rawRightX) > deadzone) {
+                    rotation.y -= rawRightX * joySens;
+                }
+                if (std::abs(rawRightY) > deadzone) {
+                    rotation.x -= rawRightY * joySens;
+                }
+            }
+
             // Remove pitch lock so the plane can easily perform 360 vertical loops
             rotation.x = glm::wrapAngle(rotation.x);
             rotation.y = glm::wrapAngle(rotation.y);
@@ -102,12 +175,16 @@ namespace our
             glm::vec3 current_sensitivity = controller->positionSensitivity * controller->speedupFactor;
             // If the LEFT SHIFT key is pressed, we multiply the position sensitivity by the speed up factor
             bool shiftPressed = app->getKeyboard().isPressed(GLFW_KEY_LEFT_SHIFT);
-            if (app->getKeyboard().isPressed(GLFW_KEY_LEFT_SHIFT))
+            if (activeJoystick != -1 && rawR2 > 0.5f) {
+                shiftPressed = true;
+            }
+
+            if (shiftPressed)
             {
                 controller->speedupFactor = 3.0f;
                 controller->tiltingSensitivity = 0.6f;
             }
-            else if (app->getKeyboard().isPressed(GLFW_KEY_LEFT_CONTROL))
+            else if (app->getKeyboard().isPressed(GLFW_KEY_LEFT_CONTROL) || (activeJoystick != -1 && rawL2 > 0.5f))
             {
                 controller->speedupFactor = 0.5f;
                 controller->tiltingSensitivity = 0.1f;
@@ -139,6 +216,11 @@ namespace our
             bool turningRight = app->getKeyboard().isPressed(GLFW_KEY_D) || app->getKeyboard().isPressed(GLFW_KEY_RIGHT);
             bool turningLeft = app->getKeyboard().isPressed(GLFW_KEY_A) || app->getKeyboard().isPressed(GLFW_KEY_LEFT);
 
+            if (activeJoystick != -1) {
+                if (rawLeftX > 0.2f) turningRight = true;
+                if (rawLeftX < -0.2f) turningLeft = true;
+            }
+
             if (turningRight)
             {
                 rotation.y -= (deltaTime * roll_speed);
@@ -155,12 +237,12 @@ namespace our
             }
 
             // Q & E just do direct rotation around Z (rolling)
-            if (app->getKeyboard().isPressed(GLFW_KEY_E))
+            if (app->getKeyboard().isPressed(GLFW_KEY_E) || (activeJoystick != -1 && rawR1))
             {
                 rotation.z -= deltaTime * roll_speed * 2.5f; // Pure roll right
                 turning = true;
             }
-            if (app->getKeyboard().isPressed(GLFW_KEY_Q))
+            if (app->getKeyboard().isPressed(GLFW_KEY_Q) || (activeJoystick != -1 && rawL1))
             {
                 rotation.z += deltaTime * roll_speed * 2.5f; // Pure roll left
                 turning = true;
@@ -195,6 +277,11 @@ namespace our
 
             bool pitchingUp = app->getKeyboard().isPressed(GLFW_KEY_S) || app->getKeyboard().isPressed(GLFW_KEY_DOWN);
             bool pitchingDown = app->getKeyboard().isPressed(GLFW_KEY_W) || app->getKeyboard().isPressed(GLFW_KEY_UP);
+
+            if (activeJoystick != -1) {
+                if (rawLeftY > 0.2f) pitchingUp = true;
+                if (rawLeftY < -0.2f) pitchingDown = true;
+            }
 
             if (pitchingUp)
             {

@@ -184,10 +184,10 @@ namespace our
             float secs = playTime - (mins * 60);
             snprintf(timeBuf, sizeof(timeBuf), "%02d:%05.2f", mins, secs);
 
-            std::string scoreText = "⭕ " + std::to_string(dusty->ringsPassed) + 
-                                    "   💰 " + std::to_string(dusty->coins) + 
-                                    "   🕒 " + std::string(timeBuf) + 
-                                    "   SCORE: " + std::to_string(dusty->score);
+            std::string scoreText = "Rings: " + std::to_string(dusty->ringsPassed) + 
+                                    " Coins: " + std::to_string(dusty->coins) + 
+                                    " Time: " + std::string(timeBuf) + 
+                                    " Score: " + std::to_string(dusty->score);
 
             ImFont *font = ImGui::GetFont();
             const float fontSize = 34.0f;

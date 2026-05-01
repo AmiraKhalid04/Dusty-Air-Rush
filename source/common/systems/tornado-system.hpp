@@ -4,6 +4,7 @@
 #include "../components/collider.hpp"
 #include "../components/tornado-movement.hpp"
 #include "../asset-loader.hpp"
+#include "../utils/track-utils.hpp"
 #include <glm/gtc/matrix_transform.hpp>
 #include <vector>
 #include <cmath>
@@ -89,7 +90,7 @@ namespace our
                 glm::vec3 pos;
                 pos.z = cursor.z;
                 pos.y = randomY;
-                pos.x = posX;
+                pos.x = posX + trackCurveX(cursor.z);
 
                 entity->localTransform.position = pos;
 

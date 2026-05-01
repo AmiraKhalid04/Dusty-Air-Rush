@@ -247,8 +247,8 @@
           "tint": [0.0, 1.0, 0.0, 0.3]
         },
         "runway_light": {
-          "type": "tinted",
-          "shader": "tinted",
+          "type": "textured",
+          "shader": "textured",
           "pipelineState": {
             "faceCulling": {
               "enabled": false
@@ -257,7 +257,8 @@
               "enabled": true
             }
           },
-          "tint": [1.0, 0.7490196, 0.0, 1.0]
+          "tint": [1.0, 0.7490196, 0.0, 1.0],
+          "texture": "metal_albedo"
         },
         "headlight_marker": {
           "type": "tinted",

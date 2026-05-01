@@ -262,12 +262,15 @@ namespace our
 
                         if (otherCollider->objectType == "coin")
                         {
-                            std::cout << "[COLLECT] +1 Coin picked up!" << std::endl;
-                            if (dusty) dusty->coins += 1;
+                            std::cout << "[COLLECT] +1 Coin picked up! +100 SCORE" << std::endl;
+                            if (dusty) {
+                                dusty->coins += 1;
+                                dusty->score += 100;
+                            }
                             if (audioSystem)
                                 audioSystem->playSound("assets/sounds/coin.mp3");
                             if (textPopupSystem)
-                                textPopupSystem->spawn("+10", {1.0f, 0.84f, 0.0f, 1.0f});
+                                textPopupSystem->spawn("+100 SCORE", {1.0f, 0.84f, 0.0f, 1.0f});
                             world->markForRemoval(other);
                             otherCollider->objectType = "pending_deletion";
                         }
@@ -284,35 +287,44 @@ namespace our
                         }
                         else if (otherCollider->objectType == "ring_score")
                         {
-                            std::cout << "[SCORE] +1! Passed through center!" << std::endl;
-                            if (dusty) dusty->score += 1;
+                            std::cout << "[SCORE] +1! Passed through center! +1000 SCORE" << std::endl;
+                            if (dusty) {
+                                dusty->ringsPassed += 1;
+                                dusty->score += 1000;
+                            }
                             if (audioSystem)
                                 audioSystem->playSound("assets/sounds/all-right.mp3");
                             if (textPopupSystem)
-                                textPopupSystem->spawn("+20", {0.4f, 0.8f, 1.0f, 1.0f});
+                                textPopupSystem->spawn("+1000 SCORE", {0.4f, 0.8f, 1.0f, 1.0f});
                             world->markForRemoval(other);
                             otherCollider->objectType = "pending_deletion";
                         }
                         else if (otherCollider->objectType == "ring_frame")
                         {
-                            std::cout << "[DAMAGE] Hit the Ring Frame! -20 HP" << std::endl;
-                            if (dusty) dusty->currentHealth -= 20.0f;
+                            std::cout << "[DAMAGE] Hit the Ring Frame! -20 HP, -200 SCORE" << std::endl;
+                            if (dusty) {
+                                dusty->currentHealth -= 20.0f;
+                                dusty->score -= 200;
+                            }
                             if (audioSystem)
                                 audioSystem->playSound("assets/sounds/ouch.mp3");
                             if (textPopupSystem)
-                                textPopupSystem->spawn("-20 HP", {1.0f, 0.2f, 0.2f, 1.0f});
+                                textPopupSystem->spawn("-20 HP\n-200 SCORE", {1.0f, 0.2f, 0.2f, 1.0f});
                             if (dusty && dusty->currentHealth <= 0.0f) {
                                 dusty->isDead = true;
                             }
                         }
                         else if (otherCollider->objectType == "tornado")
                         {
-                            std::cout << "[DAMAGE] Hit hazard! -20 HP" << std::endl;
-                            if (dusty) dusty->currentHealth -= 20.0f;
+                            std::cout << "[DAMAGE] Hit hazard! -20 HP, -500 SCORE" << std::endl;
+                            if (dusty) {
+                                dusty->currentHealth -= 20.0f;
+                                dusty->score -= 500;
+                            }
                             if (audioSystem)
                                 audioSystem->playSound("assets/sounds/ouch.mp3");
                             if (textPopupSystem)
-                                textPopupSystem->spawn("-20 HP", {1.0f, 0.2f, 0.2f, 1.0f});
+                                textPopupSystem->spawn("-20 HP\n-500 SCORE", {1.0f, 0.2f, 0.2f, 1.0f});
                             if (dusty && dusty->currentHealth <= 0.0f) {
                                 dusty->isDead = true;
                             }
@@ -320,17 +332,18 @@ namespace our
                         else if (otherCollider->objectType == "finish_line")
                         {
                             if (dusty) {
-                                if (dusty->score >= dusty->totalRings) {
+                                if (dusty->ringsPassed >= dusty->totalRings) {
                                     dusty->isWon = true;
 
                                     std::cout << "\n=============================================" << std::endl;
                                     std::cout << "               GAME FINISHED!                " << std::endl;
-                                    std::cout << " Rings Passed: " << dusty->score << std::endl;
+                                    std::cout << " Rings Passed: " << dusty->ringsPassed << std::endl;
                                     std::cout << " Coins Collected: " << dusty->coins << std::endl;
                                     std::cout << " Final Health: " << dusty->currentHealth << "%" << std::endl;
+                                    std::cout << " Final Score: " << dusty->score << std::endl;
                                     std::cout << "=============================================\n" << std::endl;
                                 } else {
-                                    std::cout << "You still need to collect " << (dusty->totalRings - dusty->score) << " rings! Finish line rejected\n" << std::endl;
+                                    std::cout << "You still need to collect " << (dusty->totalRings - dusty->ringsPassed) << " rings! Finish line rejected\n" << std::endl;
                                 }
                             }
                         }

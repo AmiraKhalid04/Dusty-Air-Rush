@@ -13,6 +13,7 @@ namespace our
         float currentHealth = 100.0f;
         int coins = 0;
         int score = 0;
+        int ringsPassed = 0;
         int totalRings = 0;
         bool isDead = false;
         bool isWon = false;
@@ -25,6 +26,7 @@ namespace our
             currentHealth = maxHealth; // Always start at full health
             coins = data.value("coins", coins);
             score = data.value("score", score);
+            ringsPassed = data.value("ringsPassed", ringsPassed);
             totalRings = data.value("totalRings", totalRings);
         }
     };

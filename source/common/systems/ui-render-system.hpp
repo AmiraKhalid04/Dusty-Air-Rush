@@ -167,7 +167,7 @@ namespace our
 
         // Render persistent HUD text using ImGui draw lists.
         // Call this from the state's onImmediateGui().
-        void renderScore(World *world, Application *app)
+        void renderScore(World *world, Application *app, float playTime)
         {
             auto *dusty = findPlayerDusty(world);
             if (!dusty)
@@ -178,7 +178,16 @@ namespace our
                 return;
 
             glm::ivec2 screenSize = app->getFrameBufferSize();
-            std::string scoreText = "SCORE: " + std::to_string(dusty->score);
+            
+            char timeBuf[64];
+            int mins = (int)playTime / 60;
+            float secs = playTime - (mins * 60);
+            snprintf(timeBuf, sizeof(timeBuf), "%02d:%05.2f", mins, secs);
+
+            std::string scoreText = "⭕ " + std::to_string(dusty->ringsPassed) + 
+                                    "   💰 " + std::to_string(dusty->coins) + 
+                                    "   🕒 " + std::string(timeBuf) + 
+                                    "   SCORE: " + std::to_string(dusty->score);
 
             ImFont *font = ImGui::GetFont();
             const float fontSize = 34.0f;

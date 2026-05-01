@@ -1,6 +1,10 @@
 #pragma once
 
 #include <application.hpp>
+#include <fstream>
+#include <iomanip>
+#include <vector>
+#include <algorithm>
 
 #include <ecs/world.hpp>
 #include <systems/forward-renderer.hpp>
@@ -24,6 +28,7 @@
 #include <mesh/mesh.hpp>
 #include <asset-loader.hpp>
 #include "systems/health-system.hpp"
+
 // This state shows how to use the ECS framework and deserialization.
 class Playstate : public our::State
 {
@@ -46,6 +51,49 @@ class Playstate : public our::State
 
     float playTime = 0.0f;
     bool planeFlapping = true;
+
+    void saveAndShowLeaderboard(int currentScore, int coins, float time, bool won) {
+        // 1. Save current run
+        {
+            std::ofstream outfile("scoreboard.txt", std::ios::app);
+            if (outfile.is_open()) {
+                outfile << "Result: " << (won ? "WIN " : "LOSS") << " | Score: " << currentScore 
+                        << " | Coins: " << coins 
+                        << " | Time: " << std::fixed << std::setprecision(2) << time << "s\n";
+            }
+        }
+
+        // 2. Load and sort all scores
+        struct Entry { std::string line; int score; };
+        std::vector<Entry> entries;
+        std::ifstream infile("scoreboard.txt");
+        std::string line;
+        while (std::getline(infile, line)) {
+            if (line.empty()) continue;
+            size_t pos = line.find("Score: ");
+            if (pos != std::string::npos) {
+                try {
+                    int score = std::stoi(line.substr(pos + 7));
+                    entries.push_back({line, score});
+                } catch (...) {}
+            }
+        }
+        infile.close();
+
+        std::sort(entries.begin(), entries.end(), [](const Entry& a, const Entry& b) {
+            return a.score > b.score;
+        });
+
+        // 3. Display in console
+        std::cout << "\n--- GLOBAL LEADERBOARD (TOP 5) ---" << std::endl;
+        if (!entries.empty() && currentScore >= entries[0].score) {
+            std::cout << "   *** NEW HIGH SCORE! ***" << std::endl;
+        }
+        for (size_t i = 0; i < std::min(entries.size(), (size_t)5); ++i) {
+            std::cout << (i + 1) << ". " << entries[i].line << std::endl;
+        }
+        std::cout << "----------------------------------\n" << std::endl;
+    }
 
     void onInitialize() override
     {
@@ -269,23 +317,24 @@ class Playstate : public our::State
                 {
                     std::cout << "\n=============================================" << std::endl;
                     std::cout << "          MISSION FAILED - HEALTH DEPLETED    " << std::endl;
-                    std::cout << " Rings Passed: " << dusty->score << " / " << dusty->totalRings << std::endl;
+                    std::cout << " Rings Passed: " << dusty->ringsPassed << " / " << dusty->totalRings << std::endl;
                     std::cout << " Coins Collected: " << dusty->coins << std::endl;
-                    std::cout << " Time Survived: " << playTime << "s" << std::endl;
                     std::cout << "=============================================\n"
                               << std::endl;
+                    saveAndShowLeaderboard(dusty->score, dusty->coins, playTime, false);
                     getApp()->changeState("loss");
                 }
                 else if (dusty->isWon)
                 {
                     std::cout << "\n=============================================" << std::endl;
                     std::cout << "            MISSION COMPLETE!                 " << std::endl;
-                    std::cout << " Rings Passed: " << dusty->score << " / " << dusty->totalRings << std::endl;
+                    std::cout << " Rings Passed: " << dusty->ringsPassed << " / " << dusty->totalRings << std::endl;
                     std::cout << " Coins Collected: " << dusty->coins << std::endl;
                     std::cout << " Final Health: " << dusty->currentHealth << " / " << dusty->maxHealth << std::endl;
-                    std::cout << " Time: " << playTime << "s" << std::endl;
+                    std::cout << " Final Score: " << dusty->score << std::endl;
                     std::cout << "=============================================\n"
                               << std::endl;
+                    saveAndShowLeaderboard(dusty->score, dusty->coins, playTime, true);
                     getApp()->changeState("win");
                 }
                 break; // Dusty component handled
@@ -295,7 +344,7 @@ class Playstate : public our::State
 
     void onImmediateGui() override
     {
-        uiRenderer.renderScore(&world, getApp());
+        uiRenderer.renderScore(&world, getApp(), playTime);
         textPopupSystem.render();
     }
 

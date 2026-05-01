@@ -17,6 +17,7 @@
 #include <systems/coin-system.hpp>
 #include <systems/ui-render-system.hpp>
 #include <systems/text-popup-system.hpp>
+#include <systems/score-manager.hpp>
 #include <components/camera.hpp>
 #include <components/free-camera-controller.hpp>
 #include <components/dusty.hpp>
@@ -27,7 +28,11 @@
 // This state shows how to use the ECS framework and deserialization.
 class Playstate : public our::State
 {
+public:
+    // Last computed score, readable by WinState / LossState after a state transition.
+    static inline int lastScore = 0;
 
+private:
     our::World world;
     our::ForwardRenderer renderer;
     our::FreeCameraControllerSystem cameraController;
@@ -267,23 +272,30 @@ class Playstate : public our::State
             {
                 if (dusty->isDead)
                 {
+                    lastScore = our::ScoreManager::computeFinalScore(
+                        dusty->score, dusty->coins, dusty->currentHealth, dusty->maxHealth);
                     std::cout << "\n=============================================" << std::endl;
                     std::cout << "          MISSION FAILED - HEALTH DEPLETED    " << std::endl;
                     std::cout << " Rings Passed: " << dusty->score << " / " << dusty->totalRings << std::endl;
                     std::cout << " Coins Collected: " << dusty->coins << std::endl;
                     std::cout << " Time Survived: " << playTime << "s" << std::endl;
+                    std::cout << " Final Score: " << lastScore << std::endl;
                     std::cout << "=============================================\n"
                               << std::endl;
                     getApp()->changeState("loss");
                 }
                 else if (dusty->isWon)
                 {
+                    lastScore = our::ScoreManager::computeFinalScore(
+                        dusty->score, dusty->coins, dusty->currentHealth, dusty->maxHealth);
+                    our::ScoreManager::submitScore(lastScore);
                     std::cout << "\n=============================================" << std::endl;
                     std::cout << "            MISSION COMPLETE!                 " << std::endl;
                     std::cout << " Rings Passed: " << dusty->score << " / " << dusty->totalRings << std::endl;
                     std::cout << " Coins Collected: " << dusty->coins << std::endl;
                     std::cout << " Final Health: " << dusty->currentHealth << " / " << dusty->maxHealth << std::endl;
                     std::cout << " Time: " << playTime << "s" << std::endl;
+                    std::cout << " Final Score: " << lastScore << std::endl;
                     std::cout << "=============================================\n"
                               << std::endl;
                     getApp()->changeState("win");

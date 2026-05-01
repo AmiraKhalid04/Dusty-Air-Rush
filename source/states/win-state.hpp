@@ -7,6 +7,8 @@
 #include <material/material.hpp>
 #include <mesh/mesh.hpp>
 #include <systems/audio-system.hpp>
+#include <systems/score-manager.hpp>
+#include "play-state.hpp"
 #include <imgui.h>
 
 #include <functional>
@@ -14,6 +16,7 @@
 #include <algorithm>
 #include <cfloat>
 #include <cmath>
+#include <utility>
 
 struct WinButton
 {
@@ -36,18 +39,20 @@ struct WinButton
 
 class WinState : public our::State
 {
+    // ── Labels ────────────────────────────────────────────────────────────────
     static constexpr const char *ScreenTitle = "YOU WON!!";
     static constexpr const char *ScoreLabel = "YOUR SCORE";
-    static constexpr const char *BestLabel = "BEST SCORE";
-    static constexpr std::array<const char *, 2> ButtonLabels = {
-        "PRESS SPACE TO PLAY AGAIN",
-        "PRESS ESC TO EXIT"};
+    static constexpr const char *TopLabel = "TOP SCORES";
+    static constexpr const char *NewBestLabel = "NEW BEST!";
+    static constexpr const char *HintPlay = "PRESS  SPACE  TO PLAY AGAIN";
+    static constexpr const char *HintEsc = "PRESS  ESC  TO EXIT";
 
-    // ── placeholder values – swap these out later ──────────────────────────
-    int currentScore = 9420;
-    int bestScore = 12750;
-    // ───────────────────────────────────────────────────────────────────────
+    // ── Scores ────────────────────────────────────────────────────────────────
+    int currentScore = 0;
+    bool isNewBest = false;
+    std::vector<int> topScores;
 
+    // ── GL resources ──────────────────────────────────────────────────────────
     our::TexturedMaterial *backgroundMaterial = nullptr;
     our::TintedMaterial *darkOverlay = nullptr;
     our::TintedMaterial *goldOverlay = nullptr;
@@ -55,24 +60,33 @@ class WinState : public our::State
     our::Mesh *rectangle = nullptr;
     float time = 0.0f;
 
+    // ── Buttons (ESC=0 left, PLAY=1 right) ───────────────────────────────────
     std::array<WinButton, 2> buttons{};
-    std::array<glm::vec2, 2> buttonTextPositions{};
-    glm::vec2 titlePosition{};
-    glm::vec2 titleSize{};
-    glm::vec2 scorePanelPosition{};
-    glm::vec2 scorePanelSize{};
-    float dividerY = 0.0f;
 
-    float titleFontSize = 96.0f;
-    float scoreFontSize = 52.0f;
-    float buttonFontSize = 44.0f;
+    // ── Cached layout values ──────────────────────────────────────────────────
+    float titleFontSize = 72.0f;
+    float labelFontSize = 28.0f;
+    float heroFontSize = 96.0f;
+    float tableFontSize = 32.0f;
+    float hintFontSize = 24.0f;
+
     ImFont *titleFont = nullptr;
     ImFont *scoreFont = nullptr;
     ImFont *buttonFont = nullptr;
 
+    // Zones
+    float zoneTitle = 0.0f;
+    float zoneScore = 0.0f;
+    float zoneTable = 0.0f;
+    float zoneHint = 0.0f;
+    float panelX = 0.0f;
+    float panelW = 0.0f;
+    float tableX = 0.0f;
+    float tableW = 0.0f;
+
     our::AudioSystem winAudio;
 
-    // ─── star particle state ─────────────────────────────────────────────────
+    // ── Star particles ────────────────────────────────────────────────────────
     struct Star
     {
         float x, y, speed, size, phase;
@@ -92,68 +106,93 @@ class WinState : public our::State
         }
     }
 
-    // ─── Layout ──────────────────────────────────────────────────────────────
-    void updateLayout(const glm::ivec2 &fbSize)
+    // ── Layout ────────────────────────────────────────────────────────────────
+    void updateLayout(const glm::ivec2 &fb)
     {
-        ImFont *lTitleFont = titleFont ? titleFont : ImGui::GetFont();
-        ImFont *lButtonFont = buttonFont ? buttonFont : lTitleFont;
-        float W = (float)fbSize.x;
-        float H = (float)fbSize.y;
+        float W = (float)fb.x;
+        float H = (float)fb.y;
 
-        titleFontSize = std::clamp(H * 0.19f, 120.0f, 200.0f);
-        scoreFontSize = std::clamp(H * 0.10f, 72.0f, 108.0f);
-        buttonFontSize = std::clamp(H * 0.060f, 42.0f, 70.0f);
+        titleFontSize = std::clamp(H * 0.112f, 66.0f, 122.0f);
+        labelFontSize = std::clamp(H * 0.058f, 34.0f, 58.0f);
+        heroFontSize = std::clamp(H * 0.138f, 84.0f, 144.0f);
+        tableFontSize = std::clamp(H * 0.041f, 25.0f, 44.0f);
+        hintFontSize = std::clamp(H * 0.045f, 26.0f, 50.0f);
 
-        ImVec2 ts = lTitleFont->CalcTextSizeA(titleFontSize, FLT_MAX, 0.0f, ScreenTitle);
-        titleSize = {ts.x, ts.y};
-        titlePosition = {(W - titleSize.x) * 0.5f, H * 0.22f};
+        panelW = std::clamp(W * 0.90f, 560.0f, 1200.0f);
+        panelX = (W - panelW) * 0.5f;
+        tableW = std::clamp(W * 0.66f, 520.0f, 860.0f);
+        tableX = (W - tableW) * 0.5f;
 
-        dividerY = titlePosition.y + titleSize.y + std::clamp(titleSize.y * 0.18f, 8.0f, 20.0f);
+        float margin = std::clamp(H * 0.012f, 8.0f, 14.0f);
+        float topInset = std::clamp(H * 0.020f, 14.0f, 22.0f);
+        float bottomInset = std::clamp(H * 0.022f, 14.0f, 22.0f);
+        float titleH = titleFontSize * 1.32f;
+        float scoreH = heroFontSize * 1.82f;
+        float rowH = tableFontSize * 1.78f;
+        int numRows = static_cast<int>(our::ScoreManager::MaxScores);
+        float tableH = rowH * (numRows + 2.05f);
+        float hintH = hintFontSize * 2.65f;
 
-        // Score panel centered between divider and buttons
-        float panelH = scoreFontSize * 2.6f;
-        float panelW = std::clamp(W * 0.56f, 480.0f, 820.0f);
-        scorePanelSize = {panelW, panelH};
-        scorePanelPosition = {(W - panelW) * 0.5f, dividerY + std::clamp(H * 0.01f, 6.0f, 12.0f)};
-
-        float padX = std::clamp(W * 0.030f, 34.0f, 60.0f);
-        float padY = std::clamp(H * 0.014f, 14.0f, 24.0f);
-        float buttonStartY = H * 0.72f;
-        float btnGap = std::clamp(H * 0.010f, 8.0f, 14.0f);
-        float currentY = buttonStartY;
-
-        for (size_t i = 0; i < buttons.size(); ++i)
+        float contentH = titleH + scoreH + tableH + hintH + margin * 3.0f;
+        float availableH = H - topInset - bottomInset;
+        if (contentH > availableH)
         {
-            ImVec2 bs = lButtonFont->CalcTextSizeA(buttonFontSize, FLT_MAX, 0.0f, ButtonLabels[i]);
-            buttons[i].size = {bs.x + padX * 2.0f, bs.y + padY * 2.0f};
-            buttons[i].position = {(W - buttons[i].size.x) * 0.5f, currentY};
-            buttonTextPositions[i] = {
-                buttons[i].position.x + (buttons[i].size.x - bs.x) * 0.5f,
-                buttons[i].position.y + (buttons[i].size.y - bs.y) * 0.5f};
-            currentY += buttons[i].size.y + btnGap;
+            float scale = availableH / contentH;
+            titleFontSize *= scale;
+            labelFontSize *= scale;
+            heroFontSize *= scale;
+            tableFontSize *= scale;
+            hintFontSize *= scale;
+            margin *= std::clamp(scale * 1.02f, 0.70f, 1.0f);
+
+            titleH = titleFontSize * 1.32f;
+            scoreH = heroFontSize * 1.82f;
+            rowH = tableFontSize * 1.78f;
+            tableH = rowH * (numRows + 2.05f);
+            hintH = hintFontSize * 2.65f;
         }
+
+        zoneTitle = topInset;
+        zoneScore = zoneTitle + titleH + margin * 0.75f;
+        zoneTable = zoneScore + scoreH + margin * 1.55f;
+        zoneHint = zoneTable + tableH + margin;
+        zoneHint = std::min(zoneHint, H - bottomInset - hintH);
+
+        // Invisible buttons for keyboard/mouse hit-testing (no GL rendering needed)
+        buttons[0].size = {panelW * 0.47f, hintH};
+        buttons[1].size = {panelW * 0.47f, hintH};
+        buttons[0].position = {panelX, zoneHint};
+        buttons[1].position = {panelX + panelW * 0.53f, zoneHint};
     }
 
-    // ─── Helpers ─────────────────────────────────────────────────────────────
+    // ── Helpers ───────────────────────────────────────────────────────────────
     static void drawShadowedText(ImDrawList *dl, ImFont *font, float fontSize,
                                  const glm::vec2 &pos, ImU32 color, const char *text,
-                                 float shadowOpacityMul = 0.9f, float shadowOffset = 4.0f)
+                                 float shadowMul = 0.85f, float shadowOff = 4.0f)
     {
         float alpha = ((color >> IM_COL32_A_SHIFT) & 0xFF) / 255.0f;
         ImU32 shadow = ImGui::ColorConvertFloat4ToU32(
-            ImVec4(0.05f, 0.03f, 0.0f, alpha * shadowOpacityMul));
-        dl->AddText(font, fontSize, ImVec2(pos.x + shadowOffset, pos.y + shadowOffset), shadow, text);
-        dl->AddText(font, fontSize, ImVec2(pos.x + shadowOffset * 0.5f, pos.y + shadowOffset * 0.5f), shadow, text);
+            ImVec4(0.04f, 0.02f, 0.0f, alpha * shadowMul));
+        dl->AddText(font, fontSize, ImVec2(pos.x + shadowOff, pos.y + shadowOff), shadow, text);
+        dl->AddText(font, fontSize, ImVec2(pos.x + shadowOff * 0.5f, pos.y + shadowOff * 0.5f), shadow, text);
         dl->AddText(font, fontSize, ImVec2(pos.x, pos.y), color, text);
     }
 
-    static void drawDivider(ImDrawList *dl, float x1, float x2, float y, float alpha)
+    static void drawGoldDivider(ImDrawList *dl, float x1, float x2, float y, float alpha)
     {
-        ImU32 col = ImGui::ColorConvertFloat4ToU32(ImVec4(1.0f, 0.82f, 0.22f, 0.70f * alpha));
-        dl->AddLine(ImVec2(x1, y), ImVec2(x2, y), col, 3.0f);
+        ImU32 col = ImGui::ColorConvertFloat4ToU32(ImVec4(1.0f, 0.82f, 0.22f, 0.65f * alpha));
+        dl->AddLine(ImVec2(x1, y), ImVec2(x2, y), col, 2.0f);
     }
 
-    // Draw a 4-pointed star (✦) via filled triangles
+    static float drawCenteredText(ImDrawList *dl, ImFont *font, float fontSize,
+                                  float centerX, float y, ImU32 color, const char *text)
+    {
+        ImVec2 ts = font->CalcTextSizeA(fontSize, FLT_MAX, 0.0f, text);
+        float x = centerX - ts.x * 0.5f;
+        dl->AddText(font, fontSize, ImVec2(x, y), color, text);
+        return x;
+    }
+
     static void drawStar4(ImDrawList *dl, float cx, float cy, float r, ImU32 col)
     {
         float inner = r * 0.38f;
@@ -168,13 +207,10 @@ class WinState : public our::State
             {cx - inner, cy - inner},
         };
         for (int i = 0; i < 8; i += 2)
-        {
-            int j = (i + 2) % 8;
-            dl->AddTriangleFilled(ImVec2(cx, cy), pts[i], pts[j], col);
-        }
+            dl->AddTriangleFilled(ImVec2(cx, cy), pts[i], pts[(i + 2) % 8], col);
     }
 
-    // ─── onInitialize ─────────────────────────────────────────────────────────
+    // ── onInitialize ──────────────────────────────────────────────────────────
     void onInitialize() override
     {
         ImGuiIO &io = ImGui::GetIO();
@@ -182,55 +218,43 @@ class WinState : public our::State
         titleFont = io.Fonts->AddFontFromFileTTF("assets/fonts/Cinzel-Bold.ttf", 128.0f);
         scoreFont = io.Fonts->AddFontFromFileTTF("assets/fonts/Rajdhani-Bold.ttf", 128.0f);
         buttonFont = io.Fonts->AddFontFromFileTTF("assets/fonts/Rajdhani-SemiBold.ttf", 128.0f);
+        if (!titleFont)
+            titleFont = io.Fonts->AddFontDefault();
         if (!scoreFont)
             scoreFont = io.Fonts->AddFontDefault();
         if (!buttonFont)
             buttonFont = io.Fonts->AddFontDefault();
-        if (!titleFont)
-            titleFont = io.Fonts->AddFontDefault();
         getApp()->rebuildImGuiFonts();
 
-        // Background – swap texture path to a suitable victory/celebration image
         backgroundMaterial = new our::TexturedMaterial();
         backgroundMaterial->shader = new our::ShaderProgram();
         backgroundMaterial->shader->attach("assets/shaders/textured.vert", GL_VERTEX_SHADER);
         backgroundMaterial->shader->attach("assets/shaders/textured.frag", GL_FRAGMENT_SHADER);
         backgroundMaterial->shader->link();
-        backgroundMaterial->texture = our::texture_utils::loadImage("assets/textures/dusty-win.png");
+        // backgroundMaterial->texture = our::texture_utils::loadImage("assets/textures/dusty-win.png");
         backgroundMaterial->tint = glm::vec4(0.0f);
 
-        // Dark navy/deep-blue overlay
-        darkOverlay = new our::TintedMaterial();
-        darkOverlay->shader = new our::ShaderProgram();
-        darkOverlay->shader->attach("assets/shaders/tinted.vert", GL_VERTEX_SHADER);
-        darkOverlay->shader->attach("assets/shaders/tinted.frag", GL_FRAGMENT_SHADER);
-        darkOverlay->shader->link();
-        darkOverlay->pipelineState.blending.enabled = true;
-        darkOverlay->pipelineState.blending.equation = GL_FUNC_ADD;
-        darkOverlay->pipelineState.blending.sourceFactor = GL_SRC_ALPHA;
-        darkOverlay->pipelineState.blending.destinationFactor = GL_ONE_MINUS_SRC_ALPHA;
+        auto makeTinted = [&]() -> our::TintedMaterial *
+        {
+            auto *m = new our::TintedMaterial();
+            m->shader = new our::ShaderProgram();
+            m->shader->attach("assets/shaders/tinted.vert", GL_VERTEX_SHADER);
+            m->shader->attach("assets/shaders/tinted.frag", GL_FRAGMENT_SHADER);
+            m->shader->link();
+            m->pipelineState.blending.enabled = true;
+            m->pipelineState.blending.equation = GL_FUNC_ADD;
+            m->pipelineState.blending.sourceFactor = GL_SRC_ALPHA;
+            m->pipelineState.blending.destinationFactor = GL_ONE_MINUS_SRC_ALPHA;
+            return m;
+        };
 
-        // Gold/amber additive glow overlay
-        goldOverlay = new our::TintedMaterial();
-        goldOverlay->shader = new our::ShaderProgram();
-        goldOverlay->shader->attach("assets/shaders/tinted.vert", GL_VERTEX_SHADER);
-        goldOverlay->shader->attach("assets/shaders/tinted.frag", GL_FRAGMENT_SHADER);
-        goldOverlay->shader->link();
-        goldOverlay->pipelineState.blending.enabled = true;
-        goldOverlay->pipelineState.blending.equation = GL_FUNC_ADD;
-        goldOverlay->pipelineState.blending.sourceFactor = GL_SRC_ALPHA;
+        darkOverlay = makeTinted();
+
+        goldOverlay = makeTinted();
         goldOverlay->pipelineState.blending.destinationFactor = GL_ONE;
 
-        // Button hover highlight (gold additive)
-        highlightMaterial = new our::TintedMaterial();
-        highlightMaterial->shader = new our::ShaderProgram();
-        highlightMaterial->shader->attach("assets/shaders/tinted.vert", GL_VERTEX_SHADER);
-        highlightMaterial->shader->attach("assets/shaders/tinted.frag", GL_FRAGMENT_SHADER);
-        highlightMaterial->shader->link();
-        highlightMaterial->tint = glm::vec4(1.0f, 0.75f, 0.10f, 0.65f);
-        highlightMaterial->pipelineState.blending.enabled = true;
-        highlightMaterial->pipelineState.blending.equation = GL_FUNC_ADD;
-        highlightMaterial->pipelineState.blending.sourceFactor = GL_SRC_ALPHA;
+        highlightMaterial = makeTinted();
+        highlightMaterial->tint = glm::vec4(1.0f, 0.75f, 0.10f, 0.55f);
         highlightMaterial->pipelineState.blending.destinationFactor = GL_ONE;
 
         rectangle = new our::Mesh(
@@ -247,15 +271,20 @@ class WinState : public our::State
         glm::ivec2 fb = getApp()->getFrameBufferSize();
         initStars((float)fb.x, (float)fb.y);
 
+        currentScore = Playstate::lastScore;
+        topScores = our::ScoreManager::getTopScores();
+        isNewBest = !topScores.empty() && topScores[0] == currentScore;
+
         winAudio.initialize();
         winAudio.playSound("assets/sounds/finish-line.mp3");
+
         buttons[0].action = [this]()
-        { getApp()->changeState("play"); };
-        buttons[1].action = [this]()
         { getApp()->close(); };
+        buttons[1].action = [this]()
+        { getApp()->changeState("play"); };
     }
 
-    // ─── onImmediateGui ───────────────────────────────────────────────────────
+    // ── onImmediateGui ────────────────────────────────────────────────────────
     void onImmediateGui() override
     {
         glm::ivec2 fbSize = getApp()->getFrameBufferSize();
@@ -264,146 +293,341 @@ class WinState : public our::State
         float W = (float)fbSize.x;
         float H = (float)fbSize.y;
 
-        float titleFade = glm::smoothstep(0.10f, 0.85f, time);
-        float scoreFade = glm::smoothstep(0.50f, 1.10f, time);
-        float btnFade = glm::smoothstep(0.70f, 1.40f, time);
+        float titleFade = glm::smoothstep(0.10f, 0.70f, time);
+        float scoreFade = glm::smoothstep(0.40f, 0.90f, time);
+        float tableFade = glm::smoothstep(0.60f, 1.20f, time);
+        float btnFade = glm::smoothstep(0.80f, 1.40f, time);
+        float shimmer = 0.5f + 0.5f * std::sin(time * 6.5f);
         float pulse = 0.5f + 0.5f * std::sin(time * 3.8f);
-        float shimmer = 0.5f + 0.5f * std::sin(time * 6.5f); // faster gold shimmer
 
         ImDrawList *dl = ImGui::GetForegroundDrawList();
         glm::vec2 mp = getApp()->getMouse().getMousePosition();
 
-        // ── Floating star particles ────────────────────────────────────────────
+        ImFont *sf = scoreFont ? scoreFont : ImGui::GetFont();
+        ImFont *tf = titleFont ? titleFont : ImGui::GetFont();
+        ImFont *bf = buttonFont ? buttonFont : ImGui::GetFont();
+
+        // ── Star particles ────────────────────────────────────────────────────
         for (auto &s : stars)
         {
             float twinkle = 0.5f + 0.5f * std::sin(time * s.speed * 3.0f + s.phase);
-            float alpha = titleFade * twinkle * 0.75f;
-            if (alpha <= 0.01f)
+            float alpha = titleFade * twinkle * 0.70f;
+            if (alpha < 0.02f)
                 continue;
             ImU32 col = ImGui::ColorConvertFloat4ToU32(
-                ImVec4(1.0f, 0.90f + twinkle * 0.10f, 0.40f + twinkle * 0.30f, alpha));
+                ImVec4(1.0f, 0.88f + twinkle * 0.12f, 0.35f + twinkle * 0.35f, alpha));
             drawStar4(dl, s.x, s.y, s.size, col);
         }
 
-        // ── Title ─────────────────────────────────────────────────────────────
-        float sOff = titleFontSize * 0.055f;
-
-        // Deep amber shadow
-        ImU32 titleShadow = ImGui::ColorConvertFloat4ToU32(
-            ImVec4(0.20f, 0.10f, 0.00f, titleFade));
-        // Primary gold
-        ImU32 titleBase = ImGui::ColorConvertFloat4ToU32(
-            ImVec4(1.00f, 0.78f + shimmer * 0.12f, 0.08f, titleFade));
-        // Bright highlight layer
-        ImU32 titleHot = ImGui::ColorConvertFloat4ToU32(
-            ImVec4(1.00f, 0.98f, 0.80f, titleFade * 0.55f));
-
-        dl->AddText(titleFont, titleFontSize,
-                    ImVec2(titlePosition.x + sOff, titlePosition.y + sOff), titleShadow, ScreenTitle);
-        dl->AddText(titleFont, titleFontSize,
-                    ImVec2(titlePosition.x, titlePosition.y), titleBase, ScreenTitle);
-        dl->AddText(titleFont, titleFontSize,
-                    ImVec2(titlePosition.x - 1.0f, titlePosition.y - 1.0f), titleHot, ScreenTitle);
-
-        // ── Divider ───────────────────────────────────────────────────────────
-        float divHalfW = titleSize.x * 0.38f;
-        float centerX = titlePosition.x + titleSize.x * 0.5f;
-        drawDivider(dl, centerX - divHalfW, centerX + divHalfW, dividerY, titleFade);
-
-        // ── Score Panel ───────────────────────────────────────────────────────
-        if (scoreFade > 0.01f)
+        // ═══════════════════════════════════════════════════════════════════════
+        //  ZONE 1 – TITLE STRIP
+        // ═══════════════════════════════════════════════════════════════════════
+        if (titleFade > 0.01f)
         {
-            ImFont *sf = scoreFont ? scoreFont : ImGui::GetFont();
+            float centerX = W * 0.5f;
+            float titleY = zoneTitle;
 
-            // Vertical separator only — no background box, no border
-            float midX = scorePanelPosition.x + scorePanelSize.x * 0.5f;
-            float sepTop = scorePanelPosition.y + scorePanelSize.y * 0.05f;
-            float sepBot = scorePanelPosition.y + scorePanelSize.y * 0.95f;
-            ImU32 sepCol = ImGui::ColorConvertFloat4ToU32(
-                ImVec4(1.0f, 0.80f, 0.20f, scoreFade * 0.55f));
-            dl->AddLine(ImVec2(midX, sepTop), ImVec2(midX, sepBot), sepCol, 2.0f);
+            ImU32 titleShadow = ImGui::ColorConvertFloat4ToU32(ImVec4(0.18f, 0.09f, 0.0f, titleFade));
+            ImU32 titleBase = ImGui::ColorConvertFloat4ToU32(
+                ImVec4(1.0f, 0.76f + shimmer * 0.14f, 0.06f, titleFade));
+            ImU32 titleHot = ImGui::ColorConvertFloat4ToU32(ImVec4(1.0f, 0.98f, 0.82f, titleFade * 0.50f));
 
-            // Helper: draw label + value in a half-panel cell
-            auto drawScoreCell = [&](float cellCenterX, const char *label, int value)
-            {
-                // Label
-                float labelFontSize = scoreFontSize * 0.52f;
-                ImVec2 ls = sf->CalcTextSizeA(labelFontSize, FLT_MAX, 0.0f, label);
-                float lx = cellCenterX - ls.x * 0.5f;
-                float ly = scorePanelPosition.y + scorePanelSize.y * 0.10f;
-                ImU32 labelCol = ImGui::ColorConvertFloat4ToU32(
-                    ImVec4(1.0f, 0.80f, 0.30f, scoreFade * 0.92f));
-                dl->AddText(sf, labelFontSize, ImVec2(lx, ly), labelCol, label);
+            ImVec2 ts = tf->CalcTextSizeA(titleFontSize, FLT_MAX, 0.0f, ScreenTitle);
+            float tx = centerX - ts.x * 0.5f;
+            float so = titleFontSize * 0.048f;
 
-                // Add underline right below the label text
-                float underlineY = ly + ls.y + 3.0f;
-                float underlinePad = ls.x * 0.08f;
-                ImU32 underlineCol = ImGui::ColorConvertFloat4ToU32(
-                    ImVec4(1.0f, 0.78f, 0.22f, scoreFade * 0.70f));
-                dl->AddLine(
-                    ImVec2(lx - underlinePad, underlineY),
-                    ImVec2(lx + ls.x + underlinePad, underlineY),
-                    underlineCol, 1.5f);
+            dl->AddText(tf, titleFontSize, ImVec2(tx + so, titleY + so), titleShadow, ScreenTitle);
+            dl->AddText(tf, titleFontSize, ImVec2(tx, titleY), titleBase, ScreenTitle);
+            dl->AddText(tf, titleFontSize, ImVec2(tx - 1.0f, titleY - 1.0f), titleHot, ScreenTitle);
 
-                // Value
-                char buf[32];
-                snprintf(buf, sizeof(buf), "%d", value);
-                ImVec2 vs = sf->CalcTextSizeA(scoreFontSize, FLT_MAX, 0.0f, buf);
-                glm::vec2 vp = {cellCenterX - vs.x * 0.5f,
-                                scorePanelPosition.y + scorePanelSize.y * 0.50f};
-                ImU32 valCol = ImGui::ColorConvertFloat4ToU32(
-                    ImVec4(1.00f, 0.95f + shimmer * 0.05f, 0.60f, scoreFade));
-                drawShadowedText(dl, sf, scoreFontSize, vp, valCol, buf,
-                                 0.80f, scoreFontSize * 0.05f);
-            };
-
-            float leftCell = scorePanelPosition.x + scorePanelSize.x * 0.25f;
-            float rightCell = scorePanelPosition.x + scorePanelSize.x * 0.75f;
-            drawScoreCell(leftCell, ScoreLabel, currentScore);
-            drawScoreCell(rightCell, BestLabel, bestScore);
+            float divW = ts.x * 0.55f;
+            float divY = titleY + ts.y + titleFontSize * 0.12f;
+            drawGoldDivider(dl, centerX - divW, centerX + divW, divY, titleFade);
         }
 
-        // ── Buttons ───────────────────────────────────────────────────────────
-        for (size_t i = 0; i < buttons.size(); ++i)
+        // ═══════════════════════════════════════════════════════════════════════
+        //  ZONE 2 – HERO SCORE  (no dark panel background)
+        // ═══════════════════════════════════════════════════════════════════════
+        if (scoreFade > 0.01f)
         {
-            bool hovered = buttons[i].isInside(mp);
+            float centerX = W * 0.5f;
+            float panelH = heroFontSize * 1.82f;
 
-            ImVec2 bMin(buttons[i].position.x, buttons[i].position.y);
-            ImVec2 bMax(buttons[i].position.x + buttons[i].size.x,
-                        buttons[i].position.y + buttons[i].size.y);
+            // Subtle gold border only — no filled background
+            ImU32 panelBorder = ImGui::ColorConvertFloat4ToU32(
+                ImVec4(1.0f, 0.80f, 0.22f, scoreFade * 0.40f));
+            dl->AddRect(
+                ImVec2(panelX, zoneScore),
+                ImVec2(panelX + panelW, zoneScore + panelH),
+                panelBorder, 10.0f, 0, 1.0f);
 
-            // Base background
-            // ImU32 baseBg = ImGui::ColorConvertFloat4ToU32(
-            //     ImVec4(0.08f, 0.06f, 0.01f, btnFade * 0.72f));
-            // dl->AddRectFilled(bMin, bMax, baseBg, 12.0f);
+            // "YOUR SCORE" label (bigger)
+            float lfs = labelFontSize;
+            ImU32 lblCol = ImGui::ColorConvertFloat4ToU32(
+                ImVec4(1.0f, 0.80f, 0.30f, scoreFade * 0.90f));
+            float lblY = zoneScore + panelH * 0.17f;
+            ImVec2 lts = sf->CalcTextSizeA(lfs, FLT_MAX, 0.0f, ScoreLabel);
+            float lx = centerX - lts.x * 0.5f;
+            dl->AddText(sf, lfs, ImVec2(lx, lblY), lblCol, ScoreLabel);
+            float ulY = lblY + lts.y + 3.0f;
+            ImU32 ulCol = ImGui::ColorConvertFloat4ToU32(ImVec4(1.0f, 0.78f, 0.22f, scoreFade * 0.65f));
+            dl->AddLine(ImVec2(lx - 4.0f, ulY), ImVec2(lx + lts.x + 4.0f, ulY), ulCol, 1.2f);
 
-            // // Border
-            // ImU32 border = ImGui::ColorConvertFloat4ToU32(
-            //     hovered ? ImVec4(1.0f, 0.90f, 0.30f, btnFade)
-            //             : ImVec4(0.80f, 0.62f, 0.10f, btnFade * 0.85f));
-            // dl->AddRect(bMin, bMax, border, 12.0f, 0, hovered ? 2.2f : 1.6f);
-
-            // Pulsing hover fill
-            if (hovered)
+            // Big score number
+            char scoreBuf[32];
+            snprintf(scoreBuf, sizeof(scoreBuf), "%d", currentScore);
+            ImU32 valCol = ImGui::ColorConvertFloat4ToU32(
+                ImVec4(1.0f, 0.93f + shimmer * 0.07f, 0.55f, scoreFade));
+            glm::vec2 vp;
             {
-                ImU32 hoverFill = ImGui::ColorConvertFloat4ToU32(
-                    ImVec4(0.95f, 0.72f, 0.06f, (0.14f + pulse * 0.10f) * btnFade));
-                dl->AddRectFilled(bMin, bMax, hoverFill, 12.0f);
+                ImVec2 vs = sf->CalcTextSizeA(heroFontSize, FLT_MAX, 0.0f, scoreBuf);
+                vp = {centerX - vs.x * 0.5f, ulY + heroFontSize * 0.08f};
+            }
+            drawShadowedText(dl, sf, heroFontSize, vp, valCol, scoreBuf,
+                             0.80f, heroFontSize * 0.045f);
+
+            // "NEW BEST!" badge
+            if (isNewBest && scoreFade > 0.3f)
+            {
+                float bfs = labelFontSize * 0.85f;
+                ImVec2 bts = sf->CalcTextSizeA(bfs, FLT_MAX, 0.0f, NewBestLabel);
+                float badgeX = panelX + panelW - bts.x - labelFontSize * 1.4f;
+                float badgeY = zoneScore + panelH * 0.16f;
+                float badgeW = bts.x + labelFontSize * 0.8f;
+                float badgeH = bts.y + labelFontSize * 0.4f;
+
+                float badgePulse = 0.70f + 0.30f * pulse;
+                ImU32 badgeBg = ImGui::ColorConvertFloat4ToU32(
+                    ImVec4(0.12f, 0.34f, 0.10f, scoreFade * badgePulse * 0.80f));
+                ImU32 badgeBdr = ImGui::ColorConvertFloat4ToU32(
+                    ImVec4(0.35f, 0.90f, 0.30f, scoreFade * badgePulse));
+                ImU32 badgeTxt = ImGui::ColorConvertFloat4ToU32(
+                    ImVec4(0.45f, 1.00f, 0.40f, scoreFade));
+
+                dl->AddRectFilled(ImVec2(badgeX, badgeY),
+                                  ImVec2(badgeX + badgeW, badgeY + badgeH),
+                                  badgeBg, badgeH * 0.5f);
+                dl->AddRect(ImVec2(badgeX, badgeY),
+                            ImVec2(badgeX + badgeW, badgeY + badgeH),
+                            badgeBdr, badgeH * 0.5f, 0, 1.2f);
+                dl->AddText(sf, bfs,
+                            ImVec2(badgeX + (badgeW - bts.x) * 0.5f,
+                                   badgeY + (badgeH - bts.y) * 0.5f),
+                            badgeTxt, NewBestLabel);
+            }
+        }
+
+        // ═══════════════════════════════════════════════════════════════════════
+        //  ZONE 3 – LEADERBOARD TABLE  (no dark panel background, DATE removed)
+        // ═══════════════════════════════════════════════════════════════════════
+        if (tableFade > 0.01f)
+        {
+            int maxRows = our::ScoreManager::MaxScores;
+            float rowH = tableFontSize * 1.82f;
+            float headerH = rowH * 1.06f;
+            float tableH = rowH * (maxRows + 2.05f);
+            float tblRight = tableX + tableW;
+            float centerX = tableX + tableW * 0.5f;
+
+            // Two centered columns: RANK left-of-center, SCORE right-of-center
+            float colRankX = centerX - tableW * 0.16f;
+            float colScoreX = centerX + tableW * 0.16f;
+
+            // Gold border only — no filled background
+            ImU32 tblBdr = ImGui::ColorConvertFloat4ToU32(
+                ImVec4(1.0f, 0.80f, 0.22f, tableFade * 0.35f));
+            dl->AddRect(ImVec2(tableX, zoneTable),
+                        ImVec2(tblRight, zoneTable + tableH),
+                        tblBdr, 10.0f, 0, 1.0f);
+
+            // "TOP SCORES" label (bigger)
+            float lfs = labelFontSize;
+            ImU32 lblCol = ImGui::ColorConvertFloat4ToU32(
+                ImVec4(1.0f, 0.80f, 0.30f, tableFade * 0.90f));
+            float lblY = zoneTable + rowH * 0.20f;
+            ImVec2 lts = sf->CalcTextSizeA(lfs, FLT_MAX, 0.0f, TopLabel);
+            float lx = tableX + (tableW - lts.x) * 0.5f;
+            dl->AddText(sf, lfs, ImVec2(lx, lblY), lblCol, TopLabel);
+            float ulY = lblY + lts.y + 3.0f;
+            ImU32 ulCol = ImGui::ColorConvertFloat4ToU32(ImVec4(1.0f, 0.78f, 0.22f, tableFade * 0.65f));
+            dl->AddLine(ImVec2(lx - 4.0f, ulY), ImVec2(lx + lts.x + 4.0f, ulY), ulCol, 1.2f);
+
+            // Header row
+            float hdrY = zoneTable + rowH * 1.02f;
+            float hdrBot = hdrY + headerH;
+            ImU32 hdrBg = ImGui::ColorConvertFloat4ToU32(
+                ImVec4(1.0f, 0.82f, 0.22f, tableFade * 0.12f));
+            dl->AddRectFilled(ImVec2(tableX + 2.0f, hdrY),
+                              ImVec2(tblRight - 2.0f, hdrBot), hdrBg);
+
+            float hfs = tableFontSize * 0.92f;
+            ImU32 hdrCol = ImGui::ColorConvertFloat4ToU32(
+                ImVec4(1.0f, 0.80f, 0.30f, tableFade * 0.80f));
+            float hdrTextY = hdrY + (headerH - hfs) * 0.5f;
+
+            // RANK header — right-aligned at colRankX
+            {
+                ImVec2 ts = sf->CalcTextSizeA(hfs, FLT_MAX, 0.0f, "RANK");
+                dl->AddText(sf, hfs, ImVec2(colRankX - ts.x * 0.5f, hdrTextY), hdrCol, "RANK");
+            }
+            // SCORE header — centered at colScoreX
+            {
+                ImVec2 ts = sf->CalcTextSizeA(hfs, FLT_MAX, 0.0f, "SCORE");
+                dl->AddText(sf, hfs, ImVec2(colScoreX - ts.x * 0.5f, hdrTextY), hdrCol, "SCORE");
             }
 
-            ImVec4 textColor = hovered
-                                   ? ImVec4(1.00f, 0.98f, 0.88f, btnFade)
-                                   : ImVec4(0.95f, 0.88f, 0.68f, btnFade * 0.92f);
+            // Divider under header
+            ImU32 divCol = ImGui::ColorConvertFloat4ToU32(
+                ImVec4(1.0f, 0.82f, 0.22f, tableFade * 0.30f));
+            dl->AddLine(ImVec2(tableX + 12.0f, hdrBot),
+                        ImVec2(tblRight - 12.0f, hdrBot), divCol, 1.0f);
 
-            drawShadowedText(dl, buttonFont, buttonFontSize,
-                             buttonTextPositions[i],
-                             ImGui::ColorConvertFloat4ToU32(textColor),
-                             ButtonLabels[i],
-                             0.85f, buttonFontSize * 0.06f);
+            // Data rows
+            for (int i = 0; i < maxRows; ++i)
+            {
+                bool hasEntry = i < (int)topScores.size();
+                bool isCurrentRow = hasEntry && topScores[i] == currentScore &&
+                                    i == 0 && isNewBest;
+
+                float rowTop = hdrBot + i * rowH;
+                float rowMid = rowTop + rowH * 0.5f;
+
+                if (isCurrentRow)
+                {
+                    float fadeInRow = std::min(tableFade * 1.5f, 1.0f);
+                    ImU32 rowHlBg = ImGui::ColorConvertFloat4ToU32(
+                        ImVec4(1.0f, 0.82f, 0.22f, fadeInRow * (0.08f + pulse * 0.04f)));
+                    dl->AddRectFilled(
+                        ImVec2(tableX + 2.0f, rowTop),
+                        ImVec2(tblRight - 2.0f, rowTop + rowH), rowHlBg);
+                    ImU32 accentCol = ImGui::ColorConvertFloat4ToU32(
+                        ImVec4(1.0f, 0.82f, 0.22f, fadeInRow));
+                    dl->AddRectFilled(
+                        ImVec2(tableX + 2.0f, rowTop + 2.0f),
+                        ImVec2(tableX + 6.0f, rowTop + rowH - 2.0f),
+                        accentCol, 2.0f);
+                }
+
+                if (i < maxRows - 1)
+                {
+                    float sepY = rowTop + rowH;
+                    ImU32 sepCol = ImGui::ColorConvertFloat4ToU32(
+                        ImVec4(1.0f, 0.80f, 0.22f, tableFade * 0.15f));
+                    dl->AddLine(ImVec2(tableX + 16.0f, sepY),
+                                ImVec2(tblRight - 16.0f, sepY), sepCol, 0.5f);
+                }
+
+                float rfs = tableFontSize * 1.18f;
+                float textY = rowMid - rfs * 0.5f;
+
+                ImU32 rankCol, scoreCol;
+                if (isCurrentRow)
+                {
+                    rankCol = ImGui::ColorConvertFloat4ToU32(ImVec4(1.0f, 0.92f + shimmer * 0.08f, 0.50f, tableFade));
+                    scoreCol = rankCol;
+                }
+                else if (hasEntry)
+                {
+                    rankCol = ImGui::ColorConvertFloat4ToU32(ImVec4(0.85f, 0.76f, 0.45f, tableFade * 0.90f));
+                    scoreCol = ImGui::ColorConvertFloat4ToU32(ImVec4(0.95f, 0.88f, 0.62f, tableFade * 0.90f));
+                }
+                else
+                {
+                    rankCol = ImGui::ColorConvertFloat4ToU32(ImVec4(0.45f, 0.40f, 0.25f, tableFade * 0.55f));
+                    scoreCol = rankCol;
+                }
+
+                // RANK column
+                char rankBuf[16];
+                snprintf(rankBuf, sizeof(rankBuf), "#%d", i + 1);
+                {
+                    ImVec2 ts = sf->CalcTextSizeA(rfs, FLT_MAX, 0.0f, rankBuf);
+                    float rx = colRankX - ts.x * 0.5f;
+                    if (isCurrentRow)
+                        drawShadowedText(dl, sf, rfs, {rx, textY}, rankCol, rankBuf, 0.75f, rfs * 0.04f);
+                    else
+                        dl->AddText(sf, rfs, ImVec2(rx, textY), rankCol, rankBuf);
+                }
+
+                // SCORE column
+                char scoreBuf[32];
+                if (hasEntry)
+                    snprintf(scoreBuf, sizeof(scoreBuf), "%d", topScores[i]);
+                else
+                    snprintf(scoreBuf, sizeof(scoreBuf), "---");
+                {
+                    ImVec2 ts = sf->CalcTextSizeA(rfs, FLT_MAX, 0.0f, scoreBuf);
+                    float sx = colScoreX - ts.x * 0.5f;
+                    if (isCurrentRow)
+                        drawShadowedText(dl, sf, rfs, {sx, textY}, scoreCol, scoreBuf, 0.75f, rfs * 0.04f);
+                    else
+                        dl->AddText(sf, rfs, ImVec2(sx, textY), scoreCol, scoreBuf);
+                }
+            }
+        }
+
+        // ═══════════════════════════════════════════════════════════════════════
+        //  ZONE 4 – HINT TEXT (replaces old button zone)
+        // ═══════════════════════════════════════════════════════════════════════
+        if (btnFade > 0.01f)
+        {
+            float hfs = hintFontSize * 1.10f;
+            float hoverPulse = 0.75f + 0.25f * pulse;
+            float hintPadX = std::max(18.0f, buttons[0].size.x * 0.06f);
+
+            auto fitHint = [&](const char *text) -> std::pair<float, ImVec2>
+            {
+                float fittedSize = hfs;
+                ImVec2 size = bf->CalcTextSizeA(fittedSize, FLT_MAX, 0.0f, text);
+                float maxWidth = buttons[0].size.x - hintPadX * 2.0f;
+                if (size.x > maxWidth && size.x > 0.0f)
+                {
+                    fittedSize *= maxWidth / size.x;
+                    size = bf->CalcTextSizeA(fittedSize, FLT_MAX, 0.0f, text);
+                }
+                return {fittedSize, size};
+            };
+
+            // ESC hint — left side
+            {
+                bool hov = buttons[0].isInside(mp);
+                float alpha = btnFade * (hov ? hoverPulse : 0.70f);
+                ImU32 col = ImGui::ColorConvertFloat4ToU32(
+                    ImVec4(1.0f, 0.88f + (hov ? shimmer * 0.12f : 0.0f), 0.40f, alpha));
+                auto [fontSize, ts] = fitHint(HintEsc);
+                float tx = buttons[0].position.x + (buttons[0].size.x - ts.x) * 0.5f;
+                float ty = zoneHint + (buttons[0].size.y - ts.y) * 0.5f;
+                if (hov)
+                    drawShadowedText(dl, bf, fontSize, {tx, ty}, col, HintEsc, 0.70f, fontSize * 0.04f);
+                else
+                    dl->AddText(bf, fontSize, ImVec2(tx, ty), col, HintEsc);
+            }
+
+            // SPACE hint — right side
+            {
+                bool hov = buttons[1].isInside(mp);
+                float alpha = btnFade * (hov ? hoverPulse : 0.70f);
+                ImU32 col = ImGui::ColorConvertFloat4ToU32(
+                    ImVec4(1.0f, 0.88f + (hov ? shimmer * 0.12f : 0.0f), 0.40f, alpha));
+                auto [fontSize, ts] = fitHint(HintPlay);
+                float tx = buttons[1].position.x + (buttons[1].size.x - ts.x) * 0.5f;
+                float ty = zoneHint + (buttons[1].size.y - ts.y) * 0.5f;
+                if (hov)
+                    drawShadowedText(dl, bf, fontSize, {tx, ty}, col, HintPlay, 0.70f, fontSize * 0.04f);
+                else
+                    dl->AddText(bf, fontSize, ImVec2(tx, ty), col, HintPlay);
+            }
+
+            // Subtle divider between the two hints
+            float divX = panelX + panelW * 0.5f;
+            float divY1 = zoneHint + buttons[0].size.y * 0.15f;
+            float divY2 = zoneHint + buttons[0].size.y * 0.85f;
+            ImU32 divC = ImGui::ColorConvertFloat4ToU32(ImVec4(1.0f, 0.78f, 0.22f, btnFade * 0.25f));
+            dl->AddLine(ImVec2(divX, divY1), ImVec2(divX, divY2), divC, 1.0f);
         }
     }
 
-    // ─── onDraw ───────────────────────────────────────────────────────────────
+    // ── onDraw ────────────────────────────────────────────────────────────────
     void onDraw(double deltaTime) override
     {
         glm::ivec2 size = getApp()->getFrameBufferSize();
@@ -422,11 +646,11 @@ class WinState : public our::State
         }
 
         auto &mouse = getApp()->getMouse();
-        glm::vec2 mousePosition = mouse.getMousePosition();
+        glm::vec2 mousePos = mouse.getMousePosition();
         if (mouse.justPressed(0))
-            for (auto &button : buttons)
-                if (button.isInside(mousePosition))
-                    button.action();
+            for (auto &btn : buttons)
+                if (btn.isInside(mousePos))
+                    btn.action();
 
         glViewport(0, 0, size.x, size.y);
         glm::mat4 VP = glm::ortho(0.0f, (float)size.x, (float)size.y, 0.0f, 1.0f, -1.0f);
@@ -440,8 +664,8 @@ class WinState : public our::State
         backgroundMaterial->shader->set("transform", VP * fullScreen);
         rectangle->draw();
 
-        // Dark deep-blue overlay
-        float darkAlpha = glm::smoothstep(0.15f, 1.10f, time) * 0.68f;
+        // Dark overlay (kept very subtle — mainly for legibility)
+        float darkAlpha = glm::smoothstep(0.15f, 1.10f, time) * 0.40f; // reduced from 0.70
         darkOverlay->tint = glm::vec4(0.00f, 0.01f, 0.04f, darkAlpha);
         darkOverlay->setup();
         darkOverlay->shader->set("transform", VP * fullScreen);
@@ -449,36 +673,41 @@ class WinState : public our::State
 
         // Pulsing gold glow overlay
         float pulse = 0.5f + 0.5f * std::sin(time * 2.8f);
-        float goldAlpha = glm::smoothstep(0.50f, 1.60f, time) * (0.10f + pulse * 0.06f);
+        float goldAlpha = glm::smoothstep(0.50f, 1.60f, time) * (0.08f + pulse * 0.05f);
         goldOverlay->tint = glm::vec4(1.0f, 0.78f, 0.12f, goldAlpha);
         goldOverlay->setup();
         goldOverlay->shader->set("transform", VP * fullScreen);
         rectangle->draw();
 
-        // Button hover highlight
-        for (auto &button : buttons)
+        // Button hover highlight (GL-side, additive glow)
+        for (auto &btn : buttons)
         {
-            if (button.isInside(mousePosition))
+            if (btn.isInside(mousePos))
             {
                 highlightMaterial->setup();
-                highlightMaterial->shader->set("transform", VP * button.getLocalToWorld());
+                highlightMaterial->shader->set("transform", VP * btn.getLocalToWorld());
                 rectangle->draw();
             }
         }
     }
 
-    // ─── onDestroy ────────────────────────────────────────────────────────────
+    // ── onDestroy ─────────────────────────────────────────────────────────────
     void onDestroy() override
     {
         winAudio.destroy();
+
         delete rectangle;
+
         delete backgroundMaterial->texture;
         delete backgroundMaterial->shader;
         delete backgroundMaterial;
+
         delete darkOverlay->shader;
         delete darkOverlay;
+
         delete goldOverlay->shader;
         delete goldOverlay;
+
         delete highlightMaterial->shader;
         delete highlightMaterial;
 
@@ -486,8 +715,6 @@ class WinState : public our::State
         io.Fonts->Clear();
         io.Fonts->AddFontDefault();
         getApp()->rebuildImGuiFonts();
-        titleFont = nullptr;
-        scoreFont = nullptr;
-        buttonFont = nullptr;
+        titleFont = scoreFont = buttonFont = nullptr;
     }
 };

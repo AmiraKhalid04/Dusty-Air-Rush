@@ -6,7 +6,7 @@
       "width": 1280,
       "height": 720
     },
-    "fullscreen": true
+    "fullscreen": false
   },
   "scene": {
     "plane_flapping": false,
@@ -272,7 +272,7 @@
           },
           "tint": [1.0, 1.0, 1.0, 1.0]
         }
-        }
+      }
     },
     "track": {
       "startPosition": [-25.0, 0.0, 0.0],

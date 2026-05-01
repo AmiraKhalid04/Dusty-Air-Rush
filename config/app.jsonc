@@ -4,12 +4,12 @@
     "title": "Default Game Window",
     "size": {
       "width": 1920,
-      "height": 1080
+      "height": 1000
     },
     "fullscreen": false
   },
   "scene": {
-    "plane_flapping": true,
+    "plane_flapping": false,
     "renderer": {
       "sky_lighting": {
         "top": [0.3, 0.6, 1.0],

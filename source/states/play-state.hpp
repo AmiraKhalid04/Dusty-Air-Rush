@@ -29,6 +29,7 @@
 #include <mesh/mesh.hpp>
 #include <asset-loader.hpp>
 #include "systems/health-system.hpp"
+#include <systems/ring-arrow-system.hpp>
 
 // This state shows how to use the ECS framework and deserialization.
 class Playstate : public our::State
@@ -53,6 +54,7 @@ private:
     float lastDeltaTime = 0.0f;
     our::RunwayLightSystem runwayLightSystem;
     our::WorldBoundarySystem worldBoundarySystem;
+    our::RingArrowSystem ringArrowSystem;
 
     float playTime = 0.0f;
     bool planeFlapping = true;
@@ -188,6 +190,7 @@ private:
                 ringConfig.finishLineScale = ringsJson["finishLineScale"];
         }
         std::vector<glm::vec3> ringPositions = ringSystem.initialize(&world, ringConfig);
+        ringArrowSystem.initialize(&world);  
 
         // Assign the generated logic variables (total track rings) to the player's dusty tracker
         for (auto entity : world.getEntities())
@@ -288,6 +291,7 @@ private:
         cameraController.update(&world, (float)deltaTime);
         collisionSystem.update(&world, (float)deltaTime);
         tornadoSystem.update(&world, (float)deltaTime);
+        ringArrowSystem.update(&world, (float)deltaTime);
 
         textPopupSystem.update((float)deltaTime);
         worldBoundarySystem.update(&world);

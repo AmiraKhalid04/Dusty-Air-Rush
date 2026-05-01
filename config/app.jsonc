@@ -6,7 +6,7 @@
       "width": 1280,
       "height": 720
     },
-    "fullscreen": true
+    "fullscreen": false
   },
   "scene": {
     "plane_flapping": false,
@@ -53,7 +53,8 @@
         "coin-texture": "assets/textures/coin.jpg",
         "health_pack-texture": "assets/textures/health.png",
         "dusty-texture": "assets/textures/dusty_baseColor.png",
-        "finish_line": "assets/textures/finish_line/baseColor.png"
+        "finish_line": "assets/textures/finish_line/baseColor.png",
+        "arrow": "assets/textures/arrow/baseColor.png"
       },
       "meshes": {
         "cube": "assets/models/cube.obj",
@@ -69,7 +70,8 @@
         "dusty_fan": "assets/models/dusty_fan.obj",
         "dusty_left_wing": "assets/models/dusty_left_wing.obj",
         "dusty_right_wing": "assets/models/dusty_right_wing.obj",
-        "finish_line": "assets/models/finish_line.obj"
+        "finish_line": "assets/models/finish_line.obj",
+        "arrow": "assets/models/arrow.obj"
       },
       "samplers": {
         "default": {},
@@ -159,6 +161,21 @@
           },
           "tint": [1, 1, 1, 1],
           "texture": "cone",
+          "sampler": "default"
+        },
+        "arrow": {
+          "type": "textured",
+          "shader": "textured",
+          "pipelineState": {
+            "faceCulling": {
+              "enabled": false
+            },
+            "depthTesting": {
+              "enabled": true
+            }
+          },
+          "tint": [1, 1, 1, 1],
+          "texture": "arrow",
           "sampler": "default"
         },
         "metal": {

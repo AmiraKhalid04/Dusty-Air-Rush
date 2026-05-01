@@ -236,11 +236,13 @@ int our::Application::run(int run_for_frames)
     setupCallbacks();
     keyboard.enable(window);
     mouse.enable(window);
+    Mouse::hideMouse(window);
 
     // Start the ImGui context and set dark style (just my preference :D)
     IMGUI_CHECKVERSION();
     ImGui::CreateContext();
     ImGuiIO &io = ImGui::GetIO();
+    io.ConfigFlags |= ImGuiConfigFlags_NoMouseCursorChange;
     // io.Fonts->Clear();
     // io.Fonts->AddFontFromFileTTF("assets/fonts/Cinzel-Bold.ttf", 128.0f);
     // io.Fonts->Build();

@@ -6,7 +6,7 @@
       "width": 1280,
       "height": 720
     },
-    "fullscreen": false
+    "fullscreen": true
   },
   "scene": {
     "plane_flapping": false,
@@ -59,6 +59,7 @@
         "cube": "assets/models/cube.obj",
         "plane": "assets/models/plane.obj",
         "sphere": "assets/models/sphere.obj",
+        "round_headlight": "assets/models/round_headlight.obj",
         "ring": "assets/models/ring.obj",
         "tornado": "assets/models/tornado.obj",
         "cone": "assets/models/cone.obj",
@@ -257,23 +258,36 @@
             }
           },
           "tint": [1.0, 0.7490196, 0.0, 1.0]
+        },
+        "headlight_marker": {
+          "type": "tinted",
+          "shader": "tinted",
+          "pipelineState": {
+            "faceCulling": {
+              "enabled": false
+            },
+            "depthTesting": {
+              "enabled": true
+            }
+          },
+          "tint": [1.0, 1.0, 1.0, 1.0]
         }
-      }
+        }
     },
     "track": {
       "startPosition": [-25.0, 0.0, 0.0],
-      "endPosition": [25.0, 10.0, -500.0],
+      "endPosition": [25.0, 10.0, -600.0],
       "stagesCount": 10,
       "innerMargin": 5.0,
       "outerMargin": 20.0
     },
     "rings": {
-      "ringScale": 20.0,
+      "ringScale": 28.0,
       "finishLineScale": 2.0
     },
     "tornado": {
       "depthOffset": 10.0,
-      "scale": 2.0,
+      "scale": 5.0,
       "spawnChance": 0.2,
       "angularVelocity": 3.0,
       "moveSpeedXMin": 2.0,
@@ -291,7 +305,7 @@
     "coins": {
       "depthOffset": 35.0,
       "spawnChance": 0.75,
-      "scale": 1.5
+      "scale": 1.25
     },
     "world": [
       {
@@ -385,33 +399,39 @@
               },
               {
                 "name": "Body Collider",
-                "position": [0, 2.0, -0.5],
+                "position": [0, -2.0, 0],
                 "components": [
                   {
                     "type": "Collider",
                     "shapeType": "aabb",
                     "objectType": "player",
-                    "aabbExtents": [0.5, 0.7, 3.0]
+                    "aabbExtents": [0.5, 3.0, 0.7]
                   }
                 ]
               },
               {
                 "name": "Left Wing",
-                "position": [-2.4, 2.0, 0.2],
+                "position": [-2.7, 2.0, -3],
                 "components": [
                   {
                     "type": "Collider",
                     "shapeType": "aabb",
                     "objectType": "player",
-                    "aabbExtents": [1.8, 0.25, 0.8]
+                    "aabbExtents": [2.0, 0.25, 0.8]
                   }
                 ]
               },
               {
                 "name": "Left Flashlight",
-                "position": [-2.4, 2.0, 0.2],
+                "position": [-2.0, 2.55, -3.3],
                 "rotation": [90, 0, 0],
+                "scale": [2.0, 2.0, 2.0],
                 "components": [
+                  {
+                    "type": "Mesh Renderer",
+                    "mesh": "round_headlight",
+                    "material": "headlight_marker"
+                  },
                   {
                     "type": "Light",
                     "lightType": "spot",
@@ -423,9 +443,15 @@
               },
               {
                 "name": "Right Flashlight",
-                "position": [2.4, 2.0, 0.2],
+                "position": [2.0, 2.55, -3.3],
                 "rotation": [90, 0, 0],
+                "scale": [2.0, 2.0, 2.0],
                 "components": [
+                  {
+                    "type": "Mesh Renderer",
+                    "mesh": "round_headlight",
+                    "material": "headlight_marker"
+                  },
                   {
                     "type": "Light",
                     "lightType": "spot",
@@ -437,13 +463,13 @@
               },
               {
                 "name": "Right Wing",
-                "position": [2.4, 2.0, 0.2],
+                "position": [2.7, 2.0, -3],
                 "components": [
                   {
                     "type": "Collider",
                     "shapeType": "aabb",
                     "objectType": "player",
-                    "aabbExtents": [1.8, 0.25, 0.8]
+                    "aabbExtents": [2.0, 0.25, 0.8]
                   }
                 ]
               }

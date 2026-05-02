@@ -1,4 +1,4 @@
-<h1 align ="center"> <img src="https://i.postimg.cc/7YZgf7ms/dusty-plane.png" width="24" /> &nbsp; Dusty Air Rush &nbsp; <img src="https://i.postimg.cc/7YZgf7ms/dusty-plane.png" width="24" /> </h1>
+<h1 align ="center"> <img src="https://i.postimg.cc/7YZgf7ms/dusty-plane.png" width="36" /> &nbsp; Dusty Air Rush &nbsp; <img src="https://i.postimg.cc/7YZgf7ms/dusty-plane.png" width="36" /> </h1>
 <p align="center">
   <img src="docs/readme-assets/menu.png" alt="Dusty Air Rush main menu" width="100%">
 </p>

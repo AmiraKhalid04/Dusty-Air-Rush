@@ -23,3 +23,9 @@ CMakeSettings.json
 
 # Screenshots
 screenshots/
+
+# Build artifacts (generated, not committed)
+*.AppImage
+build/AppDir/
+build/*.desktop
+build/*.rc

@@ -7,13 +7,13 @@
   A fan-made 3D flying game inspired by Dusty from Disney's <i>Planes</i>, built with C++, OpenGL, GLFW, GLAD, ImGui, and an ECS-style gameplay architecture.
 </p>
 
-## Overview
+## <img src="https://i.postimg.cc/qqZkv9vm/dusty.png" width="21" /> Overview
 
 `Dusty Air Rush` is a stylized aerial race where Dusty flies through a curved sky track, clears scoring rings, dodges moving tornados, collects pickups, and pushes to the finish line before health runs out.
 
 The project includes a complete menu flow, persistent scoring, themed visuals, cassette music switching, and both keyboard and gamepad support.
 
-## What The Game Has
+## <img src="https://i.postimg.cc/L4y4DZ3X/tornado.png" width="21" /> What The Game Has
 
 ### Flight Gameplay
 
@@ -56,7 +56,7 @@ The project includes a complete menu flow, persistent scoring, themed visuals, c
 - Lit meshes, textured assets, and UI overlays
 - Optional girlish mode that swaps Dusty's texture and turns collectibles into bows
 
-## Gameplay Loop
+## <img src="https://i.postimg.cc/fWHWC0fz/rings.png" width="21" /> Gameplay Loop
 
 1. Start from the main menu.
 2. Fly through ring centers to earn major score.
@@ -66,7 +66,7 @@ The project includes a complete menu flow, persistent scoring, themed visuals, c
 6. Reach the finish line after clearing all rings.
 7. Save the final score into the leaderboard flow.
 
-## Controls
+## <img src="https://i.postimg.cc/jq8qcJQG/game-control.png" width="21" /> Controls
 
 ### Keyboard And Mouse
 
@@ -105,17 +105,17 @@ The project includes a complete menu flow, persistent scoring, themed visuals, c
 
 The input layer also includes a fallback path for generic joysticks when a controller is connected but not exposed through GLFW's standard gamepad mapping.
 
-## Cassette Player
+## <img src="https://i.postimg.cc/sfnfmZ43/radio.png" width="21" /> Cassette Player
 
 In-game cassette switching is mapped to `0` through `4`.
 
 | Key | Track             |
 | --- | ----------------- |
 | `0` | Engine loop       |
-| `1` | `انت ازاي تجرحني` |
-| `2` | `طبيب جراح`       |
-| `3` | `زمردة`           |
-| `4` | `اللي قادرة`      |
+| `1` | انت ازاي تجرحني   |
+| `2` | طبيب جراح         |
+| `3` | كوكب زمردة        |
+| `4` | اللي قادرة        |
 
 Notes:
 
@@ -123,7 +123,7 @@ Notes:
 - Tracks `3` and `4` also trigger a pink-tinted visual overlay.
 - This section is a good place to add a future cassette screenshot.
 
-## Screenshots
+## <img src="https://i.postimg.cc/CMvM7fsM/screenshot.png" width="21" /> Screenshots
 
 Add your gameplay screenshots here later.
 
@@ -142,7 +142,7 @@ Suggested shots to add:
 - Girlish mode variant
 - Win screen and leaderboard
 
-## Build And Run
+## <img src="https://i.postimg.cc/Vs7sgbB2/install.png" width="21" /> Build And Run
 
 ### Requirements
 
@@ -188,11 +188,11 @@ bin/GAME_APPLICATION.exe
 - `-c` chooses the config file.
 - `-f` runs for a fixed number of frames, which is useful for testing.
 
-## Project Notes
+## <img src="https://i.postimg.cc/ryhyjtNL/pencil.png" width="21" /> Project Notes
 
 - Scores are saved in `assets/data/scores.json`.
 - The main runtime starts from the `menu` scene.
 - The game uses local assets for meshes, textures, shaders, fonts, and audio.
 - The executable output path is `bin/`.
 
-## Contributors
+## <img src="https://i.postimg.cc/3rLr1DFx/team.png" width="21" /> Contributors

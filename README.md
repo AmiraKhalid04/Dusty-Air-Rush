@@ -123,6 +123,11 @@ bin/GAME_APPLICATION.exe
 - `-c` chooses the config file.
 - `-f` runs for a fixed number of frames, which is useful for testing.
 
+
+## Demo Video <img src="https://i.imgur.com/cAkWtJc.png" width="28" />
+  https://github.com/user-attachments/assets/b49dd2bc-ac9e-4c89-89a5-266881c8375b
+
+
 ## <img src="https://i.postimg.cc/3rLr1DFx/team.png" width="21" /> Contributors
 
 | <a href="https://avatars.githubusercontent.com/OmarNabil005?v=4"><img src="https://avatars.githubusercontent.com/OmarNabil005?v=4" alt="Omar Nabil" width="150"></a> | <a href="https://avatars.githubusercontent.com/AmiraKhalid04?v=4"><img src="https://avatars.githubusercontent.com/AmiraKhalid04?v=4" alt="Amira Khalid" width="150"></a> | <a href="https://avatars.githubusercontent.com/AliAlaa88?v=4"><img src="https://avatars.githubusercontent.com/AliAlaa88?v=4" alt="Ali Alaa" width="150"></a> | <a href="https://avatars.githubusercontent.com/Alyaa242?v=4"><img src="https://avatars.githubusercontent.com/Alyaa242?v=4" alt="Alyaa Ali" width="150"></a> |

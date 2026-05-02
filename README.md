@@ -15,46 +15,10 @@ The project includes a complete menu flow, persistent scoring, themed visuals, c
 
 ## <img src="https://i.postimg.cc/L4y4DZ3X/tornado.png" width="21" /> What The Game Has
 
-### Flight Gameplay
-
-- Forward flight with real-time steering and banking
-- Pitch control for climbing and diving
-- Manual roll control for aerial alignment
-- Speed boost and slow-flight control
-- Backflip / emote move
-- Headlights toggle during gameplay
-- Mouse-assisted look / aim while flying
-
-### Track And Challenge Systems
-
-- Procedurally placed rings across the course
-- Moving tornado hazards with damage and pull-in behavior
-- Finish line that only accepts a full ring clear
-- Collectible coins in classic mode
-- Collectible bows in girlish mode
-- Health pack pickups for recovery
-- World boundary clamp with warning flash
-- Runway light placement along the route
-- Floating arrows above active rings
-
-### HUD, Feedback, And Progression
-
-- Health bar with color-based danger states
-- Live score, timer, ring progress, and collectible count
-- Mini-map / radar view
-- Danger overlay near tornado hazards
-- Boundary warning flash
-- Score and damage popups
-- Persistent top scores
-- Persistent last 5 winning runs leaderboard
-- Dedicated menu, leaderboard, win, and loss screens
-
-### Visual Theme Work
-
-- Dusty model with themed menu / win / crash presentation
-- Sky background with fog-based atmosphere
-- Lit meshes, textured assets, and UI overlays
-- Optional girlish mode that swaps Dusty's texture and turns collectibles into bows
+**Flight:** Steering, banking, pitch control, rolling, boost, slow-flight, backflip, headlights, and mouse-assisted look.  
+**Challenges:** Procedurally placed rings, moving tornados, finish line gates, collectible coins/bows, health pickups, boundary warnings, and runway lights.  
+**HUD & Progression:** Health bar, live stats (score/timer/rings), mini-map, danger overlays, popups, and persistent leaderboards.  
+**Visuals:** Themed Dusty model, sky atmosphere, lit meshes, textured assets, and optional girlish mode.
 
 ## <img src="https://i.postimg.cc/fWHWC0fz/rings.png" width="21" /> Gameplay Loop
 
@@ -70,40 +34,28 @@ The project includes a complete menu flow, persistent scoring, themed visuals, c
 
 ### Keyboard And Mouse
 
-| Action                        | Control              |
-| ----------------------------- | -------------------- |
-| Start game / confirm          | `Space`              |
-| Exit / return to menu         | `Esc`                |
-| Turn left / bank left         | `A` or `Left Arrow`  |
-| Turn right / bank right       | `D` or `Right Arrow` |
-| Climb                         | `S` or `Down Arrow`  |
-| Dive                          | `W`                  |
-| Roll left                     | `Q`                  |
-| Roll right                    | `E`                  |
-| Boost                         | `Left Shift`         |
-| Slow down                     | `Left Ctrl`          |
-| Backflip / emote              | `Up Arrow`           |
-| Toggle headlights             | `H`                  |
-| Open leaderboard from menu    | `L`                  |
-| Enable girlish mode from menu | `G`                  |
-| Hold to steer with mouse      | `Left Mouse Button`  |
+| Movement & Combat | Control   | Menu & Extras     | Control |
+| :---------------- | :-------- | :---------------- | :------ |
+| Turn left / bank  | `A` / `←` | Start / confirm   | `Space` |
+| Turn right / bank | `D` / `→` | Exit / menu       | `Esc`   |
+| Climb             | `S` / `↓` | Toggle headlights | `H`     |
+| Dive              | `W`       | Leaderboard       | `L`     |
+| Roll left         | `Q`       | Girlish mode      | `G`     |
+| Roll right        | `E`       | Mouse steer       | `LMB`   |
+| Boost             | `LShift`  |                   |
+| Slow down         | `LCtrl`   |                   |
+| Backflip / emote  | `↑`       |                   |
 
 ### Gamepad Support
 
-| Action            | Control       |
-| ----------------- | ------------- |
-| Turn / pitch      | `Left Stick`  |
-| Look / rotate     | `Right Stick` |
-| Boost             | `RT / R2`     |
-| Slow down         | `LT / L2`     |
-| Roll right        | `RB / R1`     |
-| Roll left         | `LB / L1`     |
-| Start / confirm   | `A`           |
-| Back / exit       | `B`           |
-| Toggle headlights | `Y`           |
-| Backflip / emote  | `D-Pad Up`    |
-
-The input layer also includes a fallback path for generic joysticks when a controller is connected but not exposed through GLFW's standard gamepad mapping.
+| Flight Controls | Button   | Menu & Actions    | Button |
+| :-------------- | :------- | :---------------- | :----- |
+| Turn / pitch    | `LStick` | Start / confirm   | `A`    |
+| Look / rotate   | `RStick` | Back / exit       | `B`    |
+| Boost           | `RT/R2`  | Toggle headlights | `Y`    |
+| Slow down       | `LT/L2`  | Backflip / emote  | `D↑`   |
+| Roll right      | `RB/R1`  |                   |
+| Roll left       | `LB/L1`  |                   |
 
 ## <img src="https://i.postimg.cc/sfnfmZ43/radio.png" width="21" /> Cassette Player
 
@@ -117,18 +69,12 @@ In-game cassette switching is mapped to `0` through `4`.
 | `3` | كوكب زمردة      |
 | `4` | اللي قادرة      |
 
-Notes:
-
-- Cassette tracks are stored under `assets/sounds/cassette/`.
-- Tracks `3` and `4` also trigger a pink-tinted visual overlay.
-- This section is a good place to add a future cassette screenshot.
-
 ## <img src="https://i.postimg.cc/CMvM7fsM/screenshot.png" width="21" /> Screenshots
 
-|                                                                                   |                                                                                   |
-| :-------------------------------------------------------------------------------: | :-------------------------------------------------------------------------------: |
-| <img src="https://i.postimg.cc/hGSTxd0V/morning2.png" alt="Morning" width="100%"> |   <img src="https://i.postimg.cc/3xj2dB2X/night.png" alt="Night" width="100%">    |
-|   <img src="https://i.postimg.cc/Dfsr9nmp/image.png" alt="Danger" width="100%">   | <img src="https://i.postimg.cc/zDb7q4XT/flip.png" alt="Flipped" width="100%"> |
+|                                                                                   |                                                                                          |
+| :-------------------------------------------------------------------------------: | :--------------------------------------------------------------------------------------: |
+| <img src="https://i.postimg.cc/hGSTxd0V/morning2.png" alt="Morning" width="100%"> |       <img src="https://i.postimg.cc/3xj2dB2X/night.png" alt="Night" width="100%">       |
+|   <img src="https://i.postimg.cc/Dfsr9nmp/image.png" alt="Danger" width="100%">   |      <img src="https://i.postimg.cc/zDb7q4XT/flip.png" alt="Flipped" width="100%">       |
 | <img src="https://i.postimg.cc/g2y3nD3R/win.png" alt="Winning Menu" width="100%"> | <img src="https://i.postimg.cc/1z9w6qKj/gameover.png" alt="Game over menu" width="100%"> |
 
 ## <img src="https://i.postimg.cc/Vs7sgbB2/install.png" width="21" /> Build And Run
@@ -176,13 +122,6 @@ bin/GAME_APPLICATION.exe
 
 - `-c` chooses the config file.
 - `-f` runs for a fixed number of frames, which is useful for testing.
-
-## <img src="https://i.postimg.cc/ryhyjtNL/pencil.png" width="21" /> Project Notes
-
-- Scores are saved in `assets/data/scores.json`.
-- The main runtime starts from the `menu` scene.
-- The game uses local assets for meshes, textures, shaders, fonts, and audio.
-- The executable output path is `bin/`.
 
 ## <img src="https://i.postimg.cc/3rLr1DFx/team.png" width="21" /> Contributors
 

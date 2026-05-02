@@ -31,6 +31,7 @@
 #include "systems/health-system.hpp"
 #include <systems/ring-arrow-system.hpp>
 #include <utils/track-utils.hpp>
+#include <game-theme.hpp>
 
 // This state shows how to use the ECS framework and deserialization.
 class Playstate : public our::State
@@ -115,7 +116,9 @@ private:
         // If we have assets in the scene config, we deserialize them
         if (config.contains("assets"))
         {
-            our::deserializeAllAssets(config["assets"]);
+            auto themedAssets = config["assets"];
+            our::applyGameplayThemeAssets(themedAssets);
+            our::deserializeAllAssets(themedAssets);
         }
         // If we have a world in the scene config, we use it to populate our world
         if (config.contains("world"))
@@ -246,6 +249,8 @@ private:
             if (coinsJson.contains("scale"))
                 coinConfig.scale = coinsJson["scale"];
         }
+        coinConfig.scale *= our::getCollectibleScaleMultiplier();
+        coinConfig.collectRadius = our::getCollectibleRadius();
         coinSystem.initialize(&world, coinConfig);
 
         our::HealthPackConfig healthConfig;
@@ -392,7 +397,7 @@ private:
                     std::cout << "\n=============================================" << std::endl;
                     std::cout << "          MISSION FAILED - HEALTH DEPLETED    " << std::endl;
                     std::cout << " Rings Passed: " << dusty->ringsPassed << " / " << dusty->totalRings << std::endl;
-                    std::cout << " Coins Collected: " << dusty->coins << std::endl;
+                    std::cout << ' ' << our::getCollectibleSummaryLabel() << ": " << dusty->coins << std::endl;
                     std::cout << " Final Score: " << lastScore << std::endl;
                     std::cout << "=============================================\n"
                               << std::endl;
@@ -406,7 +411,7 @@ private:
                     std::cout << "\n=============================================" << std::endl;
                     std::cout << "            MISSION COMPLETE!                 " << std::endl;
                     std::cout << " Rings Passed: " << dusty->ringsPassed << " / " << dusty->totalRings << std::endl;
-                    std::cout << " Coins Collected: " << dusty->coins << std::endl;
+                    std::cout << ' ' << our::getCollectibleSummaryLabel() << ": " << dusty->coins << std::endl;
                     std::cout << " Final Health: " << dusty->currentHealth << " / " << dusty->maxHealth << std::endl;
                     std::cout << " Time: " << playTime << "s" << std::endl;
                     std::cout << " Final Score: " << lastScore << std::endl;

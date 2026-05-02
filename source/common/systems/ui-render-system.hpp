@@ -9,6 +9,7 @@
 #include "../material/material.hpp"
 #include "../asset-loader.hpp"
 #include "../application.hpp"
+#include "../game-theme.hpp"
 
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
@@ -242,7 +243,7 @@ namespace our
 
             // Draw coin emoji
             ImVec2 ringsPartSize = font->CalcTextSizeA(fontSize, FLT_MAX, 0.0f, ("   " + std::to_string(dusty->ringsPassed) + "   ").c_str());
-            const char *coinEmoji = u8"🪙";
+            const char *coinEmoji = getCollectibleEmoji();
             ImVec2 coinEmojiPos = ImVec2(pos3.x + ringsPartSize.x, pos3.y + (fontSize - emojiFontSize) * 0.5f);
             drawList->AddText(font, emojiFontSize, ImVec2(coinEmojiPos.x + 2.0f, coinEmojiPos.y + 2.0f), shadowColor, coinEmoji);
             drawList->AddText(font, emojiFontSize, coinEmojiPos, textColor, coinEmoji);

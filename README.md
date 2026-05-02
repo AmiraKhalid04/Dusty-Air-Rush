@@ -15,7 +15,10 @@ The project includes a complete menu flow, persistent scoring, themed visuals, c
 
 
 ##  <img src="https://i.imgur.com/cAkWtJc.png" width="21" /> Demo Video
-  https://github.com/user-attachments/assets/b49dd2bc-ac9e-4c89-89a5-266881c8375b
+
+
+https://github.com/user-attachments/assets/63d2c2ba-dadb-4121-b267-274ce071dc47
+
 
 ## <img src="https://i.postimg.cc/L4y4DZ3X/tornado.png" width="21" /> What The Game Has
 

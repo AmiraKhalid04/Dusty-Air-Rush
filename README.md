@@ -9,7 +9,7 @@
 
 ## <img src="https://i.postimg.cc/qqZkv9vm/dusty.png" width="21" /> Overview
 
-`Dusty Air Rush` is a stylized aerial race where Dusty flies through a curved sky track, clears scoring rings, dodges moving tornados, collects pickups, and pushes to the finish line before health runs out.
+<font color="orange">`Dusty Air Rush`</font> is a stylized aerial race where Dusty flies through a curved sky track, clears scoring rings, dodges moving tornados, collects pickups, and pushes to the finish line before health runs out.
 
 The project includes a complete menu flow, persistent scoring, themed visuals, cassette music switching, and both keyboard and gamepad support.
 

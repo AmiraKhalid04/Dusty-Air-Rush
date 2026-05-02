@@ -125,22 +125,22 @@ Notes:
 
 ## <img src="https://i.postimg.cc/CMvM7fsM/screenshot.png" width="21" /> Screenshots
 
-Add your gameplay screenshots here later.
+<p align="center">
+  <img src="https://i.postimg.cc/hGSTxd0V/morning2.png" alt="Morning" width="60%">
+</p>
+<p align="center">
+  <img src="https://i.postimg.cc/3xj2dB2X/night.png" alt="Night" width="60%">
+</p>
+<p align="center">
+  <img src="https://i.postimg.cc/Dfsr9nmp/image.png" alt="Danger" width="60%">
+</p>
+<p align="center">
+  <img src="https://i.postimg.cc/g2y3nD3R/win.png" alt="Winning Menu" width="60%">
+</p>
+<p align="center">
+  <img src="https://i.postimg.cc/1z9w6qKj/gameover.png" alt="Game over menu" width="60%">
+</p>
 
-```md
-![Main Race](path/to/your-screenshot-1.png)
-![Cassette UI](path/to/your-screenshot-2.png)
-![Leaderboard](path/to/your-screenshot-3.png)
-```
-
-Suggested shots to add:
-
-- Main gameplay view while flying through a ring
-- Tornado danger moment
-- Mini-map and HUD close-up
-- Cassette song banner on screen
-- Girlish mode variant
-- Win screen and leaderboard
 
 ## <img src="https://i.postimg.cc/Vs7sgbB2/install.png" width="21" /> Build And Run
 
@@ -196,3 +196,8 @@ bin/GAME_APPLICATION.exe
 - The executable output path is `bin/`.
 
 ## <img src="https://i.postimg.cc/3rLr1DFx/team.png" width="21" /> Contributors
+
+
+| <a href="https://avatars.githubusercontent.com/OmarNabil005?v=4"><img src="https://avatars.githubusercontent.com/OmarNabil005?v=4" alt="Omar Nabil" width="150"></a> | <a href="https://avatars.githubusercontent.com/AmiraKhalid04?v=4"><img src="https://avatars.githubusercontent.com/AmiraKhalid04?v=4" alt="Amira Khalid" width="150"></a> | <a href="https://avatars.githubusercontent.com/AliAlaa88?v=4"><img src="https://avatars.githubusercontent.com/AliAlaa88?v=4" alt="Ali Alaa" width="150"></a> | <a href="https://avatars.githubusercontent.com/Alyaa242?v=4"><img src="https://avatars.githubusercontent.com/Alyaa242?v=4" alt="Alyaa Ali" width="150"></a> |
+| :-----------------------------------------------------------------------------------------------------------------------------------------------------------------: | :--------------------------------------------------------------------------------------------------------------------------------------------------------------: | :---------------------------------------------------------------------------------------------------------------------------------------------------------: | :----------------------------------------------------------------------------------------------------------------------------------------------------------------: |
+|                                                           [Omar Nabil](https://github.com/OmarNabil005)                                                            |                                                           [Amira Khalid](https://github.com/AmiraKhalid04)                                                            |                                                          [Ali Alaa](https://github.com/AliAlaa88)                                                           |                                                            [Alyaa Ali](https://github.com/Alyaa242)                                                            |

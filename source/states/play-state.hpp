@@ -365,7 +365,7 @@ private:
         }
         if (keyboard.justPressed(GLFW_KEY_3) || keyboard.justPressed(GLFW_KEY_KP_3))
         {
-            audioSystem.playCassetteTrack("assets/sounds/cassette/song3.mp3", 0.5f);
+            audioSystem.playCassetteTrack("assets/sounds/cassette/song3.mp3", 0.8f);
             currentSong = 3;
         }
         if (keyboard.justPressed(GLFW_KEY_4) || keyboard.justPressed(GLFW_KEY_KP_4))

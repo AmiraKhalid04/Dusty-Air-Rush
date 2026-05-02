@@ -257,8 +257,8 @@ namespace our
                     : (currentSong == 2)
                         ? u8"\uFEA1\uFE8D\uFEAE\uFE9F \uFE90\uFEF4\uFE92\uFEC3"
                     : (currentSong == 3)
-                        ? u8"\u0632\u0645\u0631\u062F\u0629"
-                        : u8"\u0627\u0644\u0644\u064A \u0642\u0627\u062F\u0631\u0629";
+                        ? u8"\uFE93\uFEA9\uFEAE\uFEE3\uFEAF"
+                        : u8"\uFE93\uFEAD\uFEA9\uFE8E\uFED7 \uFEF2\uFEE0\uFEDF\uFE8D";
 
                 // Add speaker emoji beside it. Visual direction is RTL, so adding at the end of LTR string (visual left)
                 std::string songString = std::string(songText) + u8" 🔊";

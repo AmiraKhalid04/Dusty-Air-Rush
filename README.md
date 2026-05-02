@@ -15,10 +15,10 @@ The project includes a complete menu flow, persistent scoring, themed visuals, c
 
 ## <img src="https://i.postimg.cc/L4y4DZ3X/tornado.png" width="21" /> What The Game Has
 
-**Flight:** Steering, banking, pitch control, rolling, boost, slow-flight, backflip, headlights, and mouse-assisted look.  
-**Challenges:** Procedurally placed rings, moving tornados, finish line gates, collectible coins/bows, health pickups, boundary warnings, and runway lights.  
-**HUD & Progression:** Health bar, live stats (score/timer/rings), mini-map, danger overlays, popups, and persistent leaderboards.  
-**Visuals:** Themed Dusty model, sky atmosphere, lit meshes, textured assets, and optional girlish mode.
+- **Flight:** Steering, banking, pitch control, rolling, boost, slow-flight, backflip, headlights, and mouse-assisted look.
+- **Challenges:** Procedurally placed rings, moving tornados, finish line gates, collectible coins/bows, health pickups, boundary warnings, and runway lights.
+- **HUD & Progression:** Health bar, live stats (score/timer/rings), mini-map, danger overlays, popups, and persistent leaderboards.
+- **Visuals:** Themed Dusty model, sky atmosphere, lit meshes, textured assets, and optional girlish mode.
 
 ## <img src="https://i.postimg.cc/fWHWC0fz/rings.png" width="21" /> Gameplay Loop
 

@@ -109,13 +109,13 @@ The input layer also includes a fallback path for generic joysticks when a contr
 
 In-game cassette switching is mapped to `0` through `4`.
 
-| Key | Track             |
-| --- | ----------------- |
-| `0` | Engine loop       |
-| `1` | انت ازاي تجرحني   |
-| `2` | طبيب جراح         |
-| `3` | كوكب زمردة        |
-| `4` | اللي قادرة        |
+| Key | Track           |
+| --- | --------------- |
+| `0` | Engine loop     |
+| `1` | انت ازاي تجرحني |
+| `2` | طبيب جراح       |
+| `3` | كوكب زمردة      |
+| `4` | اللي قادرة      |
 
 Notes:
 
@@ -125,22 +125,11 @@ Notes:
 
 ## <img src="https://i.postimg.cc/CMvM7fsM/screenshot.png" width="21" /> Screenshots
 
-<p align="center">
-  <img src="https://i.postimg.cc/hGSTxd0V/morning2.png" alt="Morning" width="60%">
-</p>
-<p align="center">
-  <img src="https://i.postimg.cc/3xj2dB2X/night.png" alt="Night" width="60%">
-</p>
-<p align="center">
-  <img src="https://i.postimg.cc/Dfsr9nmp/image.png" alt="Danger" width="60%">
-</p>
-<p align="center">
-  <img src="https://i.postimg.cc/g2y3nD3R/win.png" alt="Winning Menu" width="60%">
-</p>
-<p align="center">
-  <img src="https://i.postimg.cc/1z9w6qKj/gameover.png" alt="Game over menu" width="60%">
-</p>
-
+|                                                                                   |                                                                                   |
+| :-------------------------------------------------------------------------------: | :-------------------------------------------------------------------------------: |
+| <img src="https://i.postimg.cc/hGSTxd0V/morning2.png" alt="Morning" width="100%"> |   <img src="https://i.postimg.cc/3xj2dB2X/night.png" alt="Night" width="100%">    |
+|   <img src="https://i.postimg.cc/Dfsr9nmp/image.png" alt="Danger" width="100%">   | <img src="https://i.postimg.cc/zDb7q4XT/flip.png" alt="Flipped" width="100%"> |
+| <img src="https://i.postimg.cc/g2y3nD3R/win.png" alt="Winning Menu" width="100%"> | <img src="https://i.postimg.cc/1z9w6qKj/gameover.png" alt="Game over menu" width="100%"> |
 
 ## <img src="https://i.postimg.cc/Vs7sgbB2/install.png" width="21" /> Build And Run
 
@@ -197,7 +186,6 @@ bin/GAME_APPLICATION.exe
 
 ## <img src="https://i.postimg.cc/3rLr1DFx/team.png" width="21" /> Contributors
 
-
 | <a href="https://avatars.githubusercontent.com/OmarNabil005?v=4"><img src="https://avatars.githubusercontent.com/OmarNabil005?v=4" alt="Omar Nabil" width="150"></a> | <a href="https://avatars.githubusercontent.com/AmiraKhalid04?v=4"><img src="https://avatars.githubusercontent.com/AmiraKhalid04?v=4" alt="Amira Khalid" width="150"></a> | <a href="https://avatars.githubusercontent.com/AliAlaa88?v=4"><img src="https://avatars.githubusercontent.com/AliAlaa88?v=4" alt="Ali Alaa" width="150"></a> | <a href="https://avatars.githubusercontent.com/Alyaa242?v=4"><img src="https://avatars.githubusercontent.com/Alyaa242?v=4" alt="Alyaa Ali" width="150"></a> |
-| :-----------------------------------------------------------------------------------------------------------------------------------------------------------------: | :--------------------------------------------------------------------------------------------------------------------------------------------------------------: | :---------------------------------------------------------------------------------------------------------------------------------------------------------: | :----------------------------------------------------------------------------------------------------------------------------------------------------------------: |
-|                                                           [Omar Nabil](https://github.com/OmarNabil005)                                                            |                                                           [Amira Khalid](https://github.com/AmiraKhalid04)                                                            |                                                          [Ali Alaa](https://github.com/AliAlaa88)                                                           |                                                            [Alyaa Ali](https://github.com/Alyaa242)                                                            |
+| :------------------------------------------------------------------------------------------------------------------------------------------------------------------: | :----------------------------------------------------------------------------------------------------------------------------------------------------------------------: | :----------------------------------------------------------------------------------------------------------------------------------------------------------: | :---------------------------------------------------------------------------------------------------------------------------------------------------------: |
+|                                                            [Omar Nabil](https://github.com/OmarNabil005)                                                             |                                                             [Amira Khalid](https://github.com/AmiraKhalid04)                                                             |                                                           [Ali Alaa](https://github.com/AliAlaa88)                                                           |                                                          [Alyaa Ali](https://github.com/Alyaa242)                                                           |

@@ -5,6 +5,7 @@
 #include "../components/coin-component.hpp"
 #include "../components/collider.hpp"
 #include "../asset-loader.hpp"
+#include "../game-theme.hpp"
 #include "../utils/track-utils.hpp"
 #include <glm/glm.hpp>
 #include <glm/gtc/constants.hpp>
@@ -100,8 +101,8 @@ namespace our
                 auto *col = coin->addComponent<ColliderComponent>();
                 col->shapeType = ColliderType::Sphere;
                 col->objectType = "coin";
-                col->sphereRadius = 0.4f;
-                col->center = glm::vec3(0.0f, 0.8f, 0.0f);
+                col->sphereRadius = config.collectRadius;
+                col->center = getCollectibleColliderCenter();
 
                 std::cout << "Coin " << i << " at: "
                           << spawnPos.x << ", " << spawnPos.y << ", " << spawnPos.z << std::endl;

@@ -9,6 +9,7 @@
 #include "../material/material.hpp"
 #include "../asset-loader.hpp"
 #include "../application.hpp"
+#include "../game-theme.hpp"
 
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
@@ -242,17 +243,22 @@ namespace our
 
             // Draw coin emoji
             ImVec2 ringsPartSize = font->CalcTextSizeA(fontSize, FLT_MAX, 0.0f, ("   " + std::to_string(dusty->ringsPassed) + "   ").c_str());
-            const char *coinEmoji = u8"🪙";
+            const char *coinEmoji = getCollectibleEmoji();
             ImVec2 coinEmojiPos = ImVec2(pos3.x + ringsPartSize.x, pos3.y + (fontSize - emojiFontSize) * 0.5f);
             drawList->AddText(font, emojiFontSize, ImVec2(coinEmojiPos.x + 2.0f, coinEmojiPos.y + 2.0f), shadowColor, coinEmoji);
             drawList->AddText(font, emojiFontSize, coinEmojiPos, textColor, coinEmoji);
 
-            if (currentSong == 1 || currentSong == 2)
+            if (currentSong == 1 || currentSong == 2 || currentSong == 3 || currentSong == 4)
             {
                 // Reversed presentation forms to bypass LTR rendering
-                const char *songText = (currentSong == 1)
-                                           ? u8"\uFEF2\uFEE8\uFEA3\uFEAE\uFEA0\uFE97 \uFEF1\uFE8D\uFEAF\uFE8D \uFE96\uFEE7\uFE8D"
-                                           : u8"\uFEA1\uFE8D\uFEAE\uFE9F \uFE90\uFEF4\uFE92\uFEC3";
+                const char *songText =
+                    (currentSong == 1)
+                        ? u8"\uFEF2\uFEE8\uFEA3\uFEAE\uFEA0\uFE97 \uFEF1\uFE8D\uFEAF\uFE8D \uFE96\uFEE7\uFE8D"
+                    : (currentSong == 2)
+                        ? u8"\uFEA1\uFE8D\uFEAE\uFE9F \uFE90\uFEF4\uFE92\uFEC3"
+                    : (currentSong == 3)
+                        ? u8"\uFE93\uFEA9\uFEAE\uFEE3\uFEAF"
+                        : u8"\uFE93\uFEAD\uFEA9\uFE8E\uFED7 \uFEF2\uFEE0\uFEDF\uFE8D";
 
                 // Add speaker emoji beside it. Visual direction is RTL, so adding at the end of LTR string (visual left)
                 std::string songString = std::string(songText) + u8" 🔊";
@@ -502,6 +508,43 @@ namespace our
 
             // White flash instead of red
             drawHealthBarQuad(fullScreenTransform, {1.0f, 1.0f, 1.0f, overlayAlpha});
+
+            // Restore blending state
+            healthBarMaterial->pipelineState.blending.equation = previousBlendEquation;
+            healthBarMaterial->pipelineState.blending.sourceFactor = previousSource;
+            healthBarMaterial->pipelineState.blending.destinationFactor = previousDestination;
+        }
+
+        void renderColoredOverlay(glm::ivec2 screenSize, float intensity, glm::vec4 color)
+        {
+            if (!healthBarMaterial || !healthBarMaterial->shader || !healthBarQuad)
+                return;
+
+            float clampedIntensity = glm::clamp(intensity, 0.0f, 1.0f);
+            if (clampedIntensity <= 0.0f)
+                return;
+
+            glViewport(0, 0, screenSize.x, screenSize.y);
+
+            // No fading: use the color's alpha directly
+            float overlayAlpha = color.a;
+
+            // Save blending state
+            auto previousBlendEquation = healthBarMaterial->pipelineState.blending.equation;
+            auto previousSource = healthBarMaterial->pipelineState.blending.sourceFactor;
+            auto previousDestination = healthBarMaterial->pipelineState.blending.destinationFactor;
+
+            healthBarMaterial->pipelineState.blending.equation = GL_FUNC_ADD;
+            healthBarMaterial->pipelineState.blending.sourceFactor = GL_SRC_ALPHA;
+            healthBarMaterial->pipelineState.blending.destinationFactor = GL_ONE_MINUS_SRC_ALPHA;
+
+            // Full-screen quad
+            glm::mat4 fullScreenTransform =
+                glm::translate(glm::mat4(1.0f), glm::vec3(-1.0f, -1.0f, 0.0f)) *
+                glm::scale(glm::mat4(1.0f), glm::vec3(2.0f, 2.0f, 1.0f));
+
+            // Draw with specified color
+            drawHealthBarQuad(fullScreenTransform, {color.r, color.g, color.b, overlayAlpha});
 
             // Restore blending state
             healthBarMaterial->pipelineState.blending.equation = previousBlendEquation;

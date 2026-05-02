@@ -6,6 +6,7 @@
 #include <texture/texture-utils.hpp>
 #include <material/material.hpp>
 #include <mesh/mesh.hpp>
+#include <game-theme.hpp>
 #include <systems/audio-system.hpp>
 #include <imgui.h>
 
@@ -42,9 +43,12 @@ class Menustate : public our::State
         "PRESS ESC TO EXIT"};
     static constexpr const char *LeaderboardLabel = "LEADERBOARD";
     static constexpr const char *LeaderboardHint = "PRESS L";
+    static constexpr const char *GirlishLabel = "GIRLISH";
+    static constexpr const char *GirlishHint = "PRESS G";
 
     our::TexturedMaterial *menuMaterial;
     our::TexturedMaterial *cupMaterial;
+    our::TexturedMaterial *bowMaterial;
     our::TintedMaterial *highlightMaterial;
     // Dark overlay drawn on top of the background to improve text legibility
     our::TintedMaterial *darkOverlay;
@@ -53,12 +57,15 @@ class Menustate : public our::State
 
     std::array<Button, 2> buttons;
     Button leaderboardButton{};
+    Button girlishButton{};
     std::array<glm::vec2, 2> buttonTextPositions{};
     std::array<glm::vec2, 2> buttonTextSizes{};
     glm::vec2 titlePosition{};
     glm::vec2 titleSize{};
     glm::vec2 leaderboardLabelPosition{};
     glm::vec2 leaderboardHintPosition{};
+    glm::vec2 girlishLabelPosition{};
+    glm::vec2 girlishHintPosition{};
 
     float titleFontSize = 96.0f;
     float buttonFontSize = 44.0f;
@@ -67,6 +74,44 @@ class Menustate : public our::State
     ImFont *buttonFont = nullptr;
 
     our::AudioSystem menuAudio;
+
+    static our::TexturedMaterial *createIconMaterial(const char *texturePath)
+    {
+        auto *material = new our::TexturedMaterial();
+        material->shader = new our::ShaderProgram();
+        material->shader->attach("assets/shaders/textured.vert", GL_VERTEX_SHADER);
+        material->shader->attach("assets/shaders/textured.frag", GL_FRAGMENT_SHADER);
+        material->shader->link();
+        material->texture = our::texture_utils::loadImage(texturePath);
+        material->tint = glm::vec4(1.0f);
+        material->pipelineState.blending.enabled = true;
+        material->pipelineState.blending.equation = GL_FUNC_ADD;
+        material->pipelineState.blending.sourceFactor = GL_SRC_ALPHA;
+        material->pipelineState.blending.destinationFactor = GL_ONE_MINUS_SRC_ALPHA;
+        return material;
+    }
+
+    static void destroyIconMaterial(our::TexturedMaterial *material)
+    {
+        if (!material)
+            return;
+        delete material->texture;
+        delete material->shader;
+        delete material;
+    }
+
+    void drawPulsingIcon(our::TexturedMaterial *material, const Button &button, float alpha, const glm::mat4 &VP)
+    {
+        float pulse = 0.94f + 0.06f * (0.5f + 0.5f * std::sin(time * 3.0f));
+        Button drawButton = button;
+        glm::vec2 extra = button.size * (pulse - 1.0f) * 0.5f;
+        drawButton.position -= extra;
+        drawButton.size *= pulse;
+        material->tint = glm::vec4(1.0f, 1.0f, 1.0f, alpha);
+        material->setup();
+        material->shader->set("transform", VP * drawButton.getLocalToWorld());
+        rectangle->draw();
+    }
 
     // ─── Layout ──────────────────────────────────────────────────────────────
     void updateLayout(const glm::ivec2 &fbSize)
@@ -110,8 +155,11 @@ class Menustate : public our::State
 
         float iconSize = std::clamp(H * 0.12f, 74.0f, 120.0f);
         float margin = std::clamp(W * 0.025f, 22.0f, 42.0f);
+        float iconGap = std::clamp(W * 0.015f, 16.0f, 28.0f);
         leaderboardButton.size = {iconSize, iconSize};
         leaderboardButton.position = {W - margin - iconSize, margin};
+        girlishButton.size = {iconSize, iconSize};
+        girlishButton.position = {leaderboardButton.position.x - iconGap - iconSize, margin};
 
         ImVec2 labelSize = layoutButtonFont->CalcTextSizeA(leaderboardFontSize, FLT_MAX, 0.0f, LeaderboardLabel);
         ImVec2 hintSize = layoutButtonFont->CalcTextSizeA(leaderboardFontSize * 0.82f, FLT_MAX, 0.0f, LeaderboardHint);
@@ -121,6 +169,15 @@ class Menustate : public our::State
         leaderboardHintPosition = {
             leaderboardButton.position.x + (leaderboardButton.size.x - hintSize.x) * 0.5f,
             leaderboardLabelPosition.y + labelSize.y + H * 0.004f};
+
+        ImVec2 girlishLabelSize = layoutButtonFont->CalcTextSizeA(leaderboardFontSize, FLT_MAX, 0.0f, GirlishLabel);
+        ImVec2 girlishHintSize = layoutButtonFont->CalcTextSizeA(leaderboardFontSize * 0.82f, FLT_MAX, 0.0f, GirlishHint);
+        girlishLabelPosition = {
+            girlishButton.position.x + (girlishButton.size.x - girlishLabelSize.x) * 0.5f,
+            girlishButton.position.y + girlishButton.size.y + H * 0.012f};
+        girlishHintPosition = {
+            girlishButton.position.x + (girlishButton.size.x - girlishHintSize.x) * 0.5f,
+            girlishLabelPosition.y + girlishLabelSize.y + H * 0.004f};
     }
 
     // ─── Shadowed text helper ─────────────────────────────────────────────────
@@ -171,17 +228,8 @@ class Menustate : public our::State
         menuMaterial->texture = our::texture_utils::loadImage("assets/textures/dusty-menu.jpeg");
         menuMaterial->tint = glm::vec4(0.0f, 0.0f, 0.0f, 0.0f);
 
-        cupMaterial = new our::TexturedMaterial();
-        cupMaterial->shader = new our::ShaderProgram();
-        cupMaterial->shader->attach("assets/shaders/textured.vert", GL_VERTEX_SHADER);
-        cupMaterial->shader->attach("assets/shaders/textured.frag", GL_FRAGMENT_SHADER);
-        cupMaterial->shader->link();
-        cupMaterial->texture = our::texture_utils::loadImage("assets/textures/cup.png");
-        cupMaterial->tint = glm::vec4(1.0f);
-        cupMaterial->pipelineState.blending.enabled = true;
-        cupMaterial->pipelineState.blending.equation = GL_FUNC_ADD;
-        cupMaterial->pipelineState.blending.sourceFactor = GL_SRC_ALPHA;
-        cupMaterial->pipelineState.blending.destinationFactor = GL_ONE_MINUS_SRC_ALPHA;
+        cupMaterial = createIconMaterial("assets/textures/cup.png");
+        bowMaterial = createIconMaterial("assets/textures/bow-logo.png");
 
         // Dark overlay — standard alpha blending, tint driven per-frame
         darkOverlay = new our::TintedMaterial();
@@ -221,11 +269,19 @@ class Menustate : public our::State
         menuAudio.playLooping("assets/sounds/menu-start.mp3", 0.5f);
 
         buttons[0].action = [this]()
-        { getApp()->changeState("play"); };
+        {
+            our::setGameplayTheme(our::GameplayTheme::Classic);
+            getApp()->changeState("play");
+        };
         buttons[1].action = [this]()
         { getApp()->close(); };
         leaderboardButton.action = [this]()
         { getApp()->changeState("leaderboard"); };
+        girlishButton.action = [this]()
+        {
+            our::setGameplayTheme(our::GameplayTheme::Girlish);
+            getApp()->changeState("play");
+        };
     }
 
     // ─── onImmediateGui ───────────────────────────────────────────────────────
@@ -241,6 +297,7 @@ class Menustate : public our::State
         ImDrawList *dl = ImGui::GetForegroundDrawList();
         glm::vec2 mp = getApp()->getMouse().getMousePosition();
         bool leaderboardHovered = leaderboardButton.isInside(mp);
+        bool girlishHovered = girlishButton.isInside(mp);
 
         // ── Title ────────────────────────────────────────────────────────────
         float sOff = titleFontSize * 0.045f;
@@ -314,6 +371,19 @@ class Menustate : public our::State
                         leaderboardHovered ? ImVec4(1.0f, 0.88f, 0.42f, btnFade)
                                            : ImVec4(0.90f, 0.78f, 0.42f, btnFade * 0.85f)),
                     LeaderboardHint);
+
+        dl->AddText(buttonFont, leaderboardFontSize,
+                    ImVec2(girlishLabelPosition.x, girlishLabelPosition.y),
+                    ImGui::ColorConvertFloat4ToU32(
+                        girlishHovered ? ImVec4(1.0f, 0.84f, 0.92f, btnFade)
+                                       : ImVec4(0.94f, 0.78f, 0.88f, btnFade * 0.9f)),
+                    GirlishLabel);
+        dl->AddText(buttonFont, leaderboardFontSize * 0.82f,
+                    ImVec2(girlishHintPosition.x, girlishHintPosition.y),
+                    ImGui::ColorConvertFloat4ToU32(
+                        girlishHovered ? ImVec4(1.0f, 0.62f, 0.86f, btnFade)
+                                       : ImVec4(0.90f, 0.54f, 0.80f, btnFade * 0.85f)),
+                    GirlishHint);
     }
 
     // ─── onDraw ───────────────────────────────────────────────────────────────
@@ -325,6 +395,7 @@ class Menustate : public our::State
         auto &keyboard = getApp()->getKeyboard();
         if (keyboard.justPressed(GLFW_KEY_SPACE))
         {
+            our::setGameplayTheme(our::GameplayTheme::Classic);
             getApp()->changeState("play");
             return;
         }
@@ -338,6 +409,12 @@ class Menustate : public our::State
             getApp()->changeState("leaderboard");
             return;
         }
+        if (keyboard.justPressed(GLFW_KEY_G))
+        {
+            our::setGameplayTheme(our::GameplayTheme::Girlish);
+            getApp()->changeState("play");
+            return;
+        }
 
         auto &mouse = getApp()->getMouse();
         glm::vec2 mousePosition = mouse.getMousePosition();
@@ -349,6 +426,8 @@ class Menustate : public our::State
                     b.action();
             if (leaderboardButton.isInside(mousePosition))
                 leaderboardButton.action();
+            if (girlishButton.isInside(mousePosition))
+                girlishButton.action();
         }
 
         glViewport(0, 0, size.x, size.y);
@@ -371,15 +450,9 @@ class Menustate : public our::State
         darkOverlay->shader->set("transform", VP * M);
         rectangle->draw();
 
-        float cupPulse = 0.94f + 0.06f * (0.5f + 0.5f * std::sin(time * 3.0f));
-        Button cupDrawButton = leaderboardButton;
-        glm::vec2 extra = leaderboardButton.size * (cupPulse - 1.0f) * 0.5f;
-        cupDrawButton.position -= extra;
-        cupDrawButton.size *= cupPulse;
-        cupMaterial->tint = glm::vec4(1.0f, 1.0f, 1.0f, glm::smoothstep(0.45f, 1.30f, time));
-        cupMaterial->setup();
-        cupMaterial->shader->set("transform", VP * cupDrawButton.getLocalToWorld());
-        rectangle->draw();
+        float iconAlpha = glm::smoothstep(0.45f, 1.30f, time);
+        drawPulsingIcon(cupMaterial, leaderboardButton, iconAlpha, VP);
+        drawPulsingIcon(bowMaterial, girlishButton, iconAlpha, VP);
 
         // 3. Hover highlight (subtract blend) on top of everything
         for (auto &button : buttons)
@@ -401,9 +474,8 @@ class Menustate : public our::State
         delete menuMaterial->texture;
         delete menuMaterial->shader;
         delete menuMaterial;
-        delete cupMaterial->texture;
-        delete cupMaterial->shader;
-        delete cupMaterial;
+        destroyIconMaterial(cupMaterial);
+        destroyIconMaterial(bowMaterial);
         delete darkOverlay->shader;
         delete darkOverlay;
         delete highlightMaterial->shader;

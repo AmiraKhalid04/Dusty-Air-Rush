@@ -31,6 +31,7 @@
 #include "systems/health-system.hpp"
 #include <systems/ring-arrow-system.hpp>
 #include <utils/track-utils.hpp>
+#include <game-theme.hpp>
 
 // This state shows how to use the ECS framework and deserialization.
 class Playstate : public our::State
@@ -115,7 +116,9 @@ private:
         // If we have assets in the scene config, we deserialize them
         if (config.contains("assets"))
         {
-            our::deserializeAllAssets(config["assets"]);
+            auto themedAssets = config["assets"];
+            our::applyGameplayThemeAssets(themedAssets);
+            our::deserializeAllAssets(themedAssets);
         }
         // If we have a world in the scene config, we use it to populate our world
         if (config.contains("world"))
@@ -246,6 +249,8 @@ private:
             if (coinsJson.contains("scale"))
                 coinConfig.scale = coinsJson["scale"];
         }
+        coinConfig.scale *= our::getCollectibleScaleMultiplier();
+        coinConfig.collectRadius = our::getCollectibleRadius();
         coinSystem.initialize(&world, coinConfig);
 
         our::HealthPackConfig healthConfig;
@@ -358,6 +363,21 @@ private:
             audioSystem.playCassetteTrack("assets/sounds/cassette/song2.mp3", 0.5f);
             currentSong = 2;
         }
+        if (keyboard.justPressed(GLFW_KEY_3) || keyboard.justPressed(GLFW_KEY_KP_3))
+        {
+            audioSystem.playCassetteTrack("assets/sounds/cassette/song3.mp3", 0.8f);
+            currentSong = 3;
+        }
+        if (keyboard.justPressed(GLFW_KEY_4) || keyboard.justPressed(GLFW_KEY_KP_4))
+        {
+            audioSystem.playCassetteTrack("assets/sounds/cassette/song4.mp3", 0.5f);
+            currentSong = 4;
+        }
+
+        if (currentSong == 3 || currentSong == 4)
+        {
+            uiRenderer.renderColoredOverlay(getApp()->getFrameBufferSize(), 1.0f, glm::vec4(1.0f, 0.412f, 0.706f, 0.3f));
+        }
 
         if (keyboard.justPressed(GLFW_KEY_ESCAPE))
         {
@@ -377,7 +397,7 @@ private:
                     std::cout << "\n=============================================" << std::endl;
                     std::cout << "          MISSION FAILED - HEALTH DEPLETED    " << std::endl;
                     std::cout << " Rings Passed: " << dusty->ringsPassed << " / " << dusty->totalRings << std::endl;
-                    std::cout << " Coins Collected: " << dusty->coins << std::endl;
+                    std::cout << ' ' << our::getCollectibleSummaryLabel() << ": " << dusty->coins << std::endl;
                     std::cout << " Final Score: " << lastScore << std::endl;
                     std::cout << "=============================================\n"
                               << std::endl;
@@ -391,7 +411,7 @@ private:
                     std::cout << "\n=============================================" << std::endl;
                     std::cout << "            MISSION COMPLETE!                 " << std::endl;
                     std::cout << " Rings Passed: " << dusty->ringsPassed << " / " << dusty->totalRings << std::endl;
-                    std::cout << " Coins Collected: " << dusty->coins << std::endl;
+                    std::cout << ' ' << our::getCollectibleSummaryLabel() << ": " << dusty->coins << std::endl;
                     std::cout << " Final Health: " << dusty->currentHealth << " / " << dusty->maxHealth << std::endl;
                     std::cout << " Time: " << playTime << "s" << std::endl;
                     std::cout << " Final Score: " << lastScore << std::endl;

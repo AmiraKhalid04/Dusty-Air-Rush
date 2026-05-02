@@ -1,0 +1,8 @@
+#!/bin/bash
+# AppRun - Entry point for AppImage
+# This script finds and executes the game binary
+
+APPDIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+export LD_LIBRARY_PATH="${APPDIR}:${LD_LIBRARY_PATH}"
+
+exec "${APPDIR}/GAME_APPLICATION" "$@"

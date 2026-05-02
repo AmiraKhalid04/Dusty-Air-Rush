@@ -146,7 +146,22 @@ set(STATES_SOURCES
 # For each example, we add an executable target
 # Each target compiles one example source file and the common & vendor source files
 # Then we link GLFW with each target
-add_executable(GAME_APPLICATION source/main.cpp ${STATES_SOURCES} ${COMMON_SOURCES} ${VENDOR_SOURCES})
+
+# Windows: Add resource file with icon
+if(WIN32)
+    set(WINDOWS_RESOURCES "")
+    if(EXISTS "${PROJECT_SOURCE_DIR}/assets/icons/game-icon.ico")
+        # Create a resource file for Windows icon
+        file(WRITE "${PROJECT_BINARY_DIR}/game.rc"
+            "IDI_ICON1 ICON \"${PROJECT_SOURCE_DIR}/assets/icons/game-icon.ico\"\n"
+        )
+        set(WINDOWS_RESOURCES "${PROJECT_BINARY_DIR}/game.rc")
+    endif()
+    add_executable(GAME_APPLICATION source/main.cpp ${STATES_SOURCES} ${COMMON_SOURCES} ${VENDOR_SOURCES} ${WINDOWS_RESOURCES})
+else()
+    add_executable(GAME_APPLICATION source/main.cpp ${STATES_SOURCES} ${COMMON_SOURCES} ${VENDOR_SOURCES})
+endif()
+
 target_link_libraries(GAME_APPLICATION glfw)
 target_compile_definitions(GAME_APPLICATION PRIVATE 
     IMGUI_IMPL_OPENGL_LOADER_GLAD2
@@ -154,4 +169,22 @@ target_compile_definitions(GAME_APPLICATION PRIVATE
 
 if(UNIX AND NOT APPLE)
         target_link_libraries(GAME_APPLICATION OpenGL::GL pthread m dl)
+endif()
+
+# Linux: Generate .desktop file for application launcher
+if(UNIX AND NOT APPLE)
+    file(WRITE "${PROJECT_BINARY_DIR}/game.desktop"
+        "[Desktop Entry]\n"
+        "Version=1.0\n"
+        "Type=Application\n"
+        "Name=Dusty - Air Rush\n"
+        "Exec=GAME_APPLICATION\n"
+        "Icon=game-icon\n"
+        "Categories=Game;Graphics;\n"
+    )
+    install(FILES "${PROJECT_BINARY_DIR}/game.desktop" DESTINATION . RENAME "Dusty - Air Rush.desktop")
+    install(FILES "${PROJECT_SOURCE_DIR}/assets/icons/game-icon.png" 
+            DESTINATION . 
+            RENAME game-icon.png)
+    install(TARGETS GAME_APPLICATION DESTINATION .)
 endif()

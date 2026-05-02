@@ -13,6 +13,10 @@
 
 The project includes a complete menu flow, persistent scoring, themed visuals, cassette music switching, and both keyboard and gamepad support.
 
+
+##  <img src="https://i.imgur.com/cAkWtJc.png" width="21" /> Demo Video
+  https://github.com/user-attachments/assets/b49dd2bc-ac9e-4c89-89a5-266881c8375b
+
 ## <img src="https://i.postimg.cc/L4y4DZ3X/tornado.png" width="21" /> What The Game Has
 
 - **Flight:** Steering, banking, pitch control, rolling, boost, slow-flight, backflip, headlights, and mouse-assisted look.
@@ -122,10 +126,6 @@ bin/GAME_APPLICATION.exe
 
 - `-c` chooses the config file.
 - `-f` runs for a fixed number of frames, which is useful for testing.
-
-
-## Demo Video <img src="https://i.imgur.com/cAkWtJc.png" width="28" />
-  https://github.com/user-attachments/assets/b49dd2bc-ac9e-4c89-89a5-266881c8375b
 
 
 ## <img src="https://i.postimg.cc/3rLr1DFx/team.png" width="21" /> Contributors

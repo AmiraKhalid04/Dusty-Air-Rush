@@ -86,6 +86,10 @@ In-game cassette switching is mapped to `0` through `4`.
 
 ## <img src="https://i.postimg.cc/Vs7sgbB2/install.png" width="21" /> Build And Run
 
+For a dedicated Linux executable + packaging workflow, see:
+
+- `docs/linux-build-and-package.md`
+
 ### Requirements
 
 - CMake `3.15+`

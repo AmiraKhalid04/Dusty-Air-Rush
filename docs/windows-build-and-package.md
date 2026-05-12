@@ -10,6 +10,7 @@ This guide shows how to build Dusty Air Rush on Windows and package it as a port
   - Visual Studio 2022 with Desktop development with C++ workload
   - Visual Studio Build Tools 2022 with MSVC C++ tools
   - MinGW-w64 (if you prefer GCC on Windows)
+  - Or a MinGW/Ninja toolchain (Ninja is recommended with MinGW)
 
 PowerShell is used by the scripts in this guide.
 
@@ -30,6 +31,25 @@ Quick run check:
 ```powershell
 ./bin/GAME_APPLICATION.exe -c config/app.jsonc -f 10
 ```
+
+Building with MinGW (no Visual Studio):
+
+If you have `ninja` and a MinGW-w64 toolchain on PATH, the build script will prefer Ninja.
+To explicitly request a generator, run:
+
+```powershell
+./scripts/build-windows.ps1 -Generator "Ninja" -BuildType Release
+```
+
+Or use MinGW Makefiles with `mingw32-make`:
+
+```powershell
+./scripts/build-windows.ps1 -Generator "MinGW Makefiles" -CMakeMakeProgram "C:\\msys64\\mingw64\\bin\\mingw32-make.exe"
+```
+
+Notes:
+- Ensure your MinGW `gcc`/`g++` are in PATH (e.g., MSYS2 `mingw64.exe` environment).
+- For best performance and simpler dependency handling, install `ninja` and pass `-Generator "Ninja"`.
 
 ## 3) Create A Portable Windows Bundle
 

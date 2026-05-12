@@ -90,6 +90,10 @@ For a dedicated Linux executable + packaging workflow, see:
 
 - `docs/linux-build-and-package.md`
 
+For a dedicated Windows executable + packaging workflow, see:
+
+- `docs/windows-build-and-package.md`
+
 ### Requirements
 
 - CMake `3.15+`

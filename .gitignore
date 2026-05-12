@@ -25,3 +25,4 @@ CMakeSettings.json
 screenshots/
 dist/
 build-linux/
+build-windows/

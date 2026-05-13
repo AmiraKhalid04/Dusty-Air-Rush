@@ -55,11 +55,21 @@ if command -v xdg-user-dir >/dev/null 2>&1; then
 	fi
 fi
 
-desktop_escape() {
+desktop_escape_string() {
 	local value="$1"
 	value="${value//\\/\\\\}"
-	value="${value// /\\ }"
+	# Newlines are invalid in desktop entry values.
+	value="${value//$'\n'/ }"
 	printf '%s' "${value}"
+}
+
+desktop_escape_exec_arg() {
+	local value="$1"
+	value="${value//\\/\\\\}"
+	value="${value//\"/\\\"}"
+	value="${value//\$/\\\$}"
+	value="${value//\`/\\\`}"
+	printf '"%s"' "${value}"
 }
 
 ICON_CANDIDATES=(
@@ -81,9 +91,9 @@ done
 mkdir -p "${APP_MENU_DIR}"
 
 APP_MENU_FILE="${APP_MENU_DIR}/${DESKTOP_FILE_NAME}"
-ESCAPED_RUN_PATH="$(desktop_escape "${SCRIPT_DIR}/run.sh")"
-ESCAPED_WORKDIR="$(desktop_escape "${SCRIPT_DIR}")"
-ESCAPED_ICON_PATH="$(desktop_escape "${ICON_PATH}")"
+ESCAPED_RUN_PATH="$(desktop_escape_exec_arg "${SCRIPT_DIR}/run.sh")"
+ESCAPED_WORKDIR="$(desktop_escape_string "${SCRIPT_DIR}")"
+ESCAPED_ICON_PATH="$(desktop_escape_string "${ICON_PATH}")"
 
 cat > "${APP_MENU_FILE}" << DESKTOP_EOF
 [Desktop Entry]
